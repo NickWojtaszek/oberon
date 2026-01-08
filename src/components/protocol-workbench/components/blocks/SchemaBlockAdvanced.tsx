@@ -128,7 +128,7 @@ export function SchemaBlockAdvanced({
           <div className="px-4 py-3">
             <div className="flex items-center gap-3">
               {/* Drag Handle */}
-              <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="cursor-grab active:cursor-grabbing opacity-100 transition-opacity">
                 <GripVertical className="w-4 h-4 text-slate-400" />
               </div>
 
@@ -169,7 +169,7 @@ export function SchemaBlockAdvanced({
                     <span className="text-sm font-semibold text-slate-900">{block.variable.name}</span>
                     <button
                       onClick={() => setIsEditingName(true)}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-slate-100 rounded transition-opacity"
+                      className="opacity-100 p-0.5 hover:bg-slate-100 rounded transition-opacity"
                     >
                       <Edit3 className="w-3 h-3 text-slate-400" />
                     </button>
@@ -192,7 +192,7 @@ export function SchemaBlockAdvanced({
               <BlockBadges block={block} />
 
               {/* Toolbar */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="opacity-100 transition-opacity">
                 <BlockToolbar
                   block={block}
                   onShowSettings={onShowSettings}
@@ -209,7 +209,7 @@ export function SchemaBlockAdvanced({
           <div className="px-4 py-3 bg-gradient-to-r from-blue-50/40 to-purple-50/40">
             <div className="flex items-center gap-3">
               {/* Drag Handle */}
-              <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="cursor-grab active:cursor-grabbing opacity-100 transition-opacity">
                 <GripVertical className="w-3.5 h-3.5 text-slate-400" />
               </div>
 
@@ -243,7 +243,7 @@ export function SchemaBlockAdvanced({
                     <span className="text-sm font-medium text-slate-900">{block.variable.name}</span>
                     <button
                       onClick={() => setIsEditingName(true)}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-white/50 rounded transition-opacity"
+                      className="opacity-100 p-0.5 hover:bg-white/50 rounded transition-opacity"
                     >
                       <Edit3 className="w-3 h-3 text-slate-400" />
                     </button>
@@ -273,7 +273,7 @@ export function SchemaBlockAdvanced({
               <BlockBadges block={block} />
 
               {/* Toolbar */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="opacity-100 transition-opacity">
                 <BlockToolbar
                   block={block}
                   onShowSettings={onShowSettings}

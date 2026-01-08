@@ -105,7 +105,7 @@ export function SchemaBlockItemSimple({
       >
         <div className="flex items-center gap-2">
           {/* Drag Handle */}
-          <div className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="cursor-grab active:cursor-grabbing opacity-100 transition-opacity">
             <GripVertical className="w-4 h-4 text-slate-400" />
           </div>
 
@@ -153,7 +153,7 @@ export function SchemaBlockItemSimple({
                 <span className="font-medium text-slate-900 truncate">{block.variable.name}</span>
                 <button
                   onClick={() => setIsEditingName(true)}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded transition-opacity"
+                  className="opacity-100 p-1 hover:bg-slate-100 rounded transition-opacity"
                 >
                   <Edit3 className="w-3 h-3 text-slate-400" />
                 </button>
@@ -183,7 +183,7 @@ export function SchemaBlockItemSimple({
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 opacity-100 transition-opacity">
             <button
               onClick={() => onShowDependencies(block)}
               className="p-1.5 hover:bg-slate-100 rounded transition-colors"
