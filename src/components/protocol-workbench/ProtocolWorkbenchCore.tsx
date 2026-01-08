@@ -290,6 +290,49 @@ export function ProtocolWorkbench({
     URL.revokeObjectURL(url);
   };
 
+  // Import JSON helper function with data overwrite protection
+  const handleImportJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const jsonData = JSON.parse(text);
+        
+        // Validate and import
+        const { validateAndImportSchema, regenerateBlockIds } = require('./utils');
+        const result = validateAndImportSchema(jsonData);
+        
+        if (!result.valid || !result.blocks) {
+          alert(`Failed to import schema:\n${result.errors.join('\n')}`);
+          return;
+        }
+
+        // If we have existing blocks, ask for confirmation
+        if (schemaState.schemaBlocks.length > 0) {
+          const overwrite = confirm(
+            `You already have ${schemaState.schemaBlocks.length} schema blocks. ` +
+            `Do you want to replace them with ${result.blocks.length} blocks from the imported file?\n\n` +
+            `Click OK to overwrite or Cancel to keep current blocks.`
+          );
+          
+          if (!overwrite) return;
+        }
+
+        // Replace schema blocks
+        schemaState.setSchemaBlocks(result.blocks);
+        alert(`Successfully imported ${result.blocks.length} schema blocks!`);
+      } catch (error) {
+        alert(`Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    };
+    input.click();
+  };
+
   // Listen for events from Global Header - MOVED TO TOP LEVEL SO IT WORKS ON ALL TABS
   useEffect(() => {
     const handleSaveDraftEvent = () => {
@@ -308,16 +351,22 @@ export function ProtocolWorkbench({
       handleExportJSON();
     };
 
+    const handleImport = () => {
+      handleImportJSON();
+    };
+
     window.addEventListener('protocol-save-draft', handleSaveDraftEvent);
     window.addEventListener('protocol-show-templates', handleShowTemplates);
     window.addEventListener('protocol-show-ai-generator', handleShowGenerator);
     window.addEventListener('protocol-export-schema', handleExport);
+    window.addEventListener('protocol-import-schema', handleImport);
 
     return () => {
       window.removeEventListener('protocol-save-draft', handleSaveDraftEvent);
       window.removeEventListener('protocol-show-templates', handleShowTemplates);
       window.removeEventListener('protocol-show-ai-generator', handleShowGenerator);
       window.removeEventListener('protocol-export-schema', handleExport);
+      window.removeEventListener('protocol-import-schema', handleImport);
     };
   }, [schemaState.schemaBlocks, protocolState.protocolMetadata, protocolState.protocolContent, initialProtocolId]);
 

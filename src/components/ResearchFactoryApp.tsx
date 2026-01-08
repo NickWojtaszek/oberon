@@ -313,6 +313,13 @@ export function ResearchFactoryApp() {
                   },
                 },
                 {
+                  label: 'Import Schema',
+                  onClick: () => {
+                    const event = new CustomEvent('protocol-import-schema');
+                    window.dispatchEvent(event);
+                  },
+                },
+                {
                   label: 'Export Schema',
                   onClick: () => {
                     const event = new CustomEvent('protocol-export-schema');

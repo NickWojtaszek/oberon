@@ -3,7 +3,111 @@
 import type { SchemaBlock } from './types';
 
 /**
- * Generate nested JSON structure from schema blocks
+ * Generate a unique ID for blocks (replaces uuid in regenerateBlockIds)
+ */
+const generateUniqueId = (): string => {
+  return `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
+/**
+ * Export schema blocks to downloadable JSON with full metadata
+ */
+export const exportSchemaJSON = (blocks: SchemaBlock[], protocolName: string = 'protocol'): string => {
+  const exportData = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    protocolName,
+    schemaBlocks: blocks,
+    metadata: {
+      blockCount: blocks.length,
+      totalFields: getAllBlocks(blocks).length,
+    }
+  };
+  return JSON.stringify(exportData, null, 2);
+};
+
+/**
+ * Validate imported schema JSON and reconstruct blocks
+ */
+export const validateAndImportSchema = (jsonData: any): { valid: boolean; blocks?: SchemaBlock[]; errors: string[] } => {
+  const errors: string[] = [];
+
+  // Basic structure validation
+  if (!jsonData || typeof jsonData !== 'object') {
+    errors.push('Invalid JSON: Expected an object');
+    return { valid: false, errors };
+  }
+
+  // Check for schema blocks
+  if (!jsonData.schemaBlocks && !Array.isArray(jsonData)) {
+    errors.push('Invalid format: Missing schemaBlocks array or direct block array');
+    return { valid: false, errors };
+  }
+
+  const blocks = jsonData.schemaBlocks || jsonData;
+
+  if (!Array.isArray(blocks)) {
+    errors.push('schemaBlocks must be an array');
+    return { valid: false, errors };
+  }
+
+  if (blocks.length === 0) {
+    errors.push('Schema contains no blocks');
+    return { valid: false, errors };
+  }
+
+  // Validate each block structure
+  const validatedBlocks: SchemaBlock[] = [];
+  blocks.forEach((block, index) => {
+    try {
+      if (!block.id || !block.variable || !block.dataType || !block.role) {
+        errors.push(`Block ${index}: Missing required fields (id, variable, dataType, or role)`);
+        return;
+      }
+
+      if (typeof block.variable !== 'object' || !block.variable.id || !block.variable.name) {
+        errors.push(`Block ${index}: Invalid variable structure`);
+        return;
+      }
+
+      // Regenerate IDs to avoid conflicts
+      const regeneratedBlock = regenerateBlockIds(block);
+      validatedBlocks.push(regeneratedBlock);
+    } catch (e) {
+      errors.push(`Block ${index}: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
+  });
+
+  if (errors.length > 0 && validatedBlocks.length === 0) {
+    return { valid: false, errors };
+  }
+
+  return { 
+    valid: validatedBlocks.length > 0, 
+    blocks: validatedBlocks, 
+    errors: errors.filter(e => !e.includes('Missing required fields')) // Reduce noise if we got some valid blocks
+  };
+};
+
+/**
+ * Recursively regenerate all IDs to prevent conflicts on import
+ */
+export const regenerateBlockIds = (block: SchemaBlock): SchemaBlock => {
+  const regenerated = { ...block, id: generateUniqueId() };
+  if (block.children) {
+    regenerated.children = block.children.map(child => regenerateBlockIds(child));
+  }
+  if (block.conditionalDependencies) {
+    regenerated.conditionalDependencies = block.conditionalDependencies.map(dep => ({
+      ...dep,
+      id: generateUniqueId()
+    }));
+  }
+  return regenerated;
+};
+
+/**
+ * Generate nested JSON structure from schema blocks (for data entry templates)
  */
 export const generateNestedJSON = (blocks: SchemaBlock[], level = 0): any => {
   const result: any = {};
