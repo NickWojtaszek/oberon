@@ -1,0 +1,413 @@
+{
+  "exportMetadata": {
+    "version": "1.0.0",
+    "exportedAt": 1704412800000,
+    "exportedBy": "AI Template Generator",
+    "applicationVersion": "1.0.0",
+    "description": "Example cardiovascular RCT template - Ready for AI to fill",
+    "totalProjects": 1,
+    "totalProtocols": 1,
+    "totalManuscripts": 1,
+    "totalClinicalRecords": 300
+  },
+  "projects": [
+    {
+      "project": {
+        "id": "project-cardio-rct-001",
+        "name": "ACE-X Hypertension Trial",
+        "description": "Phase III randomized controlled trial evaluating efficacy and safety of novel ACE inhibitor ACE-X versus placebo in essential hypertension",
+        "studyDesign": "RCT",
+        "createdAt": 1704412800000,
+        "settings": {
+          "primaryInvestigator": "Dr. [AI TO FILL]",
+          "institution": "[AI TO FILL]",
+          "phase": "Phase III",
+          "therapeuticArea": "Cardiology - Hypertension",
+          "patientCount": 300,
+          "enrollmentStart": "[AI TO FILL: ISO DATE]",
+          "enrollmentEnd": "[AI TO FILL: ISO DATE]",
+          "followUpDuration": "12 months",
+          "primaryEndpoint": "Mean change in sitting systolic blood pressure from baseline to 12 months",
+          "secondaryEndpoints": [
+            "Mean change in diastolic blood pressure",
+            "Proportion achieving BP control (<140/90 mmHg)",
+            "Major adverse cardiovascular events (MACE)",
+            "All-cause mortality",
+            "Quality of life (SF-36 score)"
+          ],
+          "inclusionCriteria": [
+            "Age 45-75 years",
+            "Essential hypertension (SBP 140-180 mmHg)",
+            "No BP medications for ≥4 weeks",
+            "eGFR >60 mL/min/1.73m²",
+            "Willing to provide informed consent"
+          ],
+          "exclusionCriteria": [
+            "Secondary hypertension",
+            "Recent cardiovascular event (<6 months)",
+            "NYHA Class III-IV heart failure",
+            "Severe renal impairment (eGFR <45)",
+            "Known ACE inhibitor allergy",
+            "Pregnancy or lactation"
+          ],
+          "statisticalPower": 0.9,
+          "alphaLevel": 0.05,
+          "randomizationRatio": "1:1",
+          "blindingStrategy": "double-blind",
+          "interventions": [
+            {
+              "name": "ACE-X",
+              "type": "drug",
+              "dosage": "10mg",
+              "frequency": "Once daily",
+              "duration": "12 months"
+            },
+            {
+              "name": "Placebo",
+              "type": "drug",
+              "dosage": "Matching tablet",
+              "frequency": "Once daily",
+              "duration": "12 months"
+            }
+          ]
+        }
+      },
+      "protocols": [
+        {
+          "id": "protocol-001",
+          "protocolNumber": "PROTO-2024-CARDIO-001",
+          "protocolTitle": "Efficacy and Safety of ACE-X versus Placebo in Essential Hypertension",
+          "versions": [
+            {
+              "id": "version-001",
+              "versionNumber": "1.0.0",
+              "status": "published",
+              "createdAt": 1704412800000,
+              "schemaBlocks": [
+                {
+                  "id": "demo_age",
+                  "label": "Age",
+                  "category": "demographics",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "years",
+                  "minValue": 18,
+                  "maxValue": 120,
+                  "clinicalSignificance": "Age affects hypertension prevalence and treatment response",
+                  "regulatoryRequirement": true,
+                  "collectionTimepoint": "baseline",
+                  "visitNumber": 1
+                },
+                {
+                  "id": "demo_sex",
+                  "label": "Sex",
+                  "category": "demographics",
+                  "dataType": "categorical",
+                  "required": true,
+                  "options": ["Male", "Female"],
+                  "clinicalSignificance": "Sex differences in BP and cardiovascular risk",
+                  "regulatoryRequirement": true,
+                  "collectionTimepoint": "baseline",
+                  "visitNumber": 1
+                },
+                {
+                  "id": "demo_race",
+                  "label": "Race/Ethnicity",
+                  "category": "demographics",
+                  "dataType": "categorical",
+                  "required": true,
+                  "options": ["White", "Black/African American", "Hispanic/Latino", "Asian", "Other"],
+                  "clinicalSignificance": "Racial differences in hypertension prevalence and drug response",
+                  "regulatoryRequirement": true,
+                  "collectionTimepoint": "baseline",
+                  "visitNumber": 1
+                },
+                {
+                  "id": "vital_height",
+                  "label": "Height",
+                  "category": "vital-signs",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "cm",
+                  "minValue": 140,
+                  "maxValue": 210,
+                  "clinicalSignificance": "Required for BMI calculation",
+                  "collectionTimepoint": "baseline",
+                  "visitNumber": 1
+                },
+                {
+                  "id": "vital_weight",
+                  "label": "Weight",
+                  "category": "vital-signs",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "kg",
+                  "minValue": 40,
+                  "maxValue": 200,
+                  "clinicalSignificance": "Weight affects cardiovascular risk",
+                  "collectionTimepoint": "as-needed",
+                  "visitNumber": null
+                },
+                {
+                  "id": "vital_sbp",
+                  "label": "Systolic Blood Pressure",
+                  "category": "vital-signs",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "mmHg",
+                  "minValue": 80,
+                  "maxValue": 250,
+                  "clinicalSignificance": "Primary endpoint variable",
+                  "regulatoryRequirement": true,
+                  "collectionTimepoint": "as-needed",
+                  "visitNumber": null
+                },
+                {
+                  "id": "vital_dbp",
+                  "label": "Diastolic Blood Pressure",
+                  "category": "vital-signs",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "mmHg",
+                  "minValue": 40,
+                  "maxValue": 150,
+                  "clinicalSignificance": "Secondary endpoint variable",
+                  "collectionTimepoint": "as-needed",
+                  "visitNumber": null
+                },
+                {
+                  "id": "vital_hr",
+                  "label": "Heart Rate",
+                  "category": "vital-signs",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "bpm",
+                  "minValue": 40,
+                  "maxValue": 180,
+                  "clinicalSignificance": "Safety monitoring",
+                  "collectionTimepoint": "as-needed",
+                  "visitNumber": null
+                },
+                {
+                  "id": "lab_creatinine",
+                  "label": "Serum Creatinine",
+                  "category": "laboratory",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "mg/dL",
+                  "minValue": 0.3,
+                  "maxValue": 15,
+                  "clinicalSignificance": "Renal function monitoring (ACE inhibitor safety)",
+                  "regulatoryRequirement": true,
+                  "collectionTimepoint": "monthly",
+                  "visitNumber": null
+                },
+                {
+                  "id": "lab_potassium",
+                  "label": "Serum Potassium",
+                  "category": "laboratory",
+                  "dataType": "continuous",
+                  "required": true,
+                  "unit": "mEq/L",
+                  "minValue": 2.0,
+                  "maxValue": 7.0,
+                  "clinicalSignificance": "Hyperkalemia monitoring (ACE inhibitor side effect)",
+                  "regulatoryRequirement": true,
+                  "collectionTimepoint": "monthly",
+                  "visitNumber": null
+                },
+                {
+                  "id": "lab_glucose",
+                  "label": "Fasting Glucose",
+                  "category": "laboratory",
+                  "dataType": "continuous",
+                  "required": false,
+                  "unit": "mg/dL",
+                  "minValue": 50,
+                  "maxValue": 500,
+                  "clinicalSignificance": "Metabolic risk factor",
+                  "collectionTimepoint": "baseline",
+                  "visitNumber": 1
+                },
+                {
+                  "id": "ae_type",
+                  "label": "Adverse Event Type",
+                  "category": "adverse-events",
+                  "dataType": "categorical",
+                  "required": false,
+                  "options": [
+                    "None",
+                    "Dry cough",
+                    "Dizziness",
+                    "Headache",
+                    "Fatigue",
+                    "Hypotension",
+                    "Hyperkalemia",
+                    "Angioedema",
+                    "Rash",
+                    "Other"
+                  ],
+                  "clinicalSignificance": "Safety profile documentation",
+                  "regulatoryRequirement": true,
+                  "collectionTimepoint": "as-needed",
+                  "visitNumber": null
+                }
+              ]
+            }
+          ],
+          "currentVersion": "1.0.0"
+        }
+      ],
+      "clinicalData": [
+        {
+          "recordId": "[AI TO GENERATE UNIQUE IDs FOR 300 RECORDS]",
+          "subjectId": "[AI TO GENERATE: SUBJ-001 through SUBJ-300]",
+          "visitDate": "[AI TO GENERATE: Spread across 12 months]",
+          "visitNumber": "[1-5 for each patient]",
+          "protocolNumber": "PROTO-2024-CARDIO-001",
+          "protocolVersion": "1.0.0",
+          "data": {
+            "demo_age": "[AI: 45-75 years, mean ~60]",
+            "demo_sex": "[AI: 55% Male, 45% Female]",
+            "demo_race": "[AI: 60% White, 20% Black, 15% Hispanic, 5% Asian]",
+            "vital_height": "[AI: 150-190 cm, realistic for sex]",
+            "vital_weight": "[AI: BMI 25-35 kg/m²]",
+            "vital_sbp": "[AI: Baseline 145-175, Treatment group -12±8 mmHg, Placebo -3±7 mmHg]",
+            "vital_dbp": "[AI: Baseline 85-105, Treatment group -7±6 mmHg, Placebo -2±5 mmHg]",
+            "vital_hr": "[AI: 60-90 bpm, slight variations]",
+            "lab_creatinine": "[AI: 0.7-1.5 mg/dL baseline, monitor for increases]",
+            "lab_potassium": "[AI: 3.5-5.0 mEq/L baseline, watch for hyperkalemia in treatment group]",
+            "lab_glucose": "[AI: 85-125 mg/dL, some patients with pre-diabetes]",
+            "ae_type": "[AI: Treatment arm: 15% cough, 12% dizziness, 8% headache, 7% fatigue, 4% hypotension; Placebo arm: lower rates]"
+          },
+          "enteredBy": "[AI TO FILL]",
+          "enteredAt": "[AI TO FILL: Timestamp]",
+          "status": "verified"
+        }
+      ],
+      "manuscripts": [
+        {
+          "id": "manuscript-001",
+          "projectMeta": {
+            "projectId": "project-cardio-rct-001",
+            "studyTitle": "ACE-X Hypertension Trial",
+            "primaryInvestigator": "[AI TO FILL]",
+            "protocolRef": "1.0.0",
+            "createdAt": 1704412800000,
+            "modifiedAt": 1704412800000
+          },
+          "manuscriptStructure": {
+            "methods": {
+              "statisticalPlan": {
+                "software": "Clinical Intelligence Engine v1.0",
+                "primaryTest": "Independent samples t-test for primary endpoint",
+                "rationale": "Parallel group design with continuous outcome"
+              },
+              "populationSummary": "Adults aged 45-75 with essential hypertension"
+            },
+            "results": {
+              "primaryFindings": [],
+              "secondaryFindings": []
+            },
+            "discussionAnchors": {
+              "internalConflicts": "",
+              "lateralOpportunities": []
+            }
+          },
+          "notebookContext": {
+            "linkedSources": [
+              {
+                "id": "source-001",
+                "title": "A Randomized Trial of Intensive versus Standard Blood-Pressure Control",
+                "authors": ["SPRINT Research Group"],
+                "year": 2015,
+                "journal": "New England Journal of Medicine",
+                "doi": "10.1056/NEJMoa1511939",
+                "pmid": "26551272",
+                "abstract": "[AI TO FILL: Real SPRINT trial abstract]",
+                "keyFindings": [
+                  "Intensive BP control (SBP <120) reduced CV events",
+                  "Increased risk of hypotension and AKI",
+                  "Benefits greatest in older patients"
+                ],
+                "citationKey": "SPRINT_2015",
+                "enabled": true
+              }
+            ],
+            "citationMap": {}
+          },
+          "manuscriptContent": {
+            "introduction": "[AI TO GENERATE: 800 words covering burden of hypertension, current treatments, rationale for ACE-X, study objectives]",
+            "methods": "[AI TO GENERATE: 1200 words covering study design, population, randomization, treatment protocols, outcome measures, statistical analysis]",
+            "results": "[AI TO GENERATE: 1500 words covering patient disposition, baseline characteristics, primary endpoint (Treatment -12 mmHg vs Placebo -3 mmHg, p<0.001), secondary endpoints, subgroups, safety]",
+            "discussion": "[AI TO GENERATE: 1200 words covering interpretation, comparison with other trials, clinical significance, limitations, implications]",
+            "conclusion": "[AI TO GENERATE: 300 words summarizing key findings and clinical impact]"
+          },
+          "reviewComments": []
+        }
+      ],
+      "statisticalManifests": [
+        {
+          "manifestMetadata": {
+            "protocolId": "protocol-001",
+            "protocolVersion": "1.0.0",
+            "generatedAt": 1704412800000,
+            "statistician": "[AI TO FILL]",
+            "totalRecordsAnalyzed": 300
+          },
+          "descriptiveStats": [
+            {
+              "variableId": "demo_age",
+              "label": "Age",
+              "results": {
+                "n": 300,
+                "mean": "[AI: ~60]",
+                "median": "[AI: ~61]",
+                "stdDev": "[AI: ~8]",
+                "min": "[AI: ~45]",
+                "max": "[AI: ~75]",
+                "q1": "[AI: ~54]",
+                "q3": "[AI: ~66]",
+                "missing": 0,
+                "outliers": []
+              }
+            },
+            {
+              "variableId": "vital_sbp",
+              "label": "Systolic BP Change",
+              "results": {
+                "n": 300,
+                "mean": "[AI: Treatment -12, Placebo -3]",
+                "stdDev": "[AI: Treatment 8, Placebo 7]",
+                "missing": "[AI: 3-5 missing]"
+              }
+            }
+          ],
+          "comparativeAnalyses": [
+            {
+              "id": "primary-analysis-001",
+              "testType": "ttest",
+              "variable1": "vital_sbp_change",
+              "groups": ["Treatment", "Placebo"],
+              "testStatistic": "[AI TO CALCULATE]",
+              "degreesOfFreedom": 298,
+              "pValue": "[AI: <0.001]",
+              "confidenceInterval": {
+                "lower": "[AI: ~-11.2]",
+                "upper": "[AI: ~-6.8]"
+              },
+              "effectSize": "[AI: Cohen's d ~1.2]",
+              "interpretation": "Statistically significant reduction in SBP with ACE-X treatment",
+              "clinicalSignificance": "9 mmHg difference exceeds clinically meaningful threshold of 5 mmHg"
+            }
+          ],
+          "advancedModeling": []
+        }
+      ],
+      "personas": [],
+      "templates": []
+    }
+  ],
+  "globalTemplates": [],
+  "globalPersonas": []
+}

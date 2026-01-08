@@ -1,0 +1,83 @@
+export default {
+  // === GLOBAL HEADER ===
+  globalHeader: {
+    targetJournal: "Target Journal:",
+    selectJournal: "Select journal...",
+    createCustomJournal: "Create Custom Journal",
+    editGenericJournal: "Edit Generic Journal Defaults",
+    autonomy: {
+      audit: "Audit",
+      coPilot: "Co-Pilot",
+      pilot: "Pilot",
+      notAvailableForRole: "Not available for your role"
+    },
+    exportPackage: "Export Package",
+    runLogicCheck: "Run Logic Check",
+    processing: "Processing...",
+    studyTypes: {
+      unblinded: "UNBLINDED",
+      singleBlind: "SINGLE BLIND",
+      doubleBlind: "DOUBLE BLIND",
+      tripleBlind: "TRIPLE BLIND"
+    }
+  },
+
+  // === NAVIGATION PANEL ===
+  navigation: {
+    researchFactory: "Research Factory",
+    currentProject: "Current Project:",
+    noProject: "No project selected",
+    
+    // Navigation items
+    dashboard: "Dashboard",
+    projectLibrary: "Project Library",
+    protocolLibrary: "Protocol Library",
+    aiPersonas: "AI Personas",
+    personaEditor: "Persona Editor",
+    protocolWorkbench: "Protocol Workbench",
+    researchWizard: "Research Wizard",
+    projectSetup: "Project Setup",
+    methodologyEngine: "Methodology Engine",
+    database: "Database",
+    analytics: "Analytics",
+    academicWriting: "Academic Writing",
+    dataManagement: "Data Management",
+    governance: "Governance",
+    ethics: "Ethics & IRB",
+    
+    // Navigation descriptions
+    descriptions: {
+      dashboard: "Progress overview",
+      projectLibrary: "Browse projects",
+      protocolLibrary: "Browse protocols",
+      aiPersonas: "Persona library",
+      personaEditor: "Create & edit personas",
+      protocolWorkbench: "Build schemas",
+      researchWizard: "Guided research setup",
+      projectSetup: "Team & methodology",
+      methodologyEngine: "Automated methodology generation",
+      database: "Schema & records",
+      analytics: "Statistical analysis",
+      academicWriting: "Manuscript editor",
+      dataManagement: "Import/Export",
+      governance: "Access control",
+      ethics: "IRB & Compliance"
+    },
+    
+    // Navigation actions
+    goToField: "Go to field",
+    navigateToIssue: "Navigate to issue",
+    backToList: "Back to list"
+  },
+
+  // === LANGUAGE SWITCHER ===
+  language: {
+    title: "Interface Language",
+    changeLanguage: "Change interface language",
+    autoSave: "Language preference is saved automatically",
+    english: "English",
+    polish: "Polski",
+    spanish: "Español",
+    chinese: "中文"
+  }
+};

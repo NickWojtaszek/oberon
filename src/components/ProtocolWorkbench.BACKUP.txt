@@ -1,0 +1,6 @@
+This file marks that ProtocolWorkbench.tsx has been temporarily disabled due to corruption.
+The original file should be restored from version control or rebuilt from modular components.
+
+Error location: Protocol Workbench file corruption causing build failures
+Date: 2026-01-03
+Status: File needs reconstruction
