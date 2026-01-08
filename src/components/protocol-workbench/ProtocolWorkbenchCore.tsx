@@ -257,7 +257,7 @@ export function ProtocolWorkbench({
   // Handle save
   const handleSave = (status: 'draft' | 'published' = 'draft') => {
     const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
-    
+
     if (!protocolTitle || !protocolNumber) {
       alert('Please enter Protocol Title and Protocol Number before saving');
       return;
@@ -274,6 +274,52 @@ export function ProtocolWorkbench({
       initialProtocolId // Pass the protocol ID if we're editing
     );
   };
+
+  // Export JSON helper function
+  const handleExportJSON = () => {
+    const { generateNestedJSON } = require('./utils');
+    const json = generateNestedJSON(schemaState.schemaBlocks);
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `protocol-schema-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Listen for events from Global Header - MOVED TO TOP LEVEL SO IT WORKS ON ALL TABS
+  useEffect(() => {
+    const handleSaveDraftEvent = () => {
+      handleSave('draft');
+    };
+
+    const handleShowTemplates = () => {
+      setShowTemplateLibrary(true);
+    };
+
+    const handleShowGenerator = () => {
+      setShowSchemaGenerator(true);
+    };
+
+    const handleExport = () => {
+      handleExportJSON();
+    };
+
+    window.addEventListener('protocol-save-draft', handleSaveDraftEvent);
+    window.addEventListener('protocol-show-templates', handleShowTemplates);
+    window.addEventListener('protocol-show-ai-generator', handleShowGenerator);
+    window.addEventListener('protocol-export-schema', handleExport);
+
+    return () => {
+      window.removeEventListener('protocol-save-draft', handleSaveDraftEvent);
+      window.removeEventListener('protocol-show-templates', handleShowTemplates);
+      window.removeEventListener('protocol-show-ai-generator', handleShowGenerator);
+      window.removeEventListener('protocol-export-schema', handleExport);
+    };
+  }, [schemaState.schemaBlocks, protocolState.protocolMetadata, protocolState.protocolContent, initialProtocolId]);
 
   return (
     <div className="h-full flex flex-col bg-slate-50">

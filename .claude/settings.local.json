@@ -19,7 +19,12 @@
       "Bash(timeout 10 npm run dev:*)",
       "Bash(timeout 8 npm run preview:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(railway --version:*)",
+      "Bash(railway whoami:*)",
+      "Bash(npm run dev:*)"
     ]
   }
 }

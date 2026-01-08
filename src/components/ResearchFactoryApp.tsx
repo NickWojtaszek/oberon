@@ -55,7 +55,11 @@ export function ResearchFactoryApp() {
   
   // Ref for PersonaLibrary to trigger create new
   const personaLibraryRef = useRef<PersonaLibraryRef>(null);
-  
+
+  // Protocol IDs for loading specific protocol in workbench
+  const [loadProtocolId, setLoadProtocolId] = useState<string | undefined>();
+  const [loadVersionId, setLoadVersionId] = useState<string | undefined>();
+
   // Phase 4: Journal Constraints
   const [selectedJournal, setSelectedJournal] = useState<JournalProfile>(JOURNAL_LIBRARY[0]);
   const [paperType, setPaperType] = useState<PaperType>('original-research');
@@ -318,7 +322,15 @@ export function ResearchFactoryApp() {
               ]}
             />
             <div className="flex-1 overflow-y-auto">
-              <ProtocolWorkbench />
+              <ProtocolWorkbench
+                initialProtocolId={loadProtocolId}
+                initialVersionId={loadVersionId}
+                onNavigateToLibrary={() => {
+                  setLoadProtocolId(undefined);
+                  setLoadVersionId(undefined);
+                  setActivePage('protocol-library');
+                }}
+              />
             </div>
           </div>
         );
@@ -338,11 +350,14 @@ export function ResearchFactoryApp() {
               }}
             />
             <div className="flex-1 overflow-y-auto">
-              <ProtocolLibraryScreen 
+              <ProtocolLibraryScreen
                 ref={protocolLibraryRef}
                 onNavigateToBuilder={(protocolId, versionId) => {
                   console.log('Navigate to builder:', protocolId, versionId);
-                  // TODO: Switch to protocol-workbench tab and load protocol
+                  // Set protocol IDs and navigate to workbench
+                  setLoadProtocolId(protocolId);
+                  setLoadVersionId(versionId);
+                  setActivePage('protocol-workbench');
                 }}
               />
             </div>
