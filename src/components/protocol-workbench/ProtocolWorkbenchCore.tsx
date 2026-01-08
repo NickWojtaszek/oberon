@@ -6,7 +6,7 @@ import { ProtocolUnifiedSidebar } from './components/ProtocolUnifiedSidebar';
 import { useSchemaState, useProtocolState, useVersionControl } from './hooks';
 import type { SchemaBlock, ConditionalDependency, SchemaTemplate } from './types';
 import type { ProtocolAuditResult, AuditIssue } from './auditTypes';
-import { getAllBlocks } from './utils';
+import { getAllBlocks, generateNestedJSON, validateAndImportSchema } from './utils';
 import { PublishProtocolButton } from '../PublishProtocolButton';
 import { VersionConflictModal } from '../VersionConflictModal';
 import { canEditProtocolVersion, updateDataCollectionStats } from '../../utils/schemaLocking';
@@ -277,7 +277,6 @@ export function ProtocolWorkbench({
 
   // Export JSON helper function
   const handleExportJSON = () => {
-    const { generateNestedJSON } = require('./utils');
     const json = generateNestedJSON(schemaState.schemaBlocks);
     const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -302,11 +301,10 @@ export function ProtocolWorkbench({
       try {
         const text = await file.text();
         const jsonData = JSON.parse(text);
-        
-        // Validate and import
-        const { validateAndImportSchema, regenerateBlockIds } = require('./utils');
+
+        // Validate and import using imported function
         const result = validateAndImportSchema(jsonData);
-        
+
         if (!result.valid || !result.blocks) {
           alert(`Failed to import schema:\n${result.errors.join('\n')}`);
           return;
@@ -319,7 +317,7 @@ export function ProtocolWorkbench({
             `Do you want to replace them with ${result.blocks.length} blocks from the imported file?\n\n` +
             `Click OK to overwrite or Cancel to keep current blocks.`
           );
-          
+
           if (!overwrite) return;
         }
 
