@@ -6,7 +6,7 @@ import { ProtocolUnifiedSidebar } from './components/ProtocolUnifiedSidebar';
 import { useSchemaState, useProtocolState, useVersionControl } from './hooks';
 import type { SchemaBlock, ConditionalDependency, SchemaTemplate } from './types';
 import type { ProtocolAuditResult, AuditIssue } from './auditTypes';
-import { getAllBlocks, generateNestedJSON, validateAndImportSchema } from './utils';
+import { getAllBlocks, validateAndImportSchema } from './utils';
 import { PublishProtocolButton } from '../PublishProtocolButton';
 import { VersionConflictModal } from '../VersionConflictModal';
 import { canEditProtocolVersion, updateDataCollectionStats } from '../../utils/schemaLocking';
@@ -277,8 +277,19 @@ export function ProtocolWorkbench({
 
   // Export JSON helper function
   const handleExportJSON = () => {
-    const json = generateNestedJSON(schemaState.schemaBlocks);
-    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+    // Export the actual schema blocks, not the nested data template
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      protocolTitle: protocolState.protocolMetadata.protocolTitle || 'Untitled Protocol',
+      schemaBlocks: schemaState.schemaBlocks,
+      metadata: {
+        blockCount: schemaState.schemaBlocks.length,
+        totalFields: getAllBlocks(schemaState.schemaBlocks).length,
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
