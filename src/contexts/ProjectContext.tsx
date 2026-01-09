@@ -44,6 +44,9 @@ interface ProjectContextValue {
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
+// Export for components that need direct context access
+export { ProjectContext };
+
 interface ProjectProviderProps {
   children: ReactNode;
 }
