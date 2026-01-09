@@ -680,6 +680,95 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
       showInline: true,
       badgeStyle: 'icon'
     }
+  },
+
+  'hypothesis-architect': {
+    id: 'hypothesis-architect',
+    name: 'Hypothesis Architect',
+    fairyName: 'Dr. Ariadne',
+    court: 'seelie',
+    folkloreOrigin: 'Greek mythology - Ariadne gave Theseus the thread to navigate the labyrinth; she guides researchers through complex hypothesis formation',
+    description: 'AI-powered PICO framework extraction and hypothesis grounding. Guides researchers from clinical observations to structured, validated research questions with full traceability to protocol schema.',
+    studyTypeDescription: 'Active for ALL study types - ensures research hypotheses are properly structured (Population, Intervention, Comparison, Outcome) and grounded in actual protocol variables',
+    icon: 'Compass',
+    color: {
+      primary: 'indigo',
+      bg: 'bg-indigo-50',
+      border: 'border-indigo-200',
+      text: 'text-indigo-900',
+      icon: 'text-indigo-600'
+    },
+    defaultActive: true,
+    priority: 11,
+    applicableStudyTypes: ['rct', 'observational', 'single-arm', 'diagnostic', 'registry', 'phase-1', 'phase-2', 'phase-3', 'phase-4', 'medical-device'],
+    modules: ['research-wizard'],
+    validationRules: [
+      'pico-population-defined',
+      'pico-intervention-specified',
+      'pico-comparison-identified',
+      'pico-outcome-measurable',
+      'hypothesis-variables-grounded',
+      'hypothesis-schema-alignment',
+      'hypothesis-statistical-feasibility'
+    ],
+    realTimeValidation: true,
+    batchValidation: true,
+    sidebar: {
+      enabled: true,
+      title: 'Hypothesis Formation Guide',
+      showValidationStatus: true,
+      showRecommendations: true,
+      showRegulatoryReferences: false,
+      sections: [
+        {
+          id: 'pico-framework',
+          title: 'PICO Framework',
+          type: 'checklist',
+          content: [
+            'Population clearly defined',
+            'Intervention/Exposure specified',
+            'Comparison group identified',
+            'Outcome is measurable'
+          ]
+        },
+        {
+          id: 'grounding-validation',
+          title: 'Variable Grounding',
+          type: 'warnings',
+          content: [
+            'All variables mapped to schema',
+            'No orphaned hypothesis terms',
+            'Statistical feasibility confirmed'
+          ]
+        },
+        {
+          id: 'anti-hallucination',
+          title: 'Anti-Hallucination Layer',
+          type: 'best-practices',
+          content: [
+            'Claims must be testable',
+            'Variables must exist in database',
+            'Statistical power must be achievable',
+            'Endpoints must be defined in protocol'
+          ]
+        }
+      ]
+    },
+    modal: {
+      enabled: true,
+      title: 'Hypothesis Validation',
+      showComplianceScore: true,
+      showIssueBreakdown: true,
+      allowProceedWithWarnings: false,
+      requireAcknowledgment: true
+    },
+    statusIndicator: {
+      enabled: true,
+      showInGlobalHeader: false,
+      showInModuleHeader: true,
+      showInline: true,
+      badgeStyle: 'score'
+    }
   }
 };
 

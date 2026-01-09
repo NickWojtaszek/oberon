@@ -10,7 +10,8 @@ export type PersonaId =
   | 'endpoint-validator'
   | 'amendment-advisor'
   | 'academic-writing-coach'
-  | 'manuscript-reviewer';
+  | 'manuscript-reviewer'
+  | 'hypothesis-architect';
 
 /**
  * The Oberon System's Fairy Court classification
