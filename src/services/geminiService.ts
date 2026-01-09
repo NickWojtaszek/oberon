@@ -30,6 +30,46 @@ interface PICOExtraction {
 }
 
 /**
+ * Extracted data from a foundational research paper
+ */
+export interface FoundationalPaperExtraction {
+  // Metadata
+  title: string;
+  authors: string;
+  year: string;
+  journal: string;
+  doi?: string;
+  
+  // PICO Elements
+  pico: {
+    population: string;
+    intervention: string;
+    comparison: string;
+    outcome: string;
+  };
+  
+  // Protocol Elements (for pre-fill)
+  protocolElements: {
+    inclusionCriteria: string[];
+    exclusionCriteria: string[];
+    primaryEndpoint: string;
+    secondaryEndpoints: string[];
+    sampleSize: string;
+    statisticalApproach: string;
+    followUpDuration: string;
+  };
+  
+  // For synthesis
+  studyDesign: string;
+  keyFindings: string;
+  limitations: string;
+  
+  // Source tracking
+  fileName: string;
+  extractedAt: string;
+}
+
+/**
  * Check if Gemini API is configured
  */
 export function isGeminiConfigured(): boolean {
@@ -221,4 +261,250 @@ Respond in valid JSON format only:
     console.error('Grounding validation failed:', error);
     throw error;
   }
+}
+
+/**
+ * Extract research data from a PDF file using Gemini
+ * Uses Gemini's vision capability to read PDF pages
+ */
+export async function extractFromPDF(file: File): Promise<FoundationalPaperExtraction> {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('VITE_GEMINI_API_KEY not configured');
+  }
+
+  // Convert PDF to base64
+  const base64 = await fileToBase64(file);
+  
+  const prompt = `You are a clinical research analyst. Analyze this research paper PDF and extract structured information for use as a foundational reference in a new study design.
+
+Extract the following information:
+
+1. **Metadata**: Title, authors, year, journal, DOI if visible
+2. **PICO Elements**: Population studied, intervention/exposure, comparison group, primary outcome
+3. **Protocol Elements**: 
+   - Inclusion criteria (as array of strings)
+   - Exclusion criteria (as array of strings)
+   - Primary endpoint definition
+   - Secondary endpoints (as array)
+   - Sample size and power calculation rationale
+   - Statistical approach used
+   - Follow-up duration
+4. **Study Design**: Type of study (RCT, cohort, case-control, etc.)
+5. **Key Findings**: Main results in 1-2 sentences
+6. **Limitations**: Stated limitations
+
+Respond in valid JSON format only:
+{
+  "title": "Full paper title",
+  "authors": "First author et al.",
+  "year": "2024",
+  "journal": "Journal Name",
+  "doi": "10.xxxx/xxxxx or null",
+  "pico": {
+    "population": "Description",
+    "intervention": "Description",
+    "comparison": "Description",
+    "outcome": "Description"
+  },
+  "protocolElements": {
+    "inclusionCriteria": ["criterion 1", "criterion 2"],
+    "exclusionCriteria": ["criterion 1", "criterion 2"],
+    "primaryEndpoint": "Description",
+    "secondaryEndpoints": ["endpoint 1", "endpoint 2"],
+    "sampleSize": "N=XXX with power calculation rationale",
+    "statisticalApproach": "Description of statistical methods",
+    "followUpDuration": "Duration"
+  },
+  "studyDesign": "Type of study",
+  "keyFindings": "Main results",
+  "limitations": "Key limitations"
+}`;
+
+  try {
+    // Use Gemini's multimodal endpoint for PDF
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: file.type || 'application/pdf',
+                data: base64
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2048,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${error}`);
+    }
+
+    const data: GeminiResponse = await response.json();
+    
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('No response from Gemini');
+    }
+
+    const responseText = data.candidates[0].content.parts[0].text;
+    
+    // Extract JSON from response
+    let jsonText = responseText;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1];
+    }
+    jsonText = jsonText.trim();
+    
+    const parsed = JSON.parse(jsonText);
+    
+    return {
+      title: parsed.title || 'Unknown Title',
+      authors: parsed.authors || 'Unknown Authors',
+      year: parsed.year || 'Unknown Year',
+      journal: parsed.journal || 'Unknown Journal',
+      doi: parsed.doi || undefined,
+      pico: {
+        population: parsed.pico?.population || '',
+        intervention: parsed.pico?.intervention || '',
+        comparison: parsed.pico?.comparison || '',
+        outcome: parsed.pico?.outcome || '',
+      },
+      protocolElements: {
+        inclusionCriteria: parsed.protocolElements?.inclusionCriteria || [],
+        exclusionCriteria: parsed.protocolElements?.exclusionCriteria || [],
+        primaryEndpoint: parsed.protocolElements?.primaryEndpoint || '',
+        secondaryEndpoints: parsed.protocolElements?.secondaryEndpoints || [],
+        sampleSize: parsed.protocolElements?.sampleSize || '',
+        statisticalApproach: parsed.protocolElements?.statisticalApproach || '',
+        followUpDuration: parsed.protocolElements?.followUpDuration || '',
+      },
+      studyDesign: parsed.studyDesign || '',
+      keyFindings: parsed.keyFindings || '',
+      limitations: parsed.limitations || '',
+      fileName: file.name,
+      extractedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('PDF extraction failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Synthesize multiple foundational papers into unified suggestions
+ */
+export async function synthesizeFoundationalPapers(
+  papers: FoundationalPaperExtraction[]
+): Promise<{
+  suggestedPICO: {
+    population: { value: string; sources: string[]; confidence: 'high' | 'medium' | 'low' };
+    intervention: { value: string; sources: string[]; confidence: 'high' | 'medium' | 'low' };
+    comparison: { value: string; sources: string[]; confidence: 'high' | 'medium' | 'low' };
+    outcome: { value: string; sources: string[]; confidence: 'high' | 'medium' | 'low' };
+  };
+  suggestedProtocol: {
+    inclusionCriteria: { value: string; sources: string[]; frequency: number }[];
+    exclusionCriteria: { value: string; sources: string[]; frequency: number }[];
+    primaryEndpoint: { value: string; sources: string[] };
+    statisticalApproach: { value: string; sources: string[] };
+    sampleSizeGuidance: string;
+  };
+  gapAnalysis: string;
+  uniqueContribution: string;
+}> {
+  const prompt = `You are a clinical research synthesis expert. Analyze these ${papers.length} foundational research papers and provide unified suggestions for a new study design.
+
+PAPERS:
+${papers.map((p, i) => `
+--- PAPER ${i + 1}: ${p.title} (${p.authors}, ${p.year}) ---
+Study Design: ${p.studyDesign}
+PICO:
+  - Population: ${p.pico.population}
+  - Intervention: ${p.pico.intervention}
+  - Comparison: ${p.pico.comparison}
+  - Outcome: ${p.pico.outcome}
+Inclusion Criteria: ${p.protocolElements.inclusionCriteria.join('; ')}
+Exclusion Criteria: ${p.protocolElements.exclusionCriteria.join('; ')}
+Primary Endpoint: ${p.protocolElements.primaryEndpoint}
+Sample Size: ${p.protocolElements.sampleSize}
+Statistical Approach: ${p.protocolElements.statisticalApproach}
+Key Findings: ${p.keyFindings}
+Limitations: ${p.limitations}
+`).join('\n')}
+
+SYNTHESIS TASKS:
+1. For each PICO element, suggest a synthesized version and note which papers support it
+2. Identify commonly used inclusion/exclusion criteria across papers
+3. Recommend a primary endpoint based on consensus
+4. Suggest statistical approach based on what worked
+5. Identify gaps in the literature - what hasn't been studied?
+6. Suggest a unique contribution this new study could make
+
+Respond in valid JSON format:
+{
+  "suggestedPICO": {
+    "population": { "value": "Synthesized description", "sources": ["Paper 1 title", "Paper 2 title"], "confidence": "high/medium/low" },
+    "intervention": { "value": "...", "sources": [...], "confidence": "..." },
+    "comparison": { "value": "...", "sources": [...], "confidence": "..." },
+    "outcome": { "value": "...", "sources": [...], "confidence": "..." }
+  },
+  "suggestedProtocol": {
+    "inclusionCriteria": [
+      { "value": "Criterion text", "sources": ["Paper 1"], "frequency": 3 }
+    ],
+    "exclusionCriteria": [...],
+    "primaryEndpoint": { "value": "...", "sources": [...] },
+    "statisticalApproach": { "value": "...", "sources": [...] },
+    "sampleSizeGuidance": "Based on papers, suggest N=X with rationale"
+  },
+  "gapAnalysis": "What hasn't been studied yet",
+  "uniqueContribution": "Suggested unique angle for the new study"
+}`;
+
+  try {
+    const responseText = await callGemini(prompt);
+    
+    let jsonText = responseText;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1];
+    }
+    jsonText = jsonText.trim();
+    
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error('Paper synthesis failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Helper: Convert file to base64
+ */
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }

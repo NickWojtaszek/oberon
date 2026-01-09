@@ -1,10 +1,11 @@
 // Bibliography Tab - Auto-Generated References
 
-import { useState, useMemo } from 'react';
-import { Copy, Check, Plus, Trash2, BookOpen, Download } from 'lucide-react';
+import { useState, useMemo, useContext } from 'react';
+import { Copy, Check, Plus, Trash2, BookOpen, Download, ExternalLink } from 'lucide-react';
 import type { BibliographyEntry, CitationStyle } from '../../types/aiMode';
 import type { SourceDocument } from '../../types/manuscript';
 import { copyToClipboard } from '../../utils/clipboard';
+import { ProjectContext } from '../../contexts/ProjectContext';
 
 interface BibliographyTabProps {
   usedCitations: { citationKey: string; count: number }[];
@@ -20,6 +21,10 @@ export function BibliographyTab({
   onStyleChange 
 }: BibliographyTabProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  
+  // Get foundational papers from project context
+  const projectContext = useContext(ProjectContext);
+  const foundationalPapers = projectContext?.currentProject?.studyMethodology?.foundationalPapers || [];
 
   // Build bibliography entries from used citations
   const bibliographyEntries: BibliographyEntry[] = usedCitations
@@ -134,6 +139,72 @@ export function BibliographyTab({
 
       {/* Bibliography List */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
+        {/* Foundational Papers Section */}
+        {foundationalPapers.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                🏛️ Base Studies
+              </span>
+              <span className="text-xs text-slate-500">
+                {foundationalPapers.length} foundational paper{foundationalPapers.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="space-y-3 max-w-4xl">
+              {foundationalPapers.map((paper, index) => (
+                <div 
+                  key={index}
+                  className="p-4 border-2 border-purple-200 bg-purple-50 rounded-lg"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-purple-900 mb-1">
+                        {paper.title}
+                      </div>
+                      <div className="text-xs text-purple-700 mb-2">
+                        {paper.authors}. {paper.journal}. {paper.year}.
+                      </div>
+                      {paper.doi && (
+                        <a 
+                          href={`https://doi.org/${paper.doi}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          DOI: {paper.doi}
+                        </a>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] px-2 py-0.5 bg-purple-200 text-purple-800 rounded font-medium">
+                          Informs Study Design
+                        </span>
+                        <span className="text-[10px] text-purple-600">
+                          Uploaded from Research Wizard
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(
+                        `${paper.authors}. ${paper.title}. ${paper.journal}. ${paper.year}.`,
+                        index + 1000
+                      )}
+                      className="p-2 hover:bg-purple-100 rounded transition-colors"
+                      title="Copy citation"
+                    >
+                      {copiedIndex === index + 1000 ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-purple-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 border-t border-purple-200 pt-4" />
+          </div>
+        )}
         {bibliographyEntries.length === 0 ? (
           <div className="text-center py-12 text-slate-500">
             <BookOpen className="w-12 h-12 mx-auto mb-3 text-slate-300" />

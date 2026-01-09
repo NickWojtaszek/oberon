@@ -70,6 +70,32 @@ export interface Project {
       }>;
       validatedAt?: string;
     };
+    
+    // Foundational Papers (Base Studies for the research)
+    foundationalPapers?: Array<{
+      title: string;
+      authors: string;
+      year: string;
+      journal: string;
+      doi?: string;
+      fileName: string;
+      extractedAt: string;
+      pico: {
+        population: string;
+        intervention: string;
+        comparison: string;
+        outcome: string;
+      };
+      protocolElements: {
+        inclusionCriteria: string[];
+        exclusionCriteria: string[];
+        primaryEndpoint: string;
+        secondaryEndpoints: string[];
+        sampleSize: string;
+        statisticalApproach: string;
+        followUpDuration: string;
+      };
+    }>;
   };
   
   // Future-proofing for collaboration (Phase 2+)

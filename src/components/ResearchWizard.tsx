@@ -9,7 +9,7 @@
  * - Gemini AI for actual PICO extraction (when API key configured)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Mic, 
   MicOff, 
@@ -32,12 +32,23 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Bot
+  Bot,
+  Upload,
+  BookOpen,
+  Trash2,
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
 import { useProject } from '../contexts/ProjectContext';
 import { getPersona } from './ai-personas/core/personaRegistry';
-import { isGeminiConfigured, extractPICOWithGemini } from '../services/geminiService';
+import { 
+  isGeminiConfigured, 
+  extractPICOWithGemini,
+  extractFromPDF,
+  synthesizeFoundationalPapers,
+  type FoundationalPaperExtraction
+} from '../services/geminiService';
 import type { AutonomyMode } from '../types/accountability';
 
 interface PICOField {
@@ -114,6 +125,14 @@ export function ResearchWizard({
   const [piApprovalStatus, setPiApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [editMode, setEditMode] = useState(false);
   const [personaExpanded, setPersonaExpanded] = useState(false);
+
+  // Foundational Papers State
+  const [foundationalPapers, setFoundationalPapers] = useState<FoundationalPaperExtraction[]>([]);
+  const [isUploadingPaper, setIsUploadingPaper] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [synthesis, setSynthesis] = useState<Awaited<ReturnType<typeof synthesizeFoundationalPapers>> | null>(null);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // PROJECT CONTEXT - for storing hypothesis properly
   const { currentProject, updateProject } = useProject();
@@ -373,6 +392,119 @@ export function ResearchWizard({
         grounded: hasContent ? 'found' : 'missing',
       }
     }));
+  };
+
+  // ============ FOUNDATIONAL PAPERS HANDLERS ============
+  
+  // Handle PDF file upload
+  const handlePaperUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    // Check we don't exceed 3 papers
+    if (foundationalPapers.length >= 3) {
+      setUploadError('Maximum 3 foundational papers allowed. Remove one to add another.');
+      return;
+    }
+
+    const file = files[0];
+    
+    // Validate file type
+    if (!file.type.includes('pdf')) {
+      setUploadError('Please upload a PDF file');
+      return;
+    }
+
+    // Validate file size (max 10MB for Gemini)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('PDF must be under 10MB');
+      return;
+    }
+
+    if (!isGeminiConfigured()) {
+      setUploadError('AI not configured. Add VITE_GEMINI_API_KEY to enable PDF extraction.');
+      return;
+    }
+
+    setIsUploadingPaper(true);
+    setUploadError(null);
+
+    try {
+      const extraction = await extractFromPDF(file);
+      setFoundationalPapers(prev => [...prev, extraction]);
+      
+      // Auto-trigger synthesis if we have 2+ papers
+      if (foundationalPapers.length >= 1) {
+        triggerSynthesis([...foundationalPapers, extraction]);
+      }
+    } catch (error) {
+      console.error('PDF extraction failed:', error);
+      setUploadError(`Failed to extract from PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsUploadingPaper(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Remove a foundational paper
+  const removePaper = (index: number) => {
+    setFoundationalPapers(prev => prev.filter((_, i) => i !== index));
+    setSynthesis(null); // Reset synthesis when papers change
+  };
+
+  // Trigger synthesis of papers
+  const triggerSynthesis = async (papers: FoundationalPaperExtraction[]) => {
+    if (papers.length < 2) return;
+    
+    setIsSynthesizing(true);
+    try {
+      const result = await synthesizeFoundationalPapers(papers);
+      setSynthesis(result);
+    } catch (error) {
+      console.error('Synthesis failed:', error);
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
+  // Apply synthesized suggestion to a PICO field
+  const applySynthesisSuggestion = (field: keyof typeof picoFields, value: string) => {
+    setPicoFields(prev => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        value,
+        grounded: 'pending',
+      }
+    }));
+  };
+
+  // Save foundational papers to project
+  const saveFoundationalPapersToProject = () => {
+    if (!currentProject) return;
+    
+    updateProject(currentProject.id, {
+      studyMethodology: {
+        ...currentProject.studyMethodology,
+        studyType: currentProject.studyMethodology?.studyType || 'rct',
+        configuredAt: currentProject.studyMethodology?.configuredAt || new Date().toISOString(),
+        configuredBy: currentProject.studyMethodology?.configuredBy || 'current-user',
+        foundationalPapers: foundationalPapers.map(p => ({
+          title: p.title,
+          authors: p.authors,
+          year: p.year,
+          journal: p.journal,
+          doi: p.doi,
+          fileName: p.fileName,
+          extractedAt: p.extractedAt,
+          pico: p.pico,
+          protocolElements: p.protocolElements,
+        })),
+      },
+    });
   };
 
   // Step 2 → Step 3: Validate PICO completeness
@@ -1095,6 +1227,145 @@ export function ResearchWizard({
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Foundational Papers Panel */}
+            <div className="border-t border-slate-200 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-purple-600" />
+                  <h3 className="font-medium text-slate-900">Base Studies</h3>
+                </div>
+                <span className="text-xs text-slate-500">{foundationalPapers.length}/3</span>
+              </div>
+              
+              <p className="text-xs text-slate-600 mb-3">
+                Upload similar research papers. AI will extract PICO and protocol suggestions.
+              </p>
+
+              {/* Upload Button */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handlePaperUpload}
+                className="hidden"
+              />
+              
+              {foundationalPapers.length < 3 && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPaper || !isGeminiConfigured()}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-600 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploadingPaper ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Analyzing PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Upload Research Paper (PDF)
+                    </>
+                  )}
+                </button>
+              )}
+
+              {uploadError && (
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                  {uploadError}
+                </div>
+              )}
+
+              {/* Uploaded Papers List */}
+              {foundationalPapers.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {foundationalPapers.map((paper, index) => (
+                    <div
+                      key={index}
+                      className="p-3 bg-purple-50 border border-purple-200 rounded-lg"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-purple-900 truncate" title={paper.title}>
+                            {paper.title}
+                          </div>
+                          <div className="text-[10px] text-purple-700">
+                            {paper.authors} ({paper.year})
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removePaper(index)}
+                          className="p-1 text-purple-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 rounded text-[9px] font-medium text-purple-700">
+                          🏛️ Base Study
+                        </span>
+                        <span className="text-[9px] text-purple-600">{paper.studyDesign}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Synthesized Suggestions */}
+              {synthesis && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <h4 className="text-xs font-semibold text-slate-800">AI Suggestions</h4>
+                    {isSynthesizing && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                  </div>
+                  
+                  {/* Gap Analysis */}
+                  {synthesis.gapAnalysis && (
+                    <div className="p-2 bg-amber-50 border border-amber-200 rounded">
+                      <div className="text-[10px] font-medium text-amber-800 mb-1">Research Gap</div>
+                      <p className="text-[10px] text-amber-700">{synthesis.gapAnalysis}</p>
+                    </div>
+                  )}
+
+                  {/* PICO Suggestions */}
+                  <div className="space-y-2">
+                    {(['population', 'intervention', 'comparison', 'outcome'] as const).map((field) => {
+                      const suggestion = synthesis.suggestedPICO[field];
+                      if (!suggestion?.value) return null;
+                      
+                      return (
+                        <div key={field} className="p-2 bg-slate-50 border border-slate-200 rounded">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-medium text-slate-700 capitalize">{field}</span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                              suggestion.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                              suggestion.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {suggestion.confidence}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-600 mb-2">{suggestion.value}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-400">
+                              From: {suggestion.sources.slice(0, 2).join(', ')}
+                            </span>
+                            <button
+                              onClick={() => applySynthesisSuggestion(field, suggestion.value)}
+                              className="text-[9px] px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
