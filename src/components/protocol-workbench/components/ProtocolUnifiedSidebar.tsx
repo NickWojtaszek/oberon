@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { Sparkles, BookOpen, Sun, Snowflake, Scale, Blocks, Target } from 'lucide-react';
+import { Sparkles, BookOpen, Sun, Snowflake, Scale, Blocks, Target, Shield } from 'lucide-react';
 import { SchemaArchitectSidebar } from '../../ai-personas/personas/SchemaArchitect/SchemaArchitectSidebar';
 import { IRBComplianceTrackerSidebar } from '../../ai-personas/personas/IRBComplianceTracker/IRBComplianceTrackerSidebar';
 import { EndpointValidatorSidebar } from '../../ai-personas/personas/EndpointValidator/EndpointValidatorSidebar';
