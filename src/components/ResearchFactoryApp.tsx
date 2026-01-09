@@ -25,7 +25,7 @@ import { DashboardV2 } from './DashboardV2';
 import { ProtocolLibraryScreen, type ProtocolLibraryScreenRef } from './ProtocolLibraryScreen';
 import { PersonaEditor } from './PersonaEditor';
 import { PersonaLibrary, type PersonaLibraryRef } from './PersonaLibrary';
-import { PersonaDashboard } from './PersonaDashboard';
+import { FairyCourtPersonas } from './FairyCourtPersonas';
 import { ProtocolWorkbench } from './ProtocolWorkbench';
 import { ResearchWizard } from './ResearchWizard';
 import { AcademicWriting } from './AcademicWriting';
@@ -452,13 +452,13 @@ export function ResearchFactoryApp() {
             <GlobalHeader
               breadcrumbs={[
                 { label: 'AI Personas' },
-                { label: 'Control Center' }
+                { label: 'The Oberon Faculty' }
               ]}
               autonomyMode={autonomyMode}
               onAutonomyChange={setAutonomyMode}
             />
             <div className="flex-1 overflow-y-auto">
-              <PersonaDashboard />
+              <FairyCourtPersonas />
             </div>
           </div>
         );
