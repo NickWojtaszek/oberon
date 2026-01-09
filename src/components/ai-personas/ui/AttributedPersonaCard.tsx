@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { 
-  Shield, 
+  ShieldCheck, 
   Settings2, 
   ChevronRight,
   Lock,
@@ -74,7 +74,7 @@ export function AttributedPersonaCard({
           <div className="flex items-center gap-3">
             {/* Persona Avatar */}
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${persona.color.bg} border ${persona.color.border}`}>
-              <Shield className={`w-5 h-5 ${persona.color.icon}`} />
+              <ShieldCheck className={`w-5 h-5 ${persona.color.icon}`} />
             </div>
             
             <div>
@@ -293,7 +293,7 @@ export function CompactPersonaBadge({ persona, onClick }: CompactPersonaBadgePro
       onClick={onClick}
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${persona.color.bg} border ${persona.color.border} hover:opacity-80 transition-opacity`}
     >
-      <Shield className={`w-3.5 h-3.5 ${persona.color.icon}`} />
+      <ShieldCheck className={`w-3.5 h-3.5 ${persona.color.icon}`} />
       <span className={`text-xs font-medium ${persona.color.text}`}>
         {persona.name}
       </span>
@@ -323,7 +323,7 @@ export function InlinePersonaAttribution({
   return (
     <div className={`flex items-start gap-3 p-3 rounded-lg ${persona.color.bg} border ${persona.color.border}`}>
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${persona.color.border}`}>
-        <Shield className={`w-4 h-4 ${persona.color.icon}`} />
+        <ShieldCheck className={`w-4 h-4 ${persona.color.icon}`} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">

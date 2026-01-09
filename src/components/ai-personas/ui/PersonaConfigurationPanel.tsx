@@ -14,7 +14,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Lock, 
-  Shield, 
+  ShieldCheck, 
   MessageSquare, 
   FileText, 
   X,
@@ -182,7 +182,7 @@ export function PersonaConfigurationPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-xl ${persona.color.bg} border-2 ${persona.color.border} flex items-center justify-center`}>
-                <Shield className={`w-7 h-7 ${persona.color.icon}`} />
+                <ShieldCheck className={`w-7 h-7 ${persona.color.icon}`} />
               </div>
               <div>
                 <h2 className={`text-lg font-semibold ${persona.color.text}`}>
@@ -312,7 +312,7 @@ function GuardrailsTab({ persona }: { persona: PersonaConfig }) {
           className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <Shield className="w-5 h-5 text-purple-600" />
+            <ShieldCheck className="w-5 h-5 text-purple-600" />
             <span className="text-sm font-medium text-slate-900">
               Validation Rules ({persona.validationRules.length})
             </span>

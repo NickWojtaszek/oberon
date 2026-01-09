@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { Sparkles, Shield, Target, BookOpen, Sun, Snowflake, Building2 } from 'lucide-react';
+import { Sparkles, BookOpen, Sun, Snowflake, Scale, Blocks, Target } from 'lucide-react';
 import { SchemaArchitectSidebar } from '../../ai-personas/personas/SchemaArchitect/SchemaArchitectSidebar';
 import { IRBComplianceTrackerSidebar } from '../../ai-personas/personas/IRBComplianceTracker/IRBComplianceTrackerSidebar';
 import { EndpointValidatorSidebar } from '../../ai-personas/personas/EndpointValidator/EndpointValidatorSidebar';
@@ -16,6 +16,13 @@ import { ProtocolDocumentSidebar } from './ProtocolDocumentSidebar';
 import { getPersona } from '../../ai-personas/core/personaRegistry';
 import type { SchemaBlock } from '../types';
 import type { ProtocolMetadata, ProtocolContent } from '../types';
+
+// Persona icon mapping
+const PERSONA_ICONS: Record<string, any> = {
+  'schema-architect': Blocks,
+  'ethics-compliance': Scale,
+  'endpoint-validator': Target,
+};
 
 interface ProtocolUnifiedSidebarProps {
   activeTab: 'schema' | 'dependencies' | 'protocol' | 'audit';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, BookOpen, Sparkles, Shield, BarChart3, Target, AlertTriangle, X, GitBranch, PenTool } from 'lucide-react';
+import { FileText, BookOpen, Sparkles, ShieldCheck, BarChart3, Target, AlertTriangle, X, GitBranch, Users } from 'lucide-react';
 import { useProject } from '../contexts/ProjectContext';
 import { usePersonas } from './ai-personas/core/personaContext';
 import { createDemoManuscript, shouldLoadDemoData, markDemoAsLoaded } from '../utils/demoAcademicData';
@@ -531,7 +531,7 @@ export function AcademicWriting({ onNavigate }: AcademicWritingProps = {}) {
                       : 'text-slate-600 hover:bg-slate-50 border border-transparent'
                   }`}
                 >
-                  <Shield className="w-4 h-4" />
+                  <ShieldCheck className="w-4 h-4" />
                   Review
                   {(manuscriptState.selectedManuscript.reviewComments || []).filter(c => !c.resolved).length > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">
@@ -569,7 +569,7 @@ export function AcademicWriting({ onNavigate }: AcademicWritingProps = {}) {
                       : 'text-slate-600 hover:bg-slate-50 border border-transparent'
                   }`}
                 >
-                  <PenTool className="w-4 h-4" />
+                  <Users className="w-4 h-4" />
                   Team
                 </button>
               </div>

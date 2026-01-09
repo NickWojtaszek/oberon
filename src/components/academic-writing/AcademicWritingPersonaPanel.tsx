@@ -7,6 +7,7 @@
 import { 
   Sparkles, Wand2, Zap, Brain, CheckCircle2, AlertCircle, Sun, Snowflake,
   Settings, Eye, Plane, ChevronUp, ChevronDown, BookOpen, Clock, XCircle, Users, Bot, EyeOff,
+  PenTool, Shield,
   // Persona-specific icons
   Scan, Blocks, Sigma, Radar, Scale, ShieldAlert, Target, FileDiff, Feather, SearchX
 } from 'lucide-react';
