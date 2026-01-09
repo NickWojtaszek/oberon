@@ -18,6 +18,7 @@ import {
   Clock,
   Zap,
   BookOpen,
+  BookCheck,
   BarChart3,
   Users,
   UserCheck,
@@ -26,6 +27,8 @@ import {
   Award,
   Settings2,
   Lock,
+  Sun,
+  Snowflake,
 } from 'lucide-react';
 import { usePersonas } from '../core/personaContext';
 import { getAllPersonas } from '../core/personaRegistry';
@@ -43,6 +46,7 @@ const PERSONA_ICONS: Record<PersonaId, any> = {
   'ethics-compliance': Scale,
   'safety-vigilance': AlertTriangle,
   'endpoint-validator': Target,
+  'manuscript-reviewer': BookCheck,
   'amendment-advisor': FileEdit,
   'academic-writing-coach': PenTool,
 };
@@ -151,6 +155,10 @@ export function ModulePersonaPanel({
   const showQualityTab = module === 'database' && dataRecords.length > 0;
   const showTabs = relevantPersonas.length > 0 || showQualityTab;
   
+  // Count Seelie and Unseelie personas for this module
+  const seelieCount = relevantPersonas.filter(p => p.court === 'seelie').length;
+  const unseelieCount = relevantPersonas.filter(p => p.court === 'unseelie').length;
+  
   if (relevantPersonas.length === 0 && !showQualityTab) {
     return null;
   }
@@ -160,9 +168,24 @@ export function ModulePersonaPanel({
       <div className="p-6 space-y-6">
         {/* Header with Tabs */}
         <div>
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5 text-purple-600" />
-            <h3 className="font-medium text-slate-900">AI Assistant</h3>
+            <h3 className="font-medium text-slate-900">The Oberon Faculty</h3>
+          </div>
+          {/* Court Summary */}
+          <div className="flex items-center gap-3 mb-4 text-xs">
+            {seelieCount > 0 && (
+              <div className="flex items-center gap-1 text-amber-700">
+                <Sun className="w-3.5 h-3.5" />
+                <span>{seelieCount} Seelie</span>
+              </div>
+            )}
+            {unseelieCount > 0 && (
+              <div className="flex items-center gap-1 text-slate-600">
+                <Snowflake className="w-3.5 h-3.5" />
+                <span>{unseelieCount} Unseelie</span>
+              </div>
+            )}
           </div>
 
           {/* Tabs - Show when we have personas or quality data */}
@@ -246,13 +269,16 @@ export function ModulePersonaPanel({
 
               const status = getValidationStatus();
               const StatusIcon = status.icon;
+              const CourtIcon = persona.court === 'seelie' ? Sun : Snowflake;
 
               return (
                 <div
                   key={persona.id}
                   className={`rounded-lg border-2 transition-all ${
                     isExpanded 
-                      ? `${persona.color.border} ${persona.color.bg}` 
+                      ? persona.court === 'seelie'
+                        ? 'border-amber-300 bg-amber-50'
+                        : 'border-slate-400 bg-slate-100'
                       : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
@@ -262,18 +288,26 @@ export function ModulePersonaPanel({
                     className="w-full p-3 text-left"
                   >
                     <div className="flex items-start gap-2">
-                      {/* Icon */}
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      {/* Icon with Court indicator */}
+                      <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         isExpanded ? 'bg-white/50' : persona.color.bg
                       }`}>
                         {Icon && <Icon className={`w-4 h-4 ${persona.color.icon}`} />}
+                        {/* Court badge */}
+                        <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ${
+                          persona.court === 'seelie' ? 'bg-amber-100' : 'bg-slate-200'
+                        }`}>
+                          <CourtIcon className={`w-2.5 h-2.5 ${
+                            persona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
+                          }`} />
+                        </div>
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="text-xs font-semibold text-slate-900 line-clamp-2">
-                            {persona.name}
+                        <div className="flex items-start justify-between gap-2 mb-0.5">
+                          <h4 className="text-xs font-semibold text-slate-900 line-clamp-1">
+                            {persona.fairyName || persona.name}
                           </h4>
                           {isExpanded ? (
                             <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
@@ -281,6 +315,8 @@ export function ModulePersonaPanel({
                             <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
                           )}
                         </div>
+                        {/* Role subtitle */}
+                        <p className="text-[10px] text-slate-500 mb-1">{persona.name}</p>
 
                         {/* Status Badge */}
                         <div className="flex items-center gap-2 flex-wrap">
@@ -301,8 +337,29 @@ export function ModulePersonaPanel({
                   {/* Expanded Content */}
                   {isExpanded && (
                     <div className="px-3 pb-3 space-y-3 border-t border-slate-200">
+                      {/* Court & Folklore Info */}
+                      <div className={`pt-3 p-2 rounded-lg ${
+                        persona.court === 'seelie' ? 'bg-amber-50' : 'bg-slate-50'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CourtIcon className={`w-4 h-4 ${
+                            persona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
+                          }`} />
+                          <span className={`text-xs font-medium ${
+                            persona.court === 'seelie' ? 'text-amber-800' : 'text-slate-700'
+                          }`}>
+                            {persona.court === 'seelie' ? 'Seelie Court • Co-Pilot' : 'Unseelie Court • Auditor'}
+                          </span>
+                        </div>
+                        {persona.folkloreOrigin && (
+                          <p className="text-[10px] text-slate-500 italic ml-6">
+                            {persona.folkloreOrigin}
+                          </p>
+                        )}
+                      </div>
+                      
                       {/* Configure Button */}
-                      <div className="pt-3 flex justify-end">
+                      <div className="flex justify-end">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -519,13 +576,13 @@ export function ModulePersonaPanel({
               </>
             )}
 
-            {/* Active AI Assistants Section */}
+            {/* Active Oberon Faculty Section */}
             {allActivePersonas.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="w-4 h-4 text-purple-600" />
                   <div className="text-sm font-semibold text-slate-900">
-                    Active AI Assistants ({allActivePersonas.length})
+                    The Oberon Faculty ({allActivePersonas.length})
                   </div>
                 </div>
                 <div className="text-xs text-slate-600 mb-3">
@@ -536,18 +593,33 @@ export function ModulePersonaPanel({
                 <div className="space-y-2">
                   {allActivePersonas.map((persona) => {
                     const Icon = PERSONA_ICONS[persona.id];
+                    const CourtIcon = persona.court === 'seelie' ? Sun : Snowflake;
                     return (
                       <div
                         key={persona.id}
-                        className={`rounded-lg border-2 ${persona.color.border} ${persona.color.bg} p-3`}
+                        className={`rounded-lg border-2 p-3 ${
+                          persona.court === 'seelie' 
+                            ? 'border-amber-200 bg-amber-50' 
+                            : 'border-slate-300 bg-slate-100'
+                        }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-white/50 flex items-center justify-center flex-shrink-0">
+                          <div className="relative w-8 h-8 rounded-lg bg-white/50 flex items-center justify-center flex-shrink-0">
                             {Icon && <Icon className={`w-4 h-4 ${persona.color.icon}`} />}
+                            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ${
+                              persona.court === 'seelie' ? 'bg-amber-100' : 'bg-slate-200'
+                            }`}>
+                              <CourtIcon className={`w-2.5 h-2.5 ${
+                                persona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
+                              }`} />
+                            </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-900 mb-1">
-                              {persona.name}
+                            <div className="text-sm font-medium text-slate-900 mb-0.5">
+                              {persona.fairyName || persona.name}
+                            </div>
+                            <div className="text-[10px] text-slate-500 mb-1">
+                              {persona.name} • {persona.court === 'seelie' ? 'Co-Pilot' : 'Auditor'}
                             </div>
                             <div className="text-xs text-slate-600 leading-relaxed">
                               {persona.description}
@@ -594,7 +666,7 @@ export function ModulePersonaPanel({
                     • <strong>Study Roles:</strong> Project-specific roles configured in Project Setup with human/AI assignments
                   </div>
                   <div>
-                    • <strong>AI Assistants:</strong> Specialized AI personas providing cross-module guidance and validation
+                    • <strong>Oberon Faculty:</strong> Seelie co-pilots and Unseelie auditors providing cross-module guidance
                   </div>
                 </div>
               </div>

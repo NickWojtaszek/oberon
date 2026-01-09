@@ -41,7 +41,7 @@ export function ActivePersonasBar({ module, compact = false }: ActivePersonasBar
     <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-200">
       <div className="flex items-center gap-1.5 mr-2">
         <Sparkles className="w-4 h-4 text-purple-600" />
-        <span className="text-xs font-semibold text-purple-900">Active AI Assistants:</span>
+        <span className="text-xs font-semibold text-purple-900">The Oberon Faculty:</span>
       </div>
       {activePersonas.map(persona => (
         <div key={persona.id} className="relative">

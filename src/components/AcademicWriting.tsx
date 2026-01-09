@@ -488,7 +488,7 @@ export function AcademicWriting({ onNavigate }: AcademicWritingProps = {}) {
                   }`}
                 >
                   <Sparkles className="w-4 h-4" />
-                  AI Assistant
+                  Faculty
                 </button>
                 <button
                   onClick={() => setActiveIntelligenceTab('sources')}

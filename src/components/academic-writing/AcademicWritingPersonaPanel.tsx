@@ -1,10 +1,10 @@
 /**
- * Academic Writing Persona Panel - Unified AI Assistant Tab Content
- * Displays the Academic Writing Coach persona with all its competencies and status
+ * Academic Writing Persona Panel - Unified Faculty Tab Content
+ * Displays Dr. Niamh (Writing Coach - Seelie) and Dr. Morana (Manuscript Reviewer - Unseelie)
  * Includes AI Mode controls (Co-Pilot, Audit, etc.)
  */
 
-import { Sparkles, Wand2, Zap, Brain, PenTool, CheckCircle2, AlertCircle, Shield } from 'lucide-react';
+import { Sparkles, Wand2, Zap, Brain, PenTool, CheckCircle2, AlertCircle, Shield, Sun, Snowflake, BookCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePersonas } from '../ai-personas/core/personaContext';
 import { getPersona, getAllPersonas } from '../ai-personas/core/personaRegistry';
@@ -132,18 +132,21 @@ export function AcademicWritingPersonaPanel({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200 bg-rose-50">
+      {/* Header - Dr. Niamh (Writing Coach - Seelie) */}
+      <div className="px-6 py-4 border-b border-amber-200 bg-amber-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
-            <PenTool className="w-5 h-5 text-rose-600" />
+          <div className="relative w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <PenTool className="w-5 h-5 text-amber-700" />
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center">
+              <Sun className="w-3 h-3 text-amber-600" />
+            </div>
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-slate-900">
-              Academic Writing Coach
+              {personaConfig.fairyName || 'Dr. Niamh'}
             </h3>
-            <p className="text-xs text-rose-700">
-              AI-Powered Manuscript Assistant
+            <p className="text-xs text-amber-700">
+              {personaConfig.name} • Seelie Co-Pilot
             </p>
           </div>
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-${status.color}-100 text-${status.color}-700 border border-${status.color}-200`}>
