@@ -4,7 +4,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle as AlertCircleIcon,
-  Info
+  Info,
+  Sun,
+  Snowflake,
+  Shield,
 } from 'lucide-react';
 import type { PersonaId, PersonaState, ValidationResult } from '../core/personaTypes';
 
@@ -68,24 +71,88 @@ export function PersonaSidebar({
 
   return (
     <div className="space-y-6">
-      {/* Persona Header */}
-      <div className={`${config.color.bg} rounded-lg p-4 border ${config.color.border}`}>
-        <div className="flex items-center gap-2 mb-3">
-          <Icon className={`w-5 h-5 ${config.color.icon}`} />
-          <h3 className={`font-semibold ${config.color.text}`}>
-            {config.sidebar.title}
-          </h3>
-          <Sparkles className="w-4 h-4 text-purple-500 ml-auto" />
+      {/* Persona Header with Fairy Court Styling */}
+      <div className={`rounded-lg p-4 border-2 ${
+        config.court === 'seelie' 
+          ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200' 
+          : config.court === 'unseelie'
+            ? 'bg-gradient-to-br from-slate-100 to-blue-50 border-slate-300'
+            : `${config.color.bg} ${config.color.border}`
+      }`}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+            config.court === 'seelie' 
+              ? 'bg-amber-100' 
+              : config.court === 'unseelie'
+                ? 'bg-slate-200'
+                : config.color.bg
+          }`}>
+            <Icon className={`w-5 h-5 ${
+              config.court === 'seelie' 
+                ? 'text-amber-600' 
+                : config.court === 'unseelie'
+                  ? 'text-slate-600'
+                  : config.color.icon
+            }`} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`font-semibold ${
+                config.court === 'seelie' 
+                  ? 'text-amber-900' 
+                  : config.court === 'unseelie'
+                    ? 'text-slate-900'
+                    : config.color.text
+              }`}>
+                {config.fairyName || config.sidebar.title}
+              </span>
+              {config.court && (
+                <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${
+                  config.court === 'seelie' 
+                    ? 'bg-amber-200 text-amber-800' 
+                    : 'bg-slate-200 text-slate-700'
+                }`}>
+                  {config.court === 'seelie' ? (
+                    <><Sun className="w-3 h-3" /> Co-Pilot</>
+                  ) : (
+                    <><Snowflake className="w-3 h-3" /> Auditor</>
+                  )}
+                </span>
+              )}
+              <Sparkles className="w-4 h-4 text-purple-500" />
+            </div>
+            <p className={`text-xs mt-0.5 ${
+              config.court === 'seelie' 
+                ? 'text-amber-700' 
+                : config.court === 'unseelie'
+                  ? 'text-slate-600'
+                  : `${config.color.text} opacity-80`
+            }`}>
+              {config.name}
+            </p>
+          </div>
         </div>
 
         {/* Description */}
-        <p className={`text-xs ${config.color.text} opacity-80 leading-relaxed mb-3`}>
+        <p className={`text-xs leading-relaxed mb-3 ${
+          config.court === 'seelie' 
+            ? 'text-amber-800' 
+            : config.court === 'unseelie'
+              ? 'text-slate-700'
+              : `${config.color.text} opacity-80`
+        }`}>
           {config.description}
         </p>
 
         {/* Validation Status */}
         {config.sidebar.showValidationStatus && validationResult && (
-          <div className="pt-3 border-t border-current border-opacity-20">
+          <div className={`pt-3 border-t ${
+            config.court === 'seelie' 
+              ? 'border-amber-200' 
+              : config.court === 'unseelie'
+                ? 'border-slate-200'
+                : 'border-current border-opacity-20'
+          }`}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium opacity-80">Status:</span>
               <div className="flex items-center gap-1.5">
@@ -110,7 +177,13 @@ export function PersonaSidebar({
         {onViewFullReport && (
           <button
             onClick={onViewFullReport}
-            className={`mt-3 pt-3 border-t border-current border-opacity-20 w-full text-left text-xs font-medium ${config.color.text} hover:opacity-100 opacity-80 transition-opacity flex items-center gap-1`}
+            className={`mt-3 pt-3 border-t w-full text-left text-xs font-medium hover:opacity-100 opacity-80 transition-opacity flex items-center gap-1 ${
+              config.court === 'seelie' 
+                ? 'border-amber-200 text-amber-700' 
+                : config.court === 'unseelie'
+                  ? 'border-slate-200 text-slate-600'
+                  : `border-current border-opacity-20 ${config.color.text}`
+            }`}
           >
             <Shield className="w-3 h-3" />
             View full report →
