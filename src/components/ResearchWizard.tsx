@@ -199,49 +199,162 @@ export function ResearchWizard({
       setPicoFields(extracted);
       setIsProcessing(false);
       setCurrentStep('pico');
-    }, 2000);
+    }, 1500);
   };
 
-  // Mock PICO extraction (in production, this would use real AI)
+  // Smarter PICO extraction - analyzes text for actual content
+  // In production, this would use an AI API for proper extraction
   const extractPICOFromText = (text: string): typeof picoFields => {
     const lowerText = text.toLowerCase();
     
+    // Extract population - look for patient descriptors
+    let population = '';
+    if (lowerText.includes('patient')) {
+      // Find sentences with "patient"
+      const patientMatch = text.match(/\d+\s*patients?[^.]*\./i);
+      if (patientMatch) {
+        population = patientMatch[0].replace(/\.$/, '').trim();
+      }
+    }
+    if (!population) {
+      // Look for study subject descriptions
+      const subjectPatterns = [
+        /(?:patients?|subjects?|individuals?|participants?)\s+(?:with|undergoing|receiving|who)[^.]+/i,
+        /(?:adults?|children|elderly|men|women)\s+(?:with|aged|undergoing)[^.]+/i,
+      ];
+      for (const pattern of subjectPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+          population = match[0].trim();
+          break;
+        }
+      }
+    }
+    if (!population) {
+      population = '(Please specify the target population)';
+    }
+
+    // Extract intervention - look for procedures, treatments, protocols
+    let intervention = '';
+    const interventionPatterns = [
+      /(?:protocol|procedure|treatment|intervention|technique)\s+(?:for|to|that|which)[^.]+/i,
+      /(?:stent-?graft|endovascular|surgical|therapeutic)[^.]+(?:implantation|repair|treatment)/i,
+      /(?:aim|objective|purpose)\s+(?:is|was)\s+to[^.]+/i,
+    ];
+    for (const pattern of interventionPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        intervention = match[0].trim();
+        break;
+      }
+    }
+    if (!intervention && lowerText.includes('protocol')) {
+      intervention = 'Clinical protocol for procedure optimization';
+    }
+    if (!intervention) {
+      intervention = '(Please specify the intervention or exposure)';
+    }
+
+    // Extract comparison - look for control, comparison, versus, compared to
+    let comparison = '';
+    const comparisonPatterns = [
+      /(?:compared?\s+(?:to|with)|versus|vs\.?|control\s+group)[^.]+/i,
+      /(?:standard|conventional|traditional)\s+(?:treatment|care|approach)[^.]*/i,
+    ];
+    for (const pattern of comparisonPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        comparison = match[0].trim();
+        break;
+      }
+    }
+    if (!comparison) {
+      // Check if this is a methods/protocol paper without comparison
+      if (lowerText.includes('protocol') || lowerText.includes('case series') || lowerText.includes('retrospective')) {
+        comparison = '(No comparison group - observational/protocol study)';
+      } else {
+        comparison = '(Please specify comparison or control group)';
+      }
+    }
+
+    // Extract outcome - look for endpoints, results, risk reduction
+    let outcome = '';
+    const outcomePatterns = [
+      /(?:risk\s+of|incidence\s+of|rate\s+of)[^.]+/i,
+      /(?:primary|secondary)\s+(?:endpoint|outcome|objective)[^.]*/i,
+      /(?:stroke|mortality|morbidity|complication|survival)[^.]*/i,
+      /(?:cerebral|neurological)\s+(?:microemboli|injury|damage|protection)[^.]*/i,
+    ];
+    for (const pattern of outcomePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        outcome = match[0].trim();
+        break;
+      }
+    }
+    if (!outcome) {
+      outcome = '(Please specify the primary outcome or endpoint)';
+    }
+
     return {
       population: {
         label: 'Population',
-        value: lowerText.includes('age') 
-          ? 'Adult patients aged 65+ with severe calcification'
-          : 'Adult patients with cardiovascular conditions',
+        value: population.length > 150 ? population.substring(0, 150) + '...' : population,
         icon: Users,
-        grounded: schemaVariables.includes('patient_age') ? 'found' : 'missing',
-        linkedVariable: 'patient_age',
+        grounded: population.includes('Please specify') ? 'pending' : 'pending',
+        linkedVariable: undefined,
       },
       intervention: {
         label: 'Intervention',
-        value: lowerText.includes('catheter') 
-          ? 'Atherectomy catheter treatment'
-          : 'Standard intervention protocol',
+        value: intervention.length > 150 ? intervention.substring(0, 150) + '...' : intervention,
         icon: Syringe,
-        grounded: schemaVariables.includes('intervention_type') ? 'found' : 'missing',
-        linkedVariable: 'intervention_type',
+        grounded: intervention.includes('Please specify') ? 'pending' : 'pending',
+        linkedVariable: undefined,
       },
       comparison: {
         label: 'Comparison',
-        value: 'Standard balloon angioplasty',
+        value: comparison.length > 150 ? comparison.substring(0, 150) + '...' : comparison,
         icon: GitCompare,
-        grounded: schemaVariables.includes('control_group') ? 'found' : 'missing',
-        linkedVariable: 'control_group',
+        grounded: comparison.includes('Please specify') || comparison.includes('No comparison') ? 'pending' : 'pending',
+        linkedVariable: undefined,
       },
       outcome: {
         label: 'Outcome',
-        value: lowerText.includes('mortality') 
-          ? '30-day mortality rate'
-          : 'Primary clinical endpoint',
+        value: outcome.length > 150 ? outcome.substring(0, 150) + '...' : outcome,
         icon: Target,
-        grounded: schemaVariables.includes('primary_endpoint') ? 'found' : 'missing',
-        linkedVariable: 'primary_endpoint',
+        grounded: outcome.includes('Please specify') ? 'pending' : 'pending',
+        linkedVariable: undefined,
       },
     };
+  };
+
+  // Update a single PICO field
+  const updatePicoField = (field: keyof typeof picoFields, value: string) => {
+    setPicoFields(prev => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        value,
+        grounded: value.trim() ? 'pending' : 'missing',
+      }
+    }));
+  };
+
+  // Validate grounding for a field
+  const validateGrounding = (field: keyof typeof picoFields) => {
+    const fieldValue = picoFields[field].value.toLowerCase();
+    // Check if any schema variable matches
+    const isGrounded = schemaVariables.some(v => 
+      fieldValue.includes(v.replace(/_/g, ' ')) || 
+      fieldValue.includes(v.replace(/_/g, ''))
+    );
+    setPicoFields(prev => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        grounded: isGrounded ? 'found' : 'missing',
+      }
+    }));
   };
 
   // Step 2 → Step 3: Validate against manifest
@@ -613,15 +726,20 @@ export function ResearchWizard({
                     </div>
                   </div>
 
-                  {/* Right: Structured PICO */}
+                  {/* Right: Structured PICO - EDITABLE */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
-                      <Database className="w-4 h-4" />
-                      Structured Hypothesis
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                        <Database className="w-4 h-4" />
+                        Structured Hypothesis
+                      </h3>
+                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                        ✏️ Click to edit
+                      </span>
+                    </div>
                     
-                    {Object.entries(picoFields).map(([key, field]) => (
-                      <div key={key} className="bg-white border border-slate-200 rounded-lg p-4">
+                    {(Object.entries(picoFields) as [keyof typeof picoFields, PICOField][]).map(([key, field]) => (
+                      <div key={key} className="bg-white border border-slate-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
                         <div className="flex items-start gap-3">
                           <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
                             <field.icon className="w-5 h-5 text-slate-600" />
@@ -635,21 +753,32 @@ export function ResearchWizard({
                               {field.grounded === 'found' && (
                                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-xs flex items-center gap-1">
                                   <CheckCircle className="w-3 h-3" />
-                                  Found
+                                  Grounded
                                 </span>
                               )}
                               {field.grounded === 'missing' && (
                                 <span className="px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded text-xs flex items-center gap-1">
                                   <AlertTriangle className="w-3 h-3" />
-                                  Missing
+                                  Not Grounded
+                                </span>
+                              )}
+                              {field.grounded === 'pending' && (
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-xs flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  Pending
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-slate-700 mb-2">
-                              {field.value}
-                            </p>
+                            <textarea
+                              value={field.value}
+                              onChange={(e) => updatePicoField(key, e.target.value)}
+                              onBlur={() => validateGrounding(key)}
+                              placeholder={`Enter ${field.label.toLowerCase()}...`}
+                              className="w-full px-3 py-2 text-sm text-slate-700 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none min-h-[60px]"
+                              rows={2}
+                            />
                             {field.linkedVariable && (
-                              <div className="text-xs text-slate-500">
+                              <div className="text-xs text-slate-500 mt-2">
                                 Linked: <code className="bg-slate-100 px-1 py-0.5 rounded">{field.linkedVariable}</code>
                               </div>
                             )}
