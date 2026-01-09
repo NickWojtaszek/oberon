@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PersonaProvider } from './components/ai-personas';
 import { useValidationRules } from './components/ai-personas/core/useValidationRules';
 import { queryClient } from './lib/queryClient';
+import { config } from './config/environment';
 import { migrateToProjectArchitecture } from './utils/projectMigration';
 import { migrateProtocolStorage, hasLegacyProtocols } from './utils/protocolStorageMigration';
 import { ResearchFactoryApp } from './components/ResearchFactoryApp';
