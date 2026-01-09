@@ -19,6 +19,7 @@ import {
   Lock,
   Sun,
   Snowflake,
+  Shield,
   // Persona-specific icons
   Scan,           // Dr. Mab - Protocol Auditor
   Blocks,         // Dr. Mokosh - Schema Architect
