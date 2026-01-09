@@ -37,7 +37,8 @@ import {
   BookOpen,
   Trash2,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Shield
 } from 'lucide-react';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
 import { useProject } from '../contexts/ProjectContext';
