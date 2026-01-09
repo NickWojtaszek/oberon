@@ -1,25 +1,23 @@
 /**
  * Unified Sidebar for Protocol Workbench
- * Shows different AI Persona content based on the active tab
- * - Schema tab: Dr. Mokosh (Schema Architect) - Seelie
- * - Protocol tab: Dr. Themis (Ethics) + Dr. Goodfellow (Endpoint) + Field Guidance (tabbed)
- * - Dependencies tab: Hidden (dependency graph takes full width)
- * - Audit tab: Hidden (audit takes full width)
+ * 
+ * Clean design: Shows personas stacked, no tabs, no boilerplate
+ * - Schema tab: Dr. Mokosh (Schema Architect)
+ * - Protocol tab: Dr. Themis (Ethics) + Dr. Goodfellow (Endpoint) stacked
+ * - Dependencies/Audit tabs: Hidden (full width content)
  */
 
 import { useState } from 'react';
 import { 
-  Sparkles, BookOpen, Sun, Snowflake, Scale, Blocks, Target, Shield, 
+  Sparkles, Sun, Snowflake, Scale, Blocks, Target,
   Lock, Clock, CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronUp, Settings2, Zap
 } from 'lucide-react';
 import { SchemaArchitectSidebar } from '../../ai-personas/personas/SchemaArchitect/SchemaArchitectSidebar';
-import { IRBComplianceTrackerSidebar } from '../../ai-personas/personas/IRBComplianceTracker/IRBComplianceTrackerSidebar';
-import { EndpointValidatorSidebar } from '../../ai-personas/personas/EndpointValidator/EndpointValidatorSidebar';
-import { ProtocolDocumentSidebar } from './ProtocolDocumentSidebar';
 import { getPersona } from '../../ai-personas/core/personaRegistry';
 import { usePersonas } from '../../ai-personas/core/personaContext';
 import { PersonaConfigurationPanel } from '../../ai-personas/ui/PersonaConfigurationPanel';
 import type { PersonaCustomization } from '../../../types/aiGovernance';
+import type { PersonaConfig } from '../../ai-personas/core/personaTypes';
 import type { SchemaBlock } from '../types';
 import type { ProtocolMetadata, ProtocolContent } from '../types';
 
@@ -45,60 +43,18 @@ interface ProtocolUnifiedSidebarProps {
 export function ProtocolUnifiedSidebar({
   activeTab,
   schemaBlocks,
-  protocolMetadata,
-  protocolContent,
   studyType,
-  onNavigateToSection,
-  activeField = 'protocolTitle',
-  onUpdateMetadata = () => {},
-  onUpdateContent = () => {}
 }: ProtocolUnifiedSidebarProps) {
-  const [protocolSubTab, setProtocolSubTab] = useState<'irb' | 'endpoint' | 'guidance'>('guidance');
-  const [isPersonaExpanded, setIsPersonaExpanded] = useState(false);
-  const [configPersona, setConfigPersona] = useState<any>(null);
+  const [expandedPersona, setExpandedPersona] = useState<string | null>(null);
+  const [configPersona, setConfigPersona] = useState<PersonaConfig | null>(null);
   const [personaCustomizations, setPersonaCustomizations] = useState<Record<string, PersonaCustomization>>({});
   
   const { state } = usePersonas();
 
-  // Get active persona based on current tab/subtab
-  const getActivePersona = () => {
-    if (activeTab === 'schema') {
-      return getPersona('schema-architect'); // Dr. Mokosh
-    }
-    if (activeTab === 'protocol') {
-      if (protocolSubTab === 'irb') {
-        return getPersona('ethics-compliance'); // Dr. Themis
-      }
-      if (protocolSubTab === 'endpoint') {
-        return getPersona('endpoint-validator'); // Dr. Goodfellow
-      }
-      // Guidance tab - use Dr. Themis for governance
-      return getPersona('ethics-compliance');
-    }
-    return null;
-  };
-
-  const activePersona = getActivePersona();
-  const personaState = activePersona ? state.personas[activePersona.id] : null;
-  const validation = personaState?.lastValidation;
-
-  // Get validation status
-  const getValidationStatus = () => {
-    if (!validation) {
-      return { icon: Clock, color: 'slate', label: 'Not validated', score: null };
-    }
-    const score = validation.complianceScore;
-    if (score >= 90) {
-      return { icon: CheckCircle2, color: 'green', label: 'Excellent', score };
-    }
-    if (score >= 75) {
-      return { icon: CheckCircle2, color: 'amber', label: 'Good', score };
-    }
-    if (score >= 50) {
-      return { icon: AlertCircle, color: 'orange', label: 'Needs work', score };
-    }
-    return { icon: XCircle, color: 'red', label: 'Critical', score };
-  };
+  // Get personas for protocol tab
+  const ethicsPersona = getPersona('ethics-compliance');    // Dr. Themis
+  const endpointPersona = getPersona('endpoint-validator'); // Dr. Goodfellow
+  const schemaPersona = getPersona('schema-architect');     // Dr. Mokosh
 
   const handleSaveCustomization = (customization: PersonaCustomization) => {
     setPersonaCustomizations(prev => ({
@@ -108,267 +64,244 @@ export function ProtocolUnifiedSidebar({
     setConfigPersona(null);
   };
 
-  // Don't show sidebar for dependencies and audit tabs (they need full width)
+  // Don't show sidebar for dependencies and audit tabs
   if (activeTab === 'dependencies' || activeTab === 'audit') {
     return null;
   }
 
-  const status = getValidationStatus();
-  const StatusIcon = status.icon;
-  const Icon = activePersona ? PERSONA_ICONS[activePersona.id] : null;
-  const CourtIcon = activePersona?.court === 'seelie' ? Sun : Snowflake;
+  // Get personas to display based on tab
+  const getPersonasForTab = (): PersonaConfig[] => {
+    if (activeTab === 'schema') {
+      return schemaPersona ? [schemaPersona] : [];
+    }
+    if (activeTab === 'protocol') {
+      const personas: PersonaConfig[] = [];
+      if (ethicsPersona) personas.push(ethicsPersona);
+      if (endpointPersona) personas.push(endpointPersona);
+      return personas;
+    }
+    return [];
+  };
+
+  const personas = getPersonasForTab();
+  const seelieCount = personas.filter(p => p.court === 'seelie').length;
+  const unseelieCount = personas.filter(p => p.court === 'unseelie').length;
+
+  // Render a single persona card
+  const renderPersonaCard = (persona: PersonaConfig) => {
+    const personaState = state.personas[persona.id];
+    const validation = personaState?.lastValidation;
+    const isExpanded = expandedPersona === persona.id;
+    const Icon = PERSONA_ICONS[persona.id];
+    const CourtIcon = persona.court === 'seelie' ? Sun : Snowflake;
+
+    // Get validation status
+    const getValidationStatus = () => {
+      if (!validation) {
+        return { icon: Clock, color: 'slate', label: 'Not validated', score: null };
+      }
+      const score = validation.complianceScore;
+      if (score >= 90) return { icon: CheckCircle2, color: 'green', label: 'Excellent', score };
+      if (score >= 75) return { icon: CheckCircle2, color: 'amber', label: 'Good', score };
+      if (score >= 50) return { icon: AlertCircle, color: 'orange', label: 'Needs work', score };
+      return { icon: XCircle, color: 'red', label: 'Critical', score };
+    };
+
+    const status = getValidationStatus();
+    const StatusIcon = status.icon;
+
+    return (
+      <div
+        key={persona.id}
+        className={`rounded-lg border-2 transition-all ${
+          isExpanded 
+            ? persona.court === 'seelie'
+              ? 'border-amber-300 bg-amber-50'
+              : 'border-slate-400 bg-slate-100'
+            : 'border-slate-200 bg-white hover:border-slate-300'
+        }`}
+      >
+        {/* Persona Header - Clickable */}
+        <button
+          onClick={() => setExpandedPersona(isExpanded ? null : persona.id)}
+          className="w-full p-3 text-left"
+        >
+          <div className="flex items-start gap-3">
+            {/* Icon with Court badge */}
+            <div className={`relative w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              isExpanded ? 'bg-white/50' : persona.color.bg
+            }`}>
+              {Icon && <Icon className={`w-5 h-5 ${persona.color.icon}`} />}
+              <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ${
+                persona.court === 'seelie' ? 'bg-amber-100' : 'bg-slate-200'
+              }`}>
+                <CourtIcon className={`w-2.5 h-2.5 ${
+                  persona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
+                }`} />
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2 mb-0.5">
+                <h4 className="text-sm font-semibold text-slate-900">
+                  {persona.fairyName}
+                </h4>
+                {isExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mb-1.5">{persona.name}</p>
+
+              {/* Status Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${
+                  status.color === 'green' ? 'bg-green-100 text-green-700' :
+                  status.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                  status.color === 'red' ? 'bg-red-100 text-red-700' :
+                  'bg-slate-100 text-slate-600'
+                }`}>
+                  <StatusIcon className="w-3 h-3" />
+                  {status.score !== null ? `${status.score}%` : status.label}
+                </div>
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                  <Lock className="w-3 h-3" />
+                  {persona.validationRules?.length || 0} rules
+                </div>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        {/* Expanded Content */}
+        {isExpanded && (
+          <div className="px-3 pb-3 space-y-3 border-t border-slate-200">
+            {/* Court & Folklore Info */}
+            <div className={`pt-3 p-2 rounded-lg ${
+              persona.court === 'seelie' ? 'bg-amber-50' : 'bg-slate-50'
+            }`}>
+              <div className="flex items-center gap-2 mb-1">
+                <CourtIcon className={`w-4 h-4 ${
+                  persona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
+                }`} />
+                <span className={`text-xs font-medium ${
+                  persona.court === 'seelie' ? 'text-amber-800' : 'text-slate-700'
+                }`}>
+                  {persona.court === 'seelie' ? 'Seelie Court • Co-Pilot' : 'Unseelie Court • Auditor'}
+                </span>
+              </div>
+              {persona.folkloreOrigin && (
+                <p className="text-[10px] text-slate-500 italic ml-6">
+                  {persona.folkloreOrigin}
+                </p>
+              )}
+            </div>
+            
+            {/* Configure Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfigPersona(persona);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+                Configure
+              </button>
+            </div>
+            
+            {/* Description */}
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {persona.description}
+            </p>
+
+            {/* Suggested Actions */}
+            <div>
+              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                Suggested Actions
+              </div>
+              <div className="space-y-1">
+                {persona.realTimeValidation && (
+                  <div className="flex items-start gap-2 text-xs text-slate-700 bg-white/50 rounded p-2">
+                    <Zap className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-[10px]">Real-time validation is active</span>
+                  </div>
+                )}
+                {validation && validation.criticalCount > 0 && (
+                  <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 rounded p-2">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span className="text-[10px]">Review {validation.criticalCount} critical issue{validation.criticalCount > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {validation && validation.warningCount > 0 && (
+                  <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 rounded p-2">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span className="text-[10px]">Address {validation.warningCount} warning{validation.warningCount > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {(!validation || (validation.criticalCount === 0 && validation.warningCount === 0)) && (
+                  <div className="flex items-start gap-2 text-xs text-green-700 bg-green-50 rounded p-2">
+                    <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span className="text-[10px]">All checks passed - ready to proceed</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="w-[400px] border-l border-slate-200 bg-white overflow-y-auto flex-shrink-0">
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-4">
         {/* Header */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
-              <h3 className="font-medium text-slate-900">The Oberon Faculty</h3>
-            </div>
-            {activePersona && (
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                activePersona.court === 'seelie' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'
-              }`}>
-                <CourtIcon className="w-3 h-3" />
-                1 {activePersona.court === 'seelie' ? 'Seelie' : 'Unseelie'}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            <h3 className="font-medium text-slate-900">The Oberon Faculty</h3>
+          </div>
+          <div className="flex items-center gap-1">
+            {seelieCount > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                <Sun className="w-3 h-3" />
+                {seelieCount}
+              </div>
+            )}
+            {unseelieCount > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-600">
+                <Snowflake className="w-3 h-3" />
+                {unseelieCount}
               </div>
             )}
           </div>
-          
-          {/* Rich Persona Card - Like Dr. Grim */}
-          {activePersona && (
-            <div className={`rounded-lg border-2 transition-all ${
-              isPersonaExpanded 
-                ? activePersona.court === 'seelie'
-                  ? 'border-amber-300 bg-amber-50'
-                  : 'border-slate-400 bg-slate-100'
-                : 'border-slate-200 bg-white hover:border-slate-300'
-            }`}>
-              {/* Persona Header - Clickable */}
-              <button
-                onClick={() => setIsPersonaExpanded(!isPersonaExpanded)}
-                className="w-full p-3 text-left"
-              >
-                <div className="flex items-start gap-2">
-                  {/* Icon with Court badge */}
-                  <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    isPersonaExpanded ? 'bg-white/50' : activePersona.color.bg
-                  }`}>
-                    {Icon && <Icon className={`w-4 h-4 ${activePersona.color.icon}`} />}
-                    <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ${
-                      activePersona.court === 'seelie' ? 'bg-amber-100' : 'bg-slate-200'
-                    }`}>
-                      <CourtIcon className={`w-2.5 h-2.5 ${
-                        activePersona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
-                      }`} />
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-0.5">
-                      <h4 className="text-sm font-semibold text-slate-900">
-                        {activePersona.fairyName}
-                      </h4>
-                      {isPersonaExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mb-1.5">{activePersona.name}</p>
-
-                    {/* Status Badges */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${
-                        status.color === 'green' ? 'bg-green-100 text-green-700' :
-                        status.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                        status.color === 'red' ? 'bg-red-100 text-red-700' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {status.score !== null ? `${status.score}%` : status.label}
-                      </div>
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
-                        <Lock className="w-3 h-3" />
-                        {activePersona.validationRules?.length || 0} rules
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Expanded Content */}
-              {isPersonaExpanded && (
-                <div className="px-3 pb-3 space-y-3 border-t border-slate-200">
-                  {/* Court & Folklore Info */}
-                  <div className={`pt-3 p-2 rounded-lg ${
-                    activePersona.court === 'seelie' ? 'bg-amber-50' : 'bg-slate-50'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <CourtIcon className={`w-4 h-4 ${
-                        activePersona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
-                      }`} />
-                      <span className={`text-xs font-medium ${
-                        activePersona.court === 'seelie' ? 'text-amber-800' : 'text-slate-700'
-                      }`}>
-                        {activePersona.court === 'seelie' ? 'Seelie Court • Co-Pilot' : 'Unseelie Court • Auditor'}
-                      </span>
-                    </div>
-                    {activePersona.folkloreOrigin && (
-                      <p className="text-[10px] text-slate-500 italic ml-6">
-                        {activePersona.folkloreOrigin}
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Configure Button */}
-                  <div className="flex justify-end">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfigPersona(activePersona);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
-                    >
-                      <Settings2 className="w-3.5 h-3.5" />
-                      Configure
-                    </button>
-                  </div>
-                  
-                  {/* Description */}
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {activePersona.description}
-                  </p>
-
-                  {/* Suggested Actions */}
-                  <div>
-                    <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                      Suggested Actions
-                    </div>
-                    <div className="space-y-1">
-                      {activePersona.realTimeValidation && (
-                        <div className="flex items-start gap-2 text-xs text-slate-700 bg-white/50 rounded p-2">
-                          <Zap className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
-                          <span className="text-[10px]">Real-time validation is active</span>
-                        </div>
-                      )}
-                      {validation && validation.criticalCount > 0 && (
-                        <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 rounded p-2">
-                          <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                          <span className="text-[10px]">Review critical issues immediately</span>
-                        </div>
-                      )}
-                      {validation && validation.warningCount > 0 && (
-                        <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 rounded p-2">
-                          <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                          <span className="text-[10px]">Address warnings before submission</span>
-                        </div>
-                      )}
-                      {(!validation || (validation.criticalCount === 0 && validation.warningCount === 0)) && (
-                        <div className="flex items-start gap-2 text-xs text-green-700 bg-green-50 rounded p-2">
-                          <CheckCircle2 className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                          <span className="text-[10px]">All checks passed - ready to proceed</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Sub-tabs for Protocol tab */}
-          {activeTab === 'protocol' && (
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setProtocolSubTab('guidance')}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  protocolSubTab === 'guidance'
-                    ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                    : 'text-slate-600 hover:bg-slate-50 border border-slate-200'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  <span>Guidance</span>
-                </div>
-              </button>
-              <button
-                onClick={() => setProtocolSubTab('irb')}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  protocolSubTab === 'irb'
-                    ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                    : 'text-slate-600 hover:bg-slate-50 border border-slate-200'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  <span>IRB</span>
-                </div>
-              </button>
-              <button
-                onClick={() => setProtocolSubTab('endpoint')}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  protocolSubTab === 'endpoint'
-                    ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                    : 'text-slate-600 hover:bg-slate-50 border border-slate-200'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Target className="w-4 h-4" />
-                  <span>Endpoints</span>
-                </div>
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Content based on active tab */}
-        <div className="-m-6">
-          {activeTab === 'schema' && (
+        {/* Schema tab: Use existing SchemaArchitectSidebar */}
+        {activeTab === 'schema' && (
+          <div className="-mx-6 -mb-6">
             <SchemaArchitectSidebar
               schemaBlocks={schemaBlocks}
               studyType={studyType}
             />
-          )}
+          </div>
+        )}
 
-          {activeTab === 'protocol' && protocolSubTab === 'guidance' && (
-            <div className="p-6">
-              <ProtocolDocumentSidebar
-                open={true}
-                onClose={() => {}}
-                activeField={activeField}
-                metadata={protocolMetadata}
-                content={protocolContent}
-                onUpdateMetadata={onUpdateMetadata}
-                onUpdateContent={onUpdateContent}
-              />
-            </div>
-          )}
-
-          {activeTab === 'protocol' && protocolSubTab === 'irb' && (
-            <IRBComplianceTrackerSidebar
-              protocolMetadata={protocolMetadata}
-              studyType={studyType}
-              onNavigateToSection={onNavigateToSection}
-            />
-          )}
-
-          {activeTab === 'protocol' && protocolSubTab === 'endpoint' && (
-            <EndpointValidatorSidebar
-              protocolDocument={{
-                ...protocolMetadata,
-                ...protocolContent
-              }}
-              studyType={studyType}
-              onNavigateToSection={onNavigateToSection}
-            />
-          )}
-        </div>
+        {/* Protocol tab: Stack both personas */}
+        {activeTab === 'protocol' && (
+          <div className="space-y-3">
+            {personas.map(persona => renderPersonaCard(persona))}
+            
+            {/* Footer hint */}
+            <p className="text-[10px] text-slate-400 text-center pt-2">
+              Click personas to view details and configure
+            </p>
+          </div>
+        )}
       </div>
       
       {/* Persona Configuration Modal */}
