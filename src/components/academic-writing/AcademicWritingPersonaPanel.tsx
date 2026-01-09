@@ -4,12 +4,16 @@
  * Includes AI Mode controls (Co-Pilot, Audit, etc.)
  */
 
-import { Sparkles, Wand2, Zap, Brain, PenTool, CheckCircle2, AlertCircle, Shield, Sun, Snowflake, BookCheck } from 'lucide-react';
+import { 
+  Sparkles, Wand2, Zap, Brain, CheckCircle2, AlertCircle, Sun, Snowflake,
+  Settings, Eye, Plane, ChevronUp, ChevronDown, BookOpen, Clock, XCircle, Users, Bot, EyeOff,
+  // Persona-specific icons
+  Scan, Blocks, Sigma, Radar, Scale, ShieldAlert, Target, FileDiff, Feather, SearchX
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePersonas } from '../ai-personas/core/personaContext';
 import { getPersona, getAllPersonas } from '../ai-personas/core/personaRegistry';
 import { DataConnectionPanel } from './DataConnectionPanel';
-import { Settings, Eye, Plane, ChevronUp, ChevronDown, BookOpen, Clock, XCircle, Users, Bot, EyeOff } from 'lucide-react';
 import type { ValidationResult } from '../../services/manuscriptValidationService';
 import { useProject } from '../../contexts/ProjectContext';
 
@@ -62,17 +66,18 @@ export function AcademicWritingPersonaPanel({
   const allPersonas = getAllPersonas();
   const allActivePersonas = allPersonas.filter(persona => state.personas[persona.id]?.active);
   
-  // Icon mapping for AI personas
+  // Icon mapping for AI personas - function-specific
   const PERSONA_ICONS: Record<string, any> = {
-    'protocol-auditor': Shield,
-    'schema-architect': Shield,
-    'statistical-advisor': Shield,
-    'data-quality-sentinel': Shield,
-    'ethics-compliance': Shield,
-    'safety-vigilance': Shield,
-    'endpoint-validator': Shield,
-    'amendment-advisor': Shield,
-    'academic-writing-coach': PenTool,
+    'protocol-auditor': Scan,
+    'schema-architect': Blocks,
+    'statistical-advisor': Sigma,
+    'data-quality-sentinel': Radar,
+    'ethics-compliance': Scale,
+    'safety-vigilance': ShieldAlert,
+    'endpoint-validator': Target,
+    'amendment-advisor': FileDiff,
+    'academic-writing-coach': Feather,
+    'manuscript-reviewer': SearchX,
   };
 
   if (!personaState?.active) {
@@ -136,7 +141,7 @@ export function AcademicWritingPersonaPanel({
       <div className="px-6 py-4 border-b border-amber-200 bg-amber-50">
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <PenTool className="w-5 h-5 text-amber-700" />
+            <Feather className="w-5 h-5 text-amber-700" />
             <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center">
               <Sun className="w-3 h-3 text-amber-600" />
             </div>

@@ -1,4 +1,4 @@
-import { Shield, Building2, TrendingUp, ShieldCheck, Scale, AlertTriangle, Target, FileEdit } from 'lucide-react';
+import { Scan, Blocks, Sigma, Radar, Scale, ShieldAlert, Target, FileDiff, Feather, SearchX } from 'lucide-react';
 import type { StudyType } from './ai-personas/core/personaTypes';
 import { getPersonasForStudyType, getRequiredPersonasForStudyType } from './ai-personas/core/personaRegistry';
 
@@ -8,14 +8,16 @@ interface PersonaAssignmentDisplayProps {
 }
 
 const PERSONA_ICONS: Record<string, any> = {
-  'protocol-auditor': Shield,
-  'schema-architect': Building2,
-  'statistical-advisor': TrendingUp,
-  'data-quality-sentinel': ShieldCheck,
+  'protocol-auditor': Scan,
+  'schema-architect': Blocks,
+  'statistical-advisor': Sigma,
+  'data-quality-sentinel': Radar,
   'ethics-compliance': Scale,
-  'safety-vigilance': AlertTriangle,
+  'safety-vigilance': ShieldAlert,
   'endpoint-validator': Target,
-  'amendment-advisor': FileEdit,
+  'amendment-advisor': FileDiff,
+  'academic-writing-coach': Feather,
+  'manuscript-reviewer': SearchX,
 };
 
 export function PersonaAssignmentDisplay({ studyType, compact = false }: PersonaAssignmentDisplayProps) {

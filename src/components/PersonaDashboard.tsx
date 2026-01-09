@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, Building2, TrendingUp, ShieldCheck, Scale, AlertTriangle, Target, FileEdit, CheckCircle2, XCircle, Info, ChevronRight, Play } from 'lucide-react';
+import { Scan, Blocks, Sigma, Radar, Scale, ShieldAlert, Target, FileDiff, Feather, SearchX, CheckCircle2, XCircle, Info, ChevronRight, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { usePersonas } from './ai-personas/core/personaContext';
 import { getAllPersonas } from './ai-personas/core/personaRegistry';
@@ -7,14 +7,16 @@ import { ContentContainer } from './ui/ContentContainer';
 import type { PersonaId } from './ai-personas/core/personaTypes';
 
 const PERSONA_ICONS: Record<PersonaId, any> = {
-  'protocol-auditor': Shield,
-  'schema-architect': Building2,
-  'statistical-advisor': TrendingUp,
-  'data-quality-sentinel': ShieldCheck,
+  'protocol-auditor': Scan,
+  'schema-architect': Blocks,
+  'statistical-advisor': Sigma,
+  'data-quality-sentinel': Radar,
   'ethics-compliance': Scale,
-  'safety-vigilance': AlertTriangle,
+  'safety-vigilance': ShieldAlert,
   'endpoint-validator': Target,
-  'amendment-advisor': FileEdit,
+  'amendment-advisor': FileDiff,
+  'academic-writing-coach': Feather,
+  'manuscript-reviewer': SearchX,
 };
 
 export function PersonaDashboard() {

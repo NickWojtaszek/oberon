@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
 import { 
-  Shield, 
-  Building2, 
-  TrendingUp, 
-  ShieldCheck, 
-  Scale, 
-  AlertTriangle, 
-  Target, 
-  FileEdit,
-  PenTool,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -18,7 +9,6 @@ import {
   Clock,
   Zap,
   BookOpen,
-  BookCheck,
   BarChart3,
   Users,
   UserCheck,
@@ -29,6 +19,17 @@ import {
   Lock,
   Sun,
   Snowflake,
+  // Persona-specific icons
+  Scan,           // Dr. Mab - Protocol Auditor
+  Blocks,         // Dr. Mokosh - Schema Architect
+  Sigma,          // Dr. Saga - Statistical Advisor
+  Radar,          // Dr. Grim - Data Quality
+  Scale,          // Dr. Themis - Ethics
+  ShieldAlert,    // Dr. König - Safety Vigilance
+  Target,         // Dr. Goodfellow - Endpoint Validator
+  FileDiff,       // Dr. Brigid - Amendment Advisor
+  Feather,        // Dr. Niamh - Writing Coach
+  SearchX,        // Dr. Morana - Manuscript Reviewer
 } from 'lucide-react';
 import { usePersonas } from '../core/personaContext';
 import { getAllPersonas } from '../core/personaRegistry';
@@ -39,16 +40,16 @@ import { PersonaConfigurationPanel } from './PersonaConfigurationPanel';
 import type { PersonaCustomization } from '../../../types/aiGovernance';
 
 const PERSONA_ICONS: Record<PersonaId, any> = {
-  'protocol-auditor': Shield,
-  'schema-architect': Building2,
-  'statistical-advisor': TrendingUp,
-  'data-quality-sentinel': ShieldCheck,
-  'ethics-compliance': Scale,
-  'safety-vigilance': AlertTriangle,
-  'endpoint-validator': Target,
-  'manuscript-reviewer': BookCheck,
-  'amendment-advisor': FileEdit,
-  'academic-writing-coach': PenTool,
+  'protocol-auditor': Scan,           // Dr. Mab - auditing
+  'schema-architect': Blocks,         // Dr. Mokosh - schemas
+  'statistical-advisor': Sigma,       // Dr. Saga - statistics
+  'data-quality-sentinel': Radar,     // Dr. Grim - vigilance
+  'ethics-compliance': Scale,         // Dr. Themis - justice
+  'safety-vigilance': ShieldAlert,    // Dr. König - safety
+  'endpoint-validator': Target,       // Dr. Goodfellow - precision
+  'amendment-advisor': FileDiff,      // Dr. Brigid - changes
+  'academic-writing-coach': Feather,  // Dr. Niamh - writing
+  'manuscript-reviewer': SearchX,     // Dr. Morana - review
 };
 
 interface ModulePersonaPanelProps {

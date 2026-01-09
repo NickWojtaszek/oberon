@@ -1,12 +1,5 @@
 import { 
-  Shield, 
-  Building2, 
-  TrendingUp, 
-  ShieldCheck, 
-  Scale, 
-  AlertTriangle, 
-  Target, 
-  FileEdit,
+  Scan, Blocks, Sigma, Radar, Scale, ShieldAlert, Target, FileDiff, Feather, SearchX,
   Sparkles,
   CheckCircle,
   XCircle,
@@ -15,16 +8,18 @@ import {
 } from 'lucide-react';
 import type { PersonaId, PersonaState, ValidationResult } from '../core/personaTypes';
 
-// Icon mapping
+// Icon mapping - function-specific icons
 const PERSONA_ICONS: Record<PersonaId, any> = {
-  'protocol-auditor': Shield,
-  'schema-architect': Building2,
-  'statistical-advisor': TrendingUp,
-  'data-quality-sentinel': ShieldCheck,
+  'protocol-auditor': Scan,
+  'schema-architect': Blocks,
+  'statistical-advisor': Sigma,
+  'data-quality-sentinel': Radar,
   'ethics-compliance': Scale,
-  'safety-vigilance': AlertTriangle,
+  'safety-vigilance': ShieldAlert,
   'endpoint-validator': Target,
-  'amendment-advisor': FileEdit
+  'amendment-advisor': FileDiff,
+  'academic-writing-coach': Feather,
+  'manuscript-reviewer': SearchX,
 };
 
 interface PersonaSidebarProps {

@@ -8,7 +8,6 @@
 
 import { useState } from 'react';
 import { 
-  Shield, 
   Sparkles,
   Lock,
   Settings2,
@@ -16,19 +15,22 @@ import {
   ChevronUp,
   Sun,
   Snowflake,
-  Building2,
-  TrendingUp,
-  ShieldCheck,
-  Scale,
-  AlertTriangle,
-  Target,
-  FileEdit,
-  PenTool,
-  Scissors,
   Info,
   CheckCircle2,
   Users,
   BookOpen,
+  HelpCircle,
+  // Persona-specific icons
+  Scan,           // Dr. Mab - Protocol Auditor
+  Blocks,         // Dr. Mokosh - Schema Architect
+  Sigma,          // Dr. Saga - Statistical Advisor
+  Radar,          // Dr. Grim - Data Quality
+  Scale,          // Dr. Themis - Ethics
+  ShieldAlert,    // Dr. König - Safety Vigilance
+  Target,         // Dr. Goodfellow - Endpoint Validator
+  FileDiff,       // Dr. Brigid - Amendment Advisor
+  Feather,        // Dr. Niamh - Writing Coach
+  SearchX,        // Dr. Morana - Manuscript Reviewer
 } from 'lucide-react';
 import { ContentContainer } from './ui/ContentContainer';
 import { 
@@ -41,18 +43,18 @@ import { PersonaConfigurationPanel } from './ai-personas/ui/PersonaConfiguration
 import type { PersonaCustomization } from '../types/aiGovernance';
 import { useTranslation } from 'react-i18next';
 
-// Icon mapping
+// Icon mapping - function-specific icons for each persona
 const PERSONA_ICONS: Record<string, any> = {
-  'Shield': Shield,
-  'Building2': Building2,
-  'TrendingUp': TrendingUp,
-  'ShieldCheck': ShieldCheck,
-  'Scale': Scale,
-  'AlertTriangle': AlertTriangle,
-  'Target': Target,
-  'FileEdit': FileEdit,
-  'PenTool': PenTool,
-  'Scissors': Scissors,
+  'protocol-auditor': Scan,           // Dr. Mab - auditing documents
+  'schema-architect': Blocks,         // Dr. Mokosh - building schemas
+  'statistical-advisor': Sigma,       // Dr. Saga - statistics
+  'data-quality-sentinel': Radar,     // Dr. Grim - vigilance
+  'ethics-compliance': Scale,         // Dr. Themis - justice
+  'safety-vigilance': ShieldAlert,    // Dr. König - safety warnings
+  'endpoint-validator': Target,       // Dr. Goodfellow - precision
+  'amendment-advisor': FileDiff,      // Dr. Brigid - changes
+  'academic-writing-coach': Feather,  // Dr. Niamh - elegant writing
+  'manuscript-reviewer': SearchX,     // Dr. Morana - critical review
 };
 
 export function FairyCourtPersonas() {
@@ -237,7 +239,7 @@ interface PersonaCardProps {
 }
 
 function PersonaCard({ persona, isExpanded, onToggle, onConfigure, customization }: PersonaCardProps) {
-  const Icon = PERSONA_ICONS[persona.icon] || Shield;
+  const Icon = PERSONA_ICONS[persona.id] || HelpCircle;
   const isSeelie = persona.court === 'seelie';
   
   const courtStyles = isSeelie

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { 
-  Shield, Building2, TrendingUp, ShieldCheck, Scale, 
-  AlertTriangle, Target, FileEdit, Settings, X, Sparkles,
-  Check, ChevronDown, Download, BarChart3, PenTool
+  Scan, Blocks, Sigma, Radar, Scale, ShieldAlert, Target, FileDiff, 
+  Feather, SearchX, Settings, X, Sparkles, Check, ChevronDown, Download, BarChart3
 } from 'lucide-react';
 import { usePersonas } from '../core/personaContext';
 import type { PersonaId, StudyType, RegulatoryFramework } from '../core/personaTypes';
@@ -12,15 +11,16 @@ import { reportExporter } from '../export/reportExporter';
 import { globalTrendTracker } from '../analytics/trendTracker';
 
 const PERSONA_ICONS: Record<PersonaId, any> = {
-  'protocol-auditor': Shield,
-  'schema-architect': Building2,
-  'statistical-advisor': TrendingUp,
-  'data-quality-sentinel': ShieldCheck,
+  'protocol-auditor': Scan,
+  'schema-architect': Blocks,
+  'statistical-advisor': Sigma,
+  'data-quality-sentinel': Radar,
   'ethics-compliance': Scale,
-  'safety-vigilance': AlertTriangle,
+  'safety-vigilance': ShieldAlert,
   'endpoint-validator': Target,
-  'amendment-advisor': FileEdit,
-  'academic-writing-coach': PenTool
+  'amendment-advisor': FileDiff,
+  'academic-writing-coach': Feather,
+  'manuscript-reviewer': SearchX,
 };
 
 const STUDY_TYPES: { value: StudyType; label: string }[] = [
