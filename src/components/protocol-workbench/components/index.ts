@@ -2,7 +2,7 @@
 export { VariableLibrary } from './VariableLibrary';
 export { SchemaEditor } from './SchemaEditor';
 export { ProtocolDocument } from './ProtocolDocument';
-export { ProtocolDocumentSidebar } from './ProtocolDocumentSidebar';
+// ProtocolDocumentSidebar removed - content moved to ProtocolUnifiedSidebar
 export { ProtocolUnifiedSidebar } from './ProtocolUnifiedSidebar';
 export { DependencyGraph } from './DependencyGraph';
 export { DependencyHelpSidebar } from './DependencyHelpSidebar';
