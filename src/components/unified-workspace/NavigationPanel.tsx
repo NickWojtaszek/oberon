@@ -25,11 +25,9 @@ import {
   Building,
   Sparkles,
 } from 'lucide-react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FEATURE_FLAGS } from '../../config/featureFlags';
 import { useGovernance } from '../../hooks/useGovernance';
-import { PersonaManager } from '../ai-personas/ui/PersonaManager';
 
 export type NavigationTab = 
   | 'dashboard'
@@ -83,14 +81,15 @@ const NAV_ITEMS: Array<{
     id: 'ai-personas',
     label: 'AI Personas',
     icon: Brain,
-    description: 'Persona library',
+    description: 'The Oberon Faculty',
   },
-  {
-    id: 'persona-editor',
-    label: 'Persona Editor',
-    icon: User,
-    description: 'Create & edit personas',
-  },
+  // Persona Editor hidden - functionality merged into AI Personas (FairyCourtPersonas)
+  // {
+  //   id: 'persona-editor',
+  //   label: 'Persona Editor',
+  //   icon: User,
+  //   description: 'Create & edit personas',
+  // },
   {
     id: 'protocol-workbench',
     label: 'Protocol Workbench',
@@ -163,9 +162,6 @@ export function NavigationPanel({
   
   // Get governance state (Phase 2: Permission enforcement)
   const governance = FEATURE_FLAGS.ENABLE_RBAC ? useGovernance() : null;
-  
-  // 🤖 Persona Manager state
-  const [showPersonaManager, setShowPersonaManager] = useState(false);
   
   // Helper function to get translated label for navigation item
   const getNavLabel = (id: NavigationTab): string => {
@@ -366,25 +362,19 @@ export function NavigationPanel({
           </div>
         )}
         
-        {/* 🤖 AI Persona Manager Button */}
+        {/* 🤖 AI Persona Quick Access Button - Navigates to AI Personas page */}
         <button
-          onClick={() => setShowPersonaManager(true)}
+          onClick={() => onNavigate('ai-personas')}
           className="w-full flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all text-white"
         >
           <Sparkles className="w-5 h-5" />
           <div className="text-left flex-1">
-            <div className="text-sm font-medium">AI Personas</div>
-            <div className="text-xs opacity-90">Manage validators</div>
+            <div className="text-sm font-medium">The Oberon Faculty</div>
+            <div className="text-xs opacity-90">AI Personas</div>
           </div>
           <Settings className="w-4 h-4 opacity-70" />
         </button>
       </div>
-      
-      {/* 🤖 Persona Manager Modal */}
-      <PersonaManager 
-        open={showPersonaManager} 
-        onClose={() => setShowPersonaManager(false)} 
-      />
     </nav>
   );
 }

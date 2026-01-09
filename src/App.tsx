@@ -5,7 +5,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { DashboardLayout } from './components/DashboardLayout';
 import { DashboardV2 } from './components/DashboardV2';
 import { PersonaEditor } from './components/PersonaEditor';
-import { PersonaLibrary } from './components/PersonaLibrary';
+import { FairyCourtPersonas } from './components/FairyCourtPersonas';
 import { ProtocolManager } from './components/ProtocolManager';
 import { VariableReviewWorkbench } from './components/VariableReviewWorkbench';
 import { AnalysisPlanGenerator } from './components/AnalysisPlanGenerator';
@@ -77,8 +77,9 @@ function AppContent() {
         // ✅ EXISTING: Classic UI (Preserved)
         <DashboardLayout activeScreen={activeScreen} onNavigate={handleNavigate}>
           {activeScreen === 'dashboard' && <DashboardV2 onNavigate={handleNavigate} />}
-          {activeScreen === 'personas' && <PersonaEditor />}
-          {activeScreen === 'persona-library' && <PersonaLibrary />}
+          {/* Persona Editor hidden - functionality merged into AI Personas */}
+          {activeScreen === 'personas' && <FairyCourtPersonas />}
+          {activeScreen === 'persona-library' && <FairyCourtPersonas />}
           {activeScreen === 'variables' && <VariableReviewWorkbench />}
           {activeScreen === 'analysis-planning' && <AnalysisPlanGenerator />}
           {activeScreen === 'results' && <AnalysisPlanView />}

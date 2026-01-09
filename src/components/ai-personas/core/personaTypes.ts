@@ -9,7 +9,15 @@ export type PersonaId =
   | 'safety-vigilance'
   | 'endpoint-validator'
   | 'amendment-advisor'
-  | 'academic-writing-coach';
+  | 'academic-writing-coach'
+  | 'manuscript-reviewer';
+
+/**
+ * The Oberon System's Fairy Court classification
+ * - Seelie: Co-pilots that help build and guide (growth, creativity, support)
+ * - Unseelie: Auditors that validate and constrain (truth, limits, enforcement)
+ */
+export type FairyCourt = 'seelie' | 'unseelie';
 
 export type StudyType = 
   | 'rct'
@@ -128,8 +136,11 @@ export interface ValidationResult {
 export interface PersonaConfig {
   id: PersonaId;
   name: string;
+  fairyName: string; // e.g., "Dr. Mab" - the folklore-inspired display name
+  court: FairyCourt; // 'seelie' (co-pilot) or 'unseelie' (auditor)
   description: string;
   studyTypeDescription?: string; // Explains which study types this persona serves
+  folkloreOrigin?: string; // Brief explanation of the name's folklore origin
   icon: string; // Lucide icon name
   color: PersonaColor;
   defaultActive: boolean;

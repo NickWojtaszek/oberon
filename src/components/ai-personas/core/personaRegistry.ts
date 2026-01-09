@@ -6,6 +6,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'protocol-auditor': {
     id: 'protocol-auditor',
     name: 'Protocol Auditor',
+    fairyName: 'Dr. Mab',
+    court: 'unseelie',
+    folkloreOrigin: 'Queen Mab, fairy queen of dreams who sees through illusions to truth',
     description: 'AI-powered validation of protocol documents, schema structure, and cross-validation for regulatory compliance',
     studyTypeDescription: 'Active for ALL study types - ensures ICH-GCP compliance and regulatory readiness across RCT, observational, device, and registry studies',
     icon: 'Shield',
@@ -73,6 +76,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'schema-architect': {
     id: 'schema-architect',
     name: 'Schema Architect',
+    fairyName: 'Dr. Mokosh',
+    court: 'seelie',
+    folkloreOrigin: 'Slavic goddess of weaving, fate, and women\'s work - she weaves the schema structure',
     description: 'Study-type-specific variable recommendations and schema structure validation',
     studyTypeDescription: 'Active for RCT, observational, single-arm, diagnostic, and registry studies - recommends study-specific variables (randomization, exposure tracking, diagnostic tests, follow-up)',
     icon: 'Building2',
@@ -140,6 +146,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'statistical-advisor': {
     id: 'statistical-advisor',
     name: 'Statistical Methods Advisor',
+    fairyName: 'Dr. Saga',
+    court: 'seelie',
+    folkloreOrigin: 'Norse goddess of history and storytelling - she tracks the provenance of every statistical claim',
     description: 'Study-type-appropriate statistical methods and analysis plan validation',
     studyTypeDescription: 'Active for ALL study types - recommends appropriate methods (ITT/PP for RCT, propensity scores for observational, sample size justification, missing data strategies)',
     icon: 'TrendingUp',
@@ -211,6 +220,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'data-quality-sentinel': {
     id: 'data-quality-sentinel',
     name: 'Data Quality Sentinel',
+    fairyName: 'Dr. Grim',
+    court: 'unseelie',
+    folkloreOrigin: 'Church Grim, English guardian spirit that protects sacred spaces - guards data integrity',
     description: 'Real-time data validation, range checks, and logical consistency enforcement',
     studyTypeDescription: 'Active for ALL study types - validates data quality, range checks, temporal logic, and study-specific checks (randomization balance for RCT, AE grading for interventional)',
     icon: 'ShieldCheck',
@@ -262,6 +274,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'ethics-compliance': {
     id: 'ethics-compliance',
     name: 'Ethics & IRB Compliance AI',
+    fairyName: 'Dr. Themis',
+    court: 'seelie',
+    folkloreOrigin: 'Greek titaness of law and divine order - holds the knowledge of regulatory frameworks',
     description: 'IRB submission readiness, informed consent validation, and regulatory compliance checking',
     studyTypeDescription: 'Active for ALL study types - validates informed consent, risk/benefit assessment, vulnerable populations, HIPAA compliance, and data safety monitoring plans',
     icon: 'Scale',
@@ -340,6 +355,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'safety-vigilance': {
     id: 'safety-vigilance',
     name: 'Safety Vigilance AI',
+    fairyName: 'Dr. König',
+    court: 'unseelie',
+    folkloreOrigin: 'German for King (Erlkönig) - the enforcer of safety protocols and authority limits',
     description: 'Adverse event monitoring, SAE reporting compliance, and safety signal detection',
     studyTypeDescription: 'REQUIRED for RCT, Phase I-III, and single-arm studies - monitors adverse events, SAE reporting timelines, causality assessment, DLT tracking per regulatory requirements',
     icon: 'AlertTriangle',
@@ -391,6 +409,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'endpoint-validator': {
     id: 'endpoint-validator',
     name: 'Clinical Endpoint Validator',
+    fairyName: 'Dr. Goodfellow',
+    court: 'unseelie',
+    folkloreOrigin: 'Robin Goodfellow (Puck) - mischievous tester who exposes flaws in endpoint logic',
     description: 'Endpoint adjudication support and clinical event validation',
     studyTypeDescription: 'Optional for clinical trials with complex endpoints - validates RECIST criteria (oncology), MACE adjudication (cardiology), PFS/ORR calculations per protocol definitions',
     icon: 'Target',
@@ -440,6 +461,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'amendment-advisor': {
     id: 'amendment-advisor',
     name: 'Protocol Amendment Advisor',
+    fairyName: 'Dr. Brigid',
+    court: 'seelie',
+    folkloreOrigin: 'Celtic goddess of poetry, fire, and smithcraft - forges and refines protocol changes',
     description: 'Amendment impact analysis and regulatory classification guidance',
     studyTypeDescription: 'Optional for ongoing studies requiring protocol modifications - classifies amendment severity, determines if re-consent needed, guides IRB submission type (substantial vs non-substantial)',
     icon: 'FileEdit',
@@ -488,6 +512,9 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
   'academic-writing-coach': {
     id: 'academic-writing-coach',
     name: 'Academic Writing Coach',
+    fairyName: 'Dr. Niamh',
+    court: 'seelie',
+    folkloreOrigin: 'Irish name meaning brightness or radiance - guides the writing with light and clarity',
     description: 'AI-powered manuscript assistance with citation validation, journal compliance, and writing quality checks',
     studyTypeDescription: 'Active for ALL study types - assists with manuscript drafting, citation formatting, word budget management, journal-specific requirements, and plagiarism prevention',
     icon: 'PenTool',
@@ -574,6 +601,85 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
       showInline: true,
       badgeStyle: 'score'
     }
+  },
+
+  'manuscript-reviewer': {
+    id: 'manuscript-reviewer',
+    name: 'Manuscript Reviewer',
+    fairyName: 'Dr. Morana',
+    court: 'unseelie',
+    folkloreOrigin: 'Slavic goddess of winter and death (Marzanna) - cuts excess words and kills weak arguments',
+    description: 'Critical manuscript review, word budget enforcement, claim validation, and academic rigor checking',
+    studyTypeDescription: 'Active for ALL study types - critically reviews manuscripts for word limits, unsupported claims, statistical accuracy, and journal compliance violations',
+    icon: 'Scissors',
+    color: {
+      primary: 'slate',
+      bg: 'bg-slate-100',
+      border: 'border-slate-300',
+      text: 'text-slate-900',
+      icon: 'text-slate-700'
+    },
+    defaultActive: true,
+    priority: 10,
+    applicableStudyTypes: ['rct', 'observational', 'single-arm', 'diagnostic', 'registry', 'phase-1', 'phase-2', 'phase-3', 'phase-4', 'medical-device'],
+    modules: ['academic-writing'],
+    validationRules: [
+      'manuscript-word-budget-exceeded',
+      'manuscript-unsupported-claims',
+      'manuscript-statistical-mismatch',
+      'manuscript-citation-missing',
+      'manuscript-figure-table-excess',
+      'manuscript-abstract-word-limit',
+      'manuscript-reference-count-exceeded'
+    ],
+    realTimeValidation: true,
+    batchValidation: true,
+    sidebar: {
+      enabled: true,
+      title: 'Critical Review',
+      showValidationStatus: true,
+      showRecommendations: true,
+      showRegulatoryReferences: false,
+      sections: [
+        {
+          id: 'budget-enforcement',
+          title: 'Budget Enforcement',
+          type: 'warnings',
+          content: [
+            'Word count vs. journal limit',
+            'Abstract word limit',
+            'Figure and table count limits',
+            'Reference count limits'
+          ]
+        },
+        {
+          id: 'claim-validation',
+          title: 'Claim Validation',
+          type: 'warnings',
+          content: [
+            'Statistical claims match data',
+            'All claims have supporting citations',
+            'No overclaiming of results',
+            'Conclusions align with evidence'
+          ]
+        }
+      ]
+    },
+    modal: {
+      enabled: true,
+      title: 'Manuscript Critical Review',
+      showComplianceScore: true,
+      showIssueBreakdown: true,
+      allowProceedWithWarnings: false,
+      requireAcknowledgment: true
+    },
+    statusIndicator: {
+      enabled: true,
+      showInGlobalHeader: false,
+      showInModuleHeader: true,
+      showInline: true,
+      badgeStyle: 'icon'
+    }
   }
 };
 
@@ -610,4 +716,23 @@ export function getPersonasForModule(module: string): PersonaConfig[] {
   return getAllPersonas().filter(persona => {
     return persona.modules.includes(module as any);
   });
+}
+
+// Helper function to get Seelie court personas (Co-Pilots)
+export function getSeeliePersonas(): PersonaConfig[] {
+  return getAllPersonas().filter(persona => persona.court === 'seelie');
+}
+
+// Helper function to get Unseelie court personas (Auditors)
+export function getUnseeliePersonas(): PersonaConfig[] {
+  return getAllPersonas().filter(persona => persona.court === 'unseelie');
+}
+
+// Helper function to get personas by court for a specific module
+export function getPersonasForModuleByCourt(module: string): { seelie: PersonaConfig[]; unseelie: PersonaConfig[] } {
+  const modulePersonas = getPersonasForModule(module);
+  return {
+    seelie: modulePersonas.filter(p => p.court === 'seelie'),
+    unseelie: modulePersonas.filter(p => p.court === 'unseelie'),
+  };
 }
