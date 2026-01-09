@@ -6,6 +6,7 @@
  * - ProjectContext for proper hypothesis storage
  * - Dr. Ariadne (Hypothesis Architect) persona
  * - Real PICO framework that flows to Academic Writing
+ * - Gemini AI for actual PICO extraction (when API key configured)
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -39,11 +40,13 @@ import {
   ChevronUp,
   Settings2,
   Zap,
-  Clock
+  Clock,
+  Bot
 } from 'lucide-react';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
 import { useProject } from '../contexts/ProjectContext';
 import { getPersona } from './ai-personas/core/personaRegistry';
+import { isGeminiConfigured, extractPICOWithGemini } from '../services/geminiService';
 import type { AutonomyMode } from '../types/accountability';
 
 interface PICOField {
@@ -179,6 +182,10 @@ export function ResearchWizard({
     }
   }, [currentProject?.id]);
 
+  // Check if AI is available
+  const aiAvailable = isGeminiConfigured();
+  const [aiError, setAiError] = useState<string | null>(null);
+
   // Mock statistical manifest data
   const mockStatisticalManifest = {
     mortality_rate: { pValue: 0.45, significant: false },
@@ -187,19 +194,62 @@ export function ResearchWizard({
   };
 
   // Step 1 → Step 2: Process raw text and generate PICO
-  const handleProcessObservation = () => {
+  const handleProcessObservation = async () => {
     if (!rawObservation.trim()) return;
     
     setIsProcessing(true);
+    setAiError(null);
     
-    // Simulate AI processing
+    // Try AI extraction first if available
+    if (aiAvailable) {
+      try {
+        const aiResult = await extractPICOWithGemini(rawObservation);
+        setPicoFields({
+          population: {
+            label: 'Population',
+            value: aiResult.population,
+            icon: Users,
+            grounded: 'pending',
+            linkedVariable: undefined,
+          },
+          intervention: {
+            label: 'Intervention',
+            value: aiResult.intervention,
+            icon: Syringe,
+            grounded: 'pending',
+            linkedVariable: undefined,
+          },
+          comparison: {
+            label: 'Comparison',
+            value: aiResult.comparison,
+            icon: GitCompare,
+            grounded: 'pending',
+            linkedVariable: undefined,
+          },
+          outcome: {
+            label: 'Outcome',
+            value: aiResult.outcome,
+            icon: Target,
+            grounded: 'pending',
+            linkedVariable: undefined,
+          },
+        });
+        setIsProcessing(false);
+        setCurrentStep('pico');
+        return;
+      } catch (error) {
+        console.error('AI extraction failed, falling back to regex:', error);
+        setAiError('AI extraction failed - using fallback extraction');
+      }
+    }
+    
+    // Fallback to regex extraction
     setTimeout(() => {
-      // Mock PICO extraction
       const extracted = extractPICOFromText(rawObservation);
       setPicoFields(extracted);
       setIsProcessing(false);
       setCurrentStep('pico');
-    }, 1500);
+    }, 1000);
   };
 
   // Smarter PICO extraction - analyzes text for actual content
@@ -1048,10 +1098,17 @@ export function ResearchWizard({
                         </div>
                         <p className="text-xs text-slate-500 mb-1.5">{ariadnePersona.name}</p>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700">
-                            <Zap className="w-3 h-3" />
-                            Active
-                          </div>
+                          {aiAvailable ? (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700">
+                              <Bot className="w-3 h-3" />
+                              AI Connected
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
+                              <AlertTriangle className="w-3 h-3" />
+                              Regex Mode
+                            </div>
+                          )}
                           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
                             <Lock className="w-3 h-3" />
                             {ariadnePersona.validationRules?.length || 0} rules
