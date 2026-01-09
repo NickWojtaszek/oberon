@@ -9,12 +9,13 @@
 
 import { useState } from 'react';
 import { 
-  Sparkles, Sun, Snowflake, Scale, Blocks, Target,
-  Lock, Clock, CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronUp, Settings2, Zap
+  Sparkles, Sun, Snowflake, Scale, Blocks, Target, Users, Syringe, GitCompare,
+  Lock, Clock, CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronUp, Settings2, Zap, Lightbulb, ArrowRight
 } from 'lucide-react';
 import { SchemaArchitectSidebar } from '../../ai-personas/personas/SchemaArchitect/SchemaArchitectSidebar';
 import { getPersona } from '../../ai-personas/core/personaRegistry';
 import { usePersonas } from '../../ai-personas/core/personaContext';
+import { useProject } from '../../../contexts/ProjectContext';
 import { PersonaConfigurationPanel } from '../../ai-personas/ui/PersonaConfigurationPanel';
 import type { PersonaCustomization } from '../../../types/aiGovernance';
 import type { PersonaConfig } from '../../ai-personas/core/personaTypes';
@@ -50,6 +51,10 @@ export function ProtocolUnifiedSidebar({
   const [personaCustomizations, setPersonaCustomizations] = useState<Record<string, PersonaCustomization>>({});
   
   const { state } = usePersonas();
+  const { currentProject } = useProject();
+
+  // Get PICO data from project if available
+  const picoData = currentProject?.studyMethodology?.hypothesis?.picoFramework;
 
   // Get personas for protocol tab
   const ethicsPersona = getPersona('ethics-compliance');    // Dr. Themis
@@ -294,6 +299,83 @@ export function ProtocolUnifiedSidebar({
         {/* Protocol tab: Stack both personas */}
         {activeTab === 'protocol' && (
           <div className="space-y-3">
+            {/* PICO Panel - Shows data from Research Wizard */}
+            {picoData && (picoData.population || picoData.intervention || picoData.comparison || picoData.outcome) ? (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Lightbulb className="w-4 h-4 text-indigo-600" />
+                  <h4 className="text-sm font-medium text-indigo-900">PICO from Research Wizard</h4>
+                </div>
+                <p className="text-[10px] text-indigo-700 mb-3">
+                  Your hypothesis informs this protocol. Use these as guides for schema design.
+                </p>
+                <div className="space-y-2">
+                  {picoData.population && (
+                    <div className="flex items-start gap-2 p-2 bg-white rounded border border-indigo-100">
+                      <Users className="w-3 h-3 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-medium text-slate-700">Population</div>
+                        <div className="text-[10px] text-slate-600 truncate" title={picoData.population}>{picoData.population}</div>
+                        <div className="text-[10px] text-indigo-500 mt-0.5 flex items-center gap-1">
+                          <ArrowRight className="w-2.5 h-2.5" />
+                          Inclusion/exclusion criteria
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {picoData.intervention && (
+                    <div className="flex items-start gap-2 p-2 bg-white rounded border border-indigo-100">
+                      <Syringe className="w-3 h-3 text-purple-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-medium text-slate-700">Intervention</div>
+                        <div className="text-[10px] text-slate-600 truncate" title={picoData.intervention}>{picoData.intervention}</div>
+                        <div className="text-[10px] text-indigo-500 mt-0.5 flex items-center gap-1">
+                          <ArrowRight className="w-2.5 h-2.5" />
+                          Treatment arm variables
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {picoData.comparison && (
+                    <div className="flex items-start gap-2 p-2 bg-white rounded border border-indigo-100">
+                      <GitCompare className="w-3 h-3 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-medium text-slate-700">Comparison</div>
+                        <div className="text-[10px] text-slate-600 truncate" title={picoData.comparison}>{picoData.comparison}</div>
+                        <div className="text-[10px] text-indigo-500 mt-0.5 flex items-center gap-1">
+                          <ArrowRight className="w-2.5 h-2.5" />
+                          Control group definition
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {picoData.outcome && (
+                    <div className="flex items-start gap-2 p-2 bg-white rounded border border-indigo-100">
+                      <Target className="w-3 h-3 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-medium text-slate-700">Outcome</div>
+                        <div className="text-[10px] text-slate-600 truncate" title={picoData.outcome}>{picoData.outcome}</div>
+                        <div className="text-[10px] text-indigo-500 mt-0.5 flex items-center gap-1">
+                          <ArrowRight className="w-2.5 h-2.5" />
+                          Primary endpoint variables
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-4 h-4 text-slate-400" />
+                  <h4 className="text-sm font-medium text-slate-600">No PICO Defined</h4>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Complete the Research Wizard to define your PICO hypothesis. It will appear here to guide your protocol design.
+                </p>
+              </div>
+            )}
+
             {personas.map(persona => renderPersonaCard(persona))}
             
             {/* Footer hint */}

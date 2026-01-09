@@ -9,7 +9,7 @@
  * - Gemini AI for actual PICO extraction (when API key configured)
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Mic, 
   MicOff, 
@@ -22,24 +22,15 @@ import {
   GitCompare,
   Target,
   Database,
-  Brain,
   Lock,
-  Pencil,
-  FileCheck,
   Lightbulb,
-  Shield,
   TrendingUp,
-  Activity,
   FileText,
-  Info,
-  BarChart3,
   Compass,
   Sun,
   Sparkles,
   ChevronDown,
   ChevronUp,
-  Settings2,
-  Zap,
   Clock,
   Bot
 } from 'lucide-react';
@@ -73,7 +64,6 @@ interface ResearchWizardProps {
 }
 
 type WizardStep = 'capture' | 'pico' | 'validation';
-type SidebarView = 'manifest' | 'statistics' | 'guide';
 
 export function ResearchWizard({ 
   onComplete, 
@@ -82,7 +72,6 @@ export function ResearchWizard({
   onNavigate
 }: ResearchWizardProps) {
   const [currentStep, setCurrentStep] = useState<WizardStep>('capture');
-  const [activeSidebarView, setActiveSidebarView] = useState<SidebarView>('manifest');
   const [rawObservation, setRawObservation] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -132,21 +121,7 @@ export function ResearchWizard({
   // Get Dr. Ariadne persona
   const ariadnePersona = getPersona('hypothesis-architect');
 
-  // Get schema variables from current project's protocol (if available)
-  const schemaVariables = useMemo(() => {
-    // In production, this would come from the protocol workbench schema
-    // For now, use a combination of mock + any stored schema
-    const baseVariables = [
-      'patient_age',
-      'calcification_score', 
-      'mortality_rate',
-      'intervention_type',
-      'control_group',
-      'primary_endpoint',
-      'cohort_definition'
-    ];
-    return baseVariables;
-  }, [currentProject]);
+
 
   // Load existing hypothesis from project if available
   useEffect(() => {
@@ -186,12 +161,7 @@ export function ResearchWizard({
   const aiAvailable = isGeminiConfigured();
   const [aiError, setAiError] = useState<string | null>(null);
 
-  // Mock statistical manifest data
-  const mockStatisticalManifest = {
-    mortality_rate: { pValue: 0.45, significant: false },
-    calcification_score: { pValue: 0.02, significant: true },
-    intervention_effectiveness: { pValue: 0.03, significant: true }
-  };
+
 
   // Step 1 → Step 2: Process raw text and generate PICO
   const handleProcessObservation = async () => {
@@ -390,39 +360,39 @@ export function ResearchWizard({
     }));
   };
 
-  // Validate grounding for a field
+  // Validate field has content (no schema exists yet at this stage)
+  // Protocol schema will be built AFTER PICO is defined
   const validateGrounding = (field: keyof typeof picoFields) => {
-    const fieldValue = picoFields[field].value.toLowerCase();
-    // Check if any schema variable matches
-    const isGrounded = schemaVariables.some(v => 
-      fieldValue.includes(v.replace(/_/g, ' ')) || 
-      fieldValue.includes(v.replace(/_/g, ''))
-    );
+    const fieldValue = picoFields[field].value.trim();
+    // At this stage, "grounded" means: has meaningful content (>10 chars)
+    const hasContent = fieldValue.length >= 10;
     setPicoFields(prev => ({
       ...prev,
       [field]: {
         ...prev[field],
-        grounded: isGrounded ? 'found' : 'missing',
+        grounded: hasContent ? 'found' : 'missing',
       }
     }));
   };
 
-  // Step 2 → Step 3: Validate against manifest
+  // Step 2 → Step 3: Validate PICO completeness
+  // Note: No statistical validation at this stage - study hasn't run yet
+  // Validation checks that all PICO fields have meaningful content
   const handleValidateHypothesis = () => {
     const detectedConflicts: HypothesisConflict[] = [];
     
-    // Check if outcome claims significance where data shows otherwise
-    if (picoFields.outcome.value.toLowerCase().includes('mortality')) {
-      const manifestData = mockStatisticalManifest.mortality_rate;
-      if (!manifestData.significant && rawObservation.toLowerCase().includes('significant')) {
+    // Check each PICO field has content
+    const picoEntries = Object.entries(picoFields) as [string, PICOField][];
+    picoEntries.forEach(([key, field]) => {
+      if (!field.value.trim() || field.value.length < 10) {
         detectedConflicts.push({
-          field: 'outcome',
-          reason: 'Hypothesis claims significant mortality difference, but statistical manifest shows p=0.45 (not significant)',
-          manifestValue: 'p=0.45 (not significant)',
-          proposedValue: 'Significant mortality reduction',
+          field: key,
+          reason: `${field.label} needs more detail to inform protocol design`,
+          manifestValue: 'At least 10 characters describing the component',
+          proposedValue: field.value || '(empty)',
         });
       }
-    }
+    });
     
     setConflicts(detectedConflicts);
     setCurrentStep('validation');
@@ -598,44 +568,6 @@ export function ResearchWizard({
             >
               <CheckCircle className="w-4 h-4" />
               Validation
-            </button>
-
-            {/* Divider */}
-            <div className="w-px bg-slate-200 mx-2"></div>
-
-            {/* Sidebar View Tabs */}
-            <button
-              onClick={() => setActiveSidebarView('manifest')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeSidebarView === 'manifest'
-                  ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                  : 'text-slate-600 hover:bg-slate-50 border border-transparent'
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              Manifest
-            </button>
-            <button
-              onClick={() => setActiveSidebarView('statistics')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeSidebarView === 'statistics'
-                  ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                  : 'text-slate-600 hover:bg-slate-50 border border-transparent'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              Statistics
-            </button>
-            <button
-              onClick={() => setActiveSidebarView('guide')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeSidebarView === 'guide'
-                  ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                  : 'text-slate-600 hover:bg-slate-50 border border-transparent'
-              }`}
-            >
-              <Info className="w-4 h-4" />
-              Guide
             </button>
           </div>
         </div>
@@ -872,12 +804,12 @@ export function ResearchWizard({
                   </div>
                   <div className="flex-1">
                     <h2 className="text-slate-900 mb-2">
-                      {hasConflicts ? 'Data Conflicts Detected' : 'Hypothesis Validated'}
+                      {hasConflicts ? 'PICO Needs More Detail' : 'PICO Complete'}
                     </h2>
                     <p className="text-slate-600 text-sm">
                       {hasConflicts 
-                        ? 'Your hypothesis conflicts with the Statistical Manifest'
-                        : 'All fields grounded in Protocol Schema and Statistical Manifest'
+                        ? 'Some fields need more detail before creating your protocol'
+                        : 'Your PICO framework is ready to guide protocol design'
                       }
                     </p>
                   </div>
@@ -900,13 +832,13 @@ export function ResearchWizard({
                           </p>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="bg-white border border-red-200 rounded-lg p-3">
-                              <div className="text-xs text-slate-600 mb-1">Your Hypothesis</div>
+                              <div className="text-xs text-slate-600 mb-1">Current</div>
                               <div className="text-sm text-red-900 font-medium">
                                 {conflict.proposedValue}
                               </div>
                             </div>
                             <div className="bg-white border border-emerald-200 rounded-lg p-3">
-                              <div className="text-xs text-slate-600 mb-1">Statistical Manifest</div>
+                              <div className="text-xs text-slate-600 mb-1">Required</div>
                               <div className="text-sm text-emerald-900 font-medium">
                                 {conflict.manifestValue}
                               </div>
@@ -926,10 +858,10 @@ export function ResearchWizard({
                         </div>
                         <div className="flex-1">
                           <h3 className="font-medium text-emerald-900 mb-1">
-                            Hypothesis Ready for Approval
+                            PICO Ready for Protocol Design
                           </h3>
                           <p className="text-sm text-emerald-800">
-                            All PICO fields are grounded in your Protocol Schema. No data conflicts detected.
+                            Your hypothesis will guide the Protocol Workbench to create matching schema variables.
                           </p>
                         </div>
                       </div>
@@ -1150,13 +1082,13 @@ export function ResearchWizard({
                           {currentStep === 'pico' && (
                             <div className="flex items-start gap-2 text-xs text-emerald-700 bg-emerald-50 rounded p-2">
                               <Database className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                              <span className="text-[10px]">Review each PICO field. Green badges mean the variable exists in your schema.</span>
+                              <span className="text-[10px]">Review each PICO field. Ensure each has meaningful content to guide protocol design.</span>
                             </div>
                           )}
                           {currentStep === 'validation' && (
                             <div className="flex items-start gap-2 text-xs text-purple-700 bg-purple-50 rounded p-2">
                               <CheckCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                              <span className="text-[10px]">All fields are validated. Conflicts with statistical data must be resolved before commit.</span>
+                              <span className="text-[10px]">Your PICO is complete. Commit to save, then create a protocol from your hypothesis.</span>
                             </div>
                           )}
                         </div>
@@ -1167,147 +1099,78 @@ export function ResearchWizard({
               )}
             </div>
 
+            {/* Forward Flow Panel - How PICO feeds Protocol */}
             <div className="border-t border-slate-200 pt-4">
-              {/* Manifest Panel */}
-              {activeSidebarView === 'manifest' && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Activity className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-medium text-slate-900">Live Manifest Viewer</h3>
-                  </div>
-                  
-                  {/* Protocol Variables */}
-                  <div className="mb-6">
-                    <h4 className="text-xs font-medium text-slate-700 mb-3 uppercase tracking-wider">
-                      Protocol Schema
-                    </h4>
-                    <div className="space-y-2">
-                      {schemaVariables.map((variable) => (
-                        <div key={variable} className="flex items-center gap-2 p-2 bg-emerald-50 rounded border border-emerald-200">
-                          <Database className="w-3 h-3 text-emerald-600" />
-                          <code className="text-xs text-emerald-900 font-mono">
-                            {variable}
-                          </code>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-medium text-slate-900">Forward Flow</h3>
+              </div>
+              
+              <p className="text-xs text-slate-600 mb-4">
+                Your PICO framework will guide the Protocol Workbench to create appropriate schema variables.
+              </p>
 
-                  {/* Guidance */}
-                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                    <div className="flex items-start gap-2">
-                      <Lightbulb className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="text-xs font-medium text-purple-900 mb-1">
-                          Anti-Hallucination Guard
-                        </div>
-                        <p className="text-xs text-purple-700 leading-relaxed">
-                          Your hypothesis must reference variables in the Protocol Schema and
-                          align with Statistical Manifest data. Conflicts will block progression.
-                        </p>
-                      </div>
-                    </div>
+              {/* PICO → Protocol Mapping */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-slate-800">Population</div>
+                    <div className="text-[10px] text-slate-500">→ Inclusion/exclusion criteria</div>
                   </div>
-                </div>
-              )}
-
-              {/* Statistics Panel */}
-              {activeSidebarView === 'statistics' && (
-                <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <BarChart3 className="w-5 h-5 text-purple-600" />
-                  <h3 className="font-medium text-slate-900">Statistical Manifest</h3>
+                  {picoFields.population.value && (
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  )}
                 </div>
                 
-                <div className="space-y-3">
-                  {Object.entries(mockStatisticalManifest).map(([key, value]) => (
-                    <div key={key} className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                      <div className="text-xs font-medium text-slate-900 mb-2">
-                        {key.replace(/_/g, ' ').toUpperCase()}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-600">p-value:</span>
-                        <code className={`text-xs px-2 py-1 rounded font-mono ${
-                          value.significant 
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
-                            : 'bg-slate-200 text-slate-700'
-                        }`}>
-                          {value.pValue}
-                        </code>
-                      </div>
-                      <div className="mt-2">
-                        {value.significant ? (
-                          <span className="text-xs text-emerald-700 flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Significant
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-500">Not significant</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200 mt-4">
-                  <div className="text-xs font-medium text-indigo-900 mb-2">
-                    Statistical Validation
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <Syringe className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-slate-800">Intervention</div>
+                    <div className="text-[10px] text-slate-500">→ Treatment arm design</div>
                   </div>
-                  <p className="text-xs text-indigo-700">
-                    Hypotheses claiming "significant" results must align with p-values &lt; 0.05 in the manifest.
-                  </p>
+                  {picoFields.intervention.value && (
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  )}
                 </div>
-                </div>
-              )}
-
-              {/* Guide Panel */}
-              {activeSidebarView === 'guide' && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Info className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-medium text-slate-900">Wizard Guide</h3>
-                  </div>
                 
-                  <div className="space-y-4">
-                  <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                    <h4 className="text-sm font-medium text-indigo-900 mb-2 flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4" />
-                      Clinical Capture
-                    </h4>
-                    <p className="text-xs text-indigo-700">
-                      Describe your clinical observation in natural language. The AI will extract key variables and structure them into a PICO framework.
-                    </p>
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <GitCompare className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-slate-800">Comparison</div>
+                    <div className="text-[10px] text-slate-500">→ Control group definition</div>
                   </div>
+                  {picoFields.comparison.value && (
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <Target className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-slate-800">Outcome</div>
+                    <div className="text-[10px] text-slate-500">→ Primary endpoint variables</div>
+                  </div>
+                  {picoFields.outcome.value && (
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  )}
+                </div>
+              </div>
 
-                  <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-                    <h4 className="text-sm font-medium text-emerald-900 mb-2 flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      PICO Refinement
-                    </h4>
-                    <p className="text-xs text-emerald-700">
-                      Review the structured hypothesis. Each field is cross-referenced against your Protocol Schema to ensure all variables exist in your database.
+              {/* Next Steps Hint */}
+              <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                <div className="flex items-start gap-2">
+                  <FileText className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="text-xs font-medium text-indigo-900 mb-1">
+                      Next: Protocol Workbench
+                    </div>
+                    <p className="text-[10px] text-indigo-700 leading-relaxed">
+                      After committing your PICO, the Protocol Workbench will receive these definitions and suggest matching schema variables.
                     </p>
-                  </div>
-
-                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                    <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Validation
-                    </h4>
-                    <p className="text-xs text-purple-700">
-                      The system validates your hypothesis against the Statistical Manifest. Claims of "significant" findings must be backed by p-values &lt; 0.05.
-                    </p>
-                  </div>
-
-                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                    <h4 className="text-sm font-medium text-amber-900 mb-2">Anti-Hallucination</h4>
-                    <p className="text-xs text-amber-700">
-                      This wizard prevents fabricated claims by requiring all hypothesis components to be grounded in actual protocol data and statistical results.
-                    </p>
-                  </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
