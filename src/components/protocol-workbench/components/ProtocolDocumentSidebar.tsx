@@ -4,13 +4,7 @@ import {
   AlertCircle, 
   CheckCircle, 
   Lightbulb,
-  X,
-  Sun,
-  Snowflake,
-  Sparkles,
-  Scale,
 } from 'lucide-react';
-import { getPersona } from '../../ai-personas/core/personaRegistry';
 
 type FieldHelpContent = {
   title: string;
@@ -542,92 +536,9 @@ export function ProtocolDocumentSidebar({
   };
 
   const Icon = helpContent.icon;
-  
-  // Get Dr. Themis for ethics/governance persona attribution
-  const ethicsPersona = getPersona('ethics-compliance');
 
   return (
     <div className="space-y-6">
-      {/* Persona Attribution - Dr. Themis (Seelie) */}
-      {ethicsPersona && (
-        <div className={`rounded-lg p-4 border-2 ${
-          ethicsPersona.court === 'seelie' 
-            ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200' 
-            : 'bg-gradient-to-br from-slate-100 to-blue-50 border-slate-300'
-        }`}>
-          {/* Persona Header */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              ethicsPersona.court === 'seelie' ? 'bg-amber-100' : 'bg-slate-200'
-            }`}>
-              <Scale className={`w-5 h-5 ${
-                ethicsPersona.court === 'seelie' ? 'text-amber-600' : 'text-slate-600'
-              }`} />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className={`font-semibold ${
-                  ethicsPersona.court === 'seelie' ? 'text-amber-900' : 'text-slate-900'
-                }`}>
-                  {ethicsPersona.fairyName}
-                </span>
-                <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${
-                  ethicsPersona.court === 'seelie' 
-                    ? 'bg-amber-200 text-amber-800' 
-                    : 'bg-slate-200 text-slate-700'
-                }`}>
-                  {ethicsPersona.court === 'seelie' ? (
-                    <><Sun className="w-3 h-3" /> Co-Pilot</>
-                  ) : (
-                    <><Snowflake className="w-3 h-3" /> Auditor</>
-                  )}
-                </span>
-                <Sparkles className="w-4 h-4 text-purple-500" />
-              </div>
-              <p className={`text-xs mt-0.5 ${
-                ethicsPersona.court === 'seelie' ? 'text-amber-700' : 'text-slate-600'
-              }`}>
-                {ethicsPersona.name}
-              </p>
-            </div>
-          </div>
-          
-          {/* Validation Info */}
-          <div className={`space-y-2 text-xs ${
-            ethicsPersona.court === 'seelie' ? 'text-amber-800' : 'text-slate-700'
-          }`}>
-            <p className="leading-relaxed">
-              Continuously validates your protocol for compliance, completeness, and consistency.
-            </p>
-            <div className={`pt-2 border-t mt-3 ${
-              ethicsPersona.court === 'seelie' ? 'border-amber-200' : 'border-slate-200'
-            }`}>
-              <p className={`font-medium mb-2 ${
-                ethicsPersona.court === 'seelie' ? 'text-amber-900' : 'text-slate-900'
-              }`}>Real-time checks:</p>
-              <ul className="space-y-1">
-                <li>• Required sections completed</li>
-                <li>• ICH-GCP regulatory compliance</li>
-                <li>• Protocol ↔ Schema alignment</li>
-                <li>• Cross-field consistency</li>
-              </ul>
-            </div>
-            <div className={`mt-3 pt-3 border-t ${
-              ethicsPersona.court === 'seelie' ? 'border-amber-200' : 'border-slate-200'
-            }`}>
-              <button className={`text-xs font-medium flex items-center gap-1 ${
-                ethicsPersona.court === 'seelie' 
-                  ? 'text-amber-700 hover:text-amber-900' 
-                  : 'text-slate-600 hover:text-slate-800'
-              }`}>
-                <Scale className="w-3 h-3" />
-                View full audit report in Audit tab →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Current Field Header */}
       <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div className="flex items-center gap-2">
