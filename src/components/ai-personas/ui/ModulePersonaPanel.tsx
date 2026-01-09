@@ -23,13 +23,17 @@ import {
   UserCheck,
   Bot,
   EyeOff,
-  Award
+  Award,
+  Settings2,
+  Lock,
 } from 'lucide-react';
 import { usePersonas } from '../core/personaContext';
 import { getAllPersonas } from '../core/personaRegistry';
-import type { PersonaId } from '../core/personaTypes';
+import type { PersonaId, PersonaConfig } from '../core/personaTypes';
 import { useProject } from '../../../contexts/ProjectContext';
 import { PermissionBadge, AIAutonomyBadge } from '../../ui/StatusBadge';
+import { PersonaConfigurationPanel } from './PersonaConfigurationPanel';
+import type { PersonaCustomization } from '../../../types/aiGovernance';
 
 const PERSONA_ICONS: Record<PersonaId, any> = {
   'protocol-auditor': Shield,
@@ -70,6 +74,19 @@ export function ModulePersonaPanel({
   const [activeTab, setActiveTab] = useState<'personas' | 'team' | 'quality'>('personas');
   const [qualityScore, setQualityScore] = useState<number | null>(null);
   const [validating, setValidating] = useState(false);
+  
+  // Configuration modal state
+  const [configPersona, setConfigPersona] = useState<PersonaConfig | null>(null);
+  const [personaCustomizations, setPersonaCustomizations] = useState<Record<PersonaId, PersonaCustomization>>({});
+  
+  // Handle saving customization
+  const handleSaveCustomization = (customization: PersonaCustomization) => {
+    setPersonaCustomizations(prev => ({
+      ...prev,
+      [customization.personaId]: customization
+    }));
+    // TODO: Persist to storage/backend
+  };
 
   // Get all personas
   const allPersonas = getAllPersonas();
@@ -266,9 +283,16 @@ export function ModulePersonaPanel({
                         </div>
 
                         {/* Status Badge */}
-                        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-${status.color}-100 text-${status.color}-700`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {status.score !== null ? `${status.score}%` : status.label}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-${status.color}-100 text-${status.color}-700`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {status.score !== null ? `${status.score}%` : status.label}
+                          </div>
+                          {/* Governance Badge */}
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                            <Lock className="w-3 h-3" />
+                            {persona.validationRules.length} rules
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -277,8 +301,22 @@ export function ModulePersonaPanel({
                   {/* Expanded Content */}
                   {isExpanded && (
                     <div className="px-3 pb-3 space-y-3 border-t border-slate-200">
+                      {/* Configure Button */}
+                      <div className="pt-3 flex justify-end">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfigPersona(persona);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
+                        >
+                          <Settings2 className="w-3.5 h-3.5" />
+                          Configure
+                        </button>
+                      </div>
+                      
                       {/* Description */}
-                      <p className="text-xs text-slate-600 leading-relaxed pt-3">
+                      <p className="text-xs text-slate-600 leading-relaxed">
                         {persona.description}
                       </p>
 
@@ -741,6 +779,17 @@ export function ModulePersonaPanel({
           </div>
         )}
       </div>
+      
+      {/* Persona Configuration Modal */}
+      {configPersona && (
+        <PersonaConfigurationPanel
+          persona={configPersona}
+          customization={personaCustomizations[configPersona.id] || null}
+          isOpen={!!configPersona}
+          onClose={() => setConfigPersona(null)}
+          onSaveCustomization={handleSaveCustomization}
+        />
+      )}
     </div>
   );
 }
