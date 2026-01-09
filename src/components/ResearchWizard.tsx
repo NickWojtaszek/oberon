@@ -39,7 +39,8 @@ import {
   Loader2,
   ExternalLink,
   Shield,
-  Brain
+  Brain,
+  FileCheck
 } from 'lucide-react';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
 import { useProject } from '../contexts/ProjectContext';
