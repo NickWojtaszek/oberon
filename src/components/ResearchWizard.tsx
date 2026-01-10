@@ -181,8 +181,15 @@ export function ResearchWizard({
   }, [currentProject?.id]);
 
   // Auto-save PICO and foundational papers when they change (debounced)
+  // Use refs to avoid dependency on currentProject object changing
+  const projectIdRef = useRef(currentProject?.id);
+  projectIdRef.current = currentProject?.id;
+  
   useEffect(() => {
-    if (!currentProject) return;
+    if (!currentProject?.id) return;
+    
+    // Don't save while uploading
+    if (isUploadingPaper) return;
     
     // Only save if we have some content
     const hasContent = picoFields.population.value || picoFields.intervention.value || 
@@ -225,10 +232,18 @@ export function ResearchWizard({
         },
       });
       console.log('📝 Auto-saved PICO and foundational papers');
-    }, 1500); // Debounce 1.5 seconds
+    }, 2000); // Debounce 2 seconds
 
     return () => clearTimeout(saveTimeout);
-  }, [picoFields, foundationalPapers, rawObservation, currentProject?.id]);
+  }, [
+    picoFields.population.value, 
+    picoFields.intervention.value, 
+    picoFields.comparison.value, 
+    picoFields.outcome.value,
+    foundationalPapers.length, // Only trigger on length change, not content
+    rawObservation,
+    isUploadingPaper,
+  ]);
 
   // Check if AI is available
   const aiAvailable = isGeminiConfigured();
@@ -450,28 +465,18 @@ export function ResearchWizard({
 
   // ============ FOUNDATIONAL PAPERS HANDLERS ============
   
-  // Handle PDF file upload
+  // Track upload progress for multiple files
+  const [uploadProgress, setUploadProgress] = useState<{ fileName: string; status: 'uploading' | 'done' | 'error' }[]>([]);
+  
+  // Handle PDF file upload (supports multiple files)
   const handlePaperUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
-    // Check we don't exceed 3 papers
-    if (foundationalPapers.length >= 3) {
+    // Calculate how many slots are available
+    const slotsAvailable = 3 - foundationalPapers.length;
+    if (slotsAvailable <= 0) {
       setUploadError('Maximum 3 foundational papers allowed. Remove one to add another.');
-      return;
-    }
-
-    const file = files[0];
-    
-    // Validate file type
-    if (!file.type.includes('pdf')) {
-      setUploadError('Please upload a PDF file');
-      return;
-    }
-
-    // Validate file size (max 10MB for Gemini)
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('PDF must be under 10MB');
       return;
     }
 
@@ -480,26 +485,67 @@ export function ResearchWizard({
       return;
     }
 
+    // Get files to process (up to available slots)
+    const filesToProcess = Array.from(files).slice(0, slotsAvailable);
+    
+    // Validate all files first
+    const validFiles: File[] = [];
+    for (const file of filesToProcess) {
+      if (!file.type.includes('pdf')) {
+        setUploadError(`"${file.name}" is not a PDF file`);
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setUploadError(`"${file.name}" exceeds 10MB limit`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) return;
+
     setIsUploadingPaper(true);
     setUploadError(null);
+    setUploadProgress(validFiles.map(f => ({ fileName: f.name, status: 'uploading' })));
 
-    try {
-      const extraction = await extractFromPDF(file);
-      setFoundationalPapers(prev => [...prev, extraction]);
-      
-      // Auto-trigger synthesis if we have 2+ papers
-      if (foundationalPapers.length >= 1) {
-        triggerSynthesis([...foundationalPapers, extraction]);
+    const newExtractions: FoundationalPaperExtraction[] = [];
+
+    // Process files sequentially (Gemini rate limits)
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      try {
+        const extraction = await extractFromPDF(file);
+        newExtractions.push(extraction);
+        setUploadProgress(prev => prev.map((p, idx) => 
+          idx === i ? { ...p, status: 'done' } : p
+        ));
+      } catch (error) {
+        console.error(`PDF extraction failed for ${file.name}:`, error);
+        setUploadProgress(prev => prev.map((p, idx) => 
+          idx === i ? { ...p, status: 'error' } : p
+        ));
+        setUploadError(`Failed to extract from "${file.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-    } catch (error) {
-      console.error('PDF extraction failed:', error);
-      setUploadError(`Failed to extract from PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsUploadingPaper(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    }
+
+    // Add all successful extractions
+    if (newExtractions.length > 0) {
+      setFoundationalPapers(prev => {
+        const updated = [...prev, ...newExtractions];
+        // Auto-trigger synthesis if we have 2+ papers
+        if (updated.length >= 2) {
+          triggerSynthesis(updated);
+        }
+        return updated;
+      });
+    }
+
+    setIsUploadingPaper(false);
+    setUploadProgress([]);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -1287,14 +1333,15 @@ export function ResearchWizard({
               </div>
               
               <p className="text-xs text-slate-600 mb-3">
-                Upload similar research papers. AI will extract PICO and protocol suggestions.
+                Upload similar research papers (up to 3). AI will extract PICO and protocol suggestions.
               </p>
 
-              {/* Upload Button */}
+              {/* Upload Button - supports multiple files */}
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf"
+                multiple
                 onChange={handlePaperUpload}
                 className="hidden"
               />
@@ -1308,15 +1355,31 @@ export function ResearchWizard({
                   {isUploadingPaper ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Analyzing PDF...
+                      Analyzing {uploadProgress.length} PDF{uploadProgress.length > 1 ? 's' : ''}...
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4" />
-                      Upload Research Paper (PDF)
+                      Upload PDFs ({3 - foundationalPapers.length} slots)
                     </>
                   )}
                 </button>
+              )}
+
+              {/* Upload Progress */}
+              {uploadProgress.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {uploadProgress.map((p, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-[10px]">
+                      {p.status === 'uploading' && <Loader2 className="w-3 h-3 animate-spin text-purple-500" />}
+                      {p.status === 'done' && <CheckCircle className="w-3 h-3 text-green-500" />}
+                      {p.status === 'error' && <X className="w-3 h-3 text-red-500" />}
+                      <span className={`truncate ${p.status === 'error' ? 'text-red-600' : 'text-slate-600'}`}>
+                        {p.fileName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {uploadError && (
