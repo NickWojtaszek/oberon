@@ -335,7 +335,8 @@ Respond in valid JSON format only:
             { text: prompt },
             {
               inline_data: {
-                mime_type: file.type || 'application/pdf',
+                // Chrome may return empty file.type for PDFs, so always default to application/pdf
+                mime_type: file.type && file.type.includes('pdf') ? file.type : 'application/pdf',
                 data: base64
               }
             }
@@ -494,17 +495,31 @@ Respond in valid JSON format:
 
 /**
  * Helper: Convert file to base64
+ * Works across browsers (Chrome may return empty file.type)
  */
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
+      if (!result || typeof result !== 'string') {
+        reject(new Error('FileReader returned invalid result'));
+        return;
+      }
       // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
-      const base64 = result.split(',')[1];
+      const commaIndex = result.indexOf(',');
+      if (commaIndex === -1) {
+        reject(new Error('Invalid data URL format - no comma separator'));
+        return;
+      }
+      const base64 = result.substring(commaIndex + 1);
+      if (!base64 || base64.length === 0) {
+        reject(new Error('Base64 conversion produced empty result'));
+        return;
+      }
       resolve(base64);
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error('FileReader error: ' + (reader.error?.message || 'Unknown error')));
     reader.readAsDataURL(file);
   });
 }

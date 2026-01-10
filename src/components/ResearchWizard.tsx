@@ -491,7 +491,9 @@ export function ResearchWizard({
     // Validate all files first
     const validFiles: File[] = [];
     for (const file of filesToProcess) {
-      if (!file.type.includes('pdf')) {
+      // Check both MIME type and file extension (Chrome may return empty type)
+      const isPDF = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPDF) {
         setUploadError(`"${file.name}" is not a PDF file`);
         continue;
       }
@@ -1162,7 +1164,12 @@ export function ResearchWizard({
                     {/* Cross-Module Navigation: Research Wizard → Protocol Workbench */}
                     {!hasConflicts && onNavigate && (
                       <button
-                        onClick={() => onNavigate('protocol-workbench')}
+                        onClick={() => {
+                          // IMPORTANT: Save hypothesis data BEFORE navigating to Protocol Workbench
+                          // This ensures PICO and foundational papers are available for AI suggestions
+                          saveHypothesisToProject();
+                          onNavigate('protocol-workbench');
+                        }}
                         className="flex items-center gap-2 px-6 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200"
                         title="Create a new protocol from this validated hypothesis"
                       >
