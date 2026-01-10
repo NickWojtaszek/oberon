@@ -72,6 +72,18 @@ const NAV_ITEMS: Array<{
     description: 'Browse projects',
   },
   {
+    id: 'research-wizard',
+    label: 'Research Wizard',
+    icon: Lightbulb,
+    description: 'Guided research setup',
+  },
+  {
+    id: 'protocol-workbench',
+    label: 'Protocol Workbench',
+    icon: FlaskConical,
+    description: 'Build schemas',
+  },
+  {
     id: 'protocol-library',
     label: 'Protocol Library',
     icon: FolderOpen,
@@ -90,18 +102,6 @@ const NAV_ITEMS: Array<{
   //   icon: User,
   //   description: 'Create & edit personas',
   // },
-  {
-    id: 'protocol-workbench',
-    label: 'Protocol Workbench',
-    icon: FlaskConical,
-    description: 'Build schemas',
-  },
-  {
-    id: 'research-wizard',
-    label: 'Research Wizard',
-    icon: Lightbulb,
-    description: 'Guided research setup',
-  },
   {
     id: 'project-setup',
     label: 'Project Setup',
@@ -364,7 +364,7 @@ export function NavigationPanel({
         
         {/* 🤖 AI Persona Quick Access Button - Navigates to AI Personas page */}
         <button
-          onClick={() => onNavigate('ai-personas')}
+          onClick={() => onTabChange('ai-personas')}
           className="w-full flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all text-white"
         >
           <Sparkles className="w-5 h-5" />

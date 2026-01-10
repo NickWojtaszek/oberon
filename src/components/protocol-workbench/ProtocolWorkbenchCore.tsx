@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield } from 'lucide-react';
 import { VariableLibrary, SchemaEditor, ProtocolDocument, DependencyGraph, ProtocolAudit, SettingsModal, DependencyModalAdvanced, VersionTagModal, SchemaGeneratorModal, SchemaTemplateLibrary, PrePublishValidationModal } from './components';
+import { ProtocolSelectionModal } from './components/modals/ProtocolSelectionModal';
 import { ProtocolUnifiedSidebar } from './components/ProtocolUnifiedSidebar';
 import { useSchemaState, useProtocolState, useVersionControl } from './hooks';
 import type { SchemaBlock, ConditionalDependency, SchemaTemplate } from './types';
@@ -57,6 +58,9 @@ export function ProtocolWorkbench({
     studyType: string;
   } | null>(null);
 
+  // 🆕 Protocol Selection Modal
+  const [showProtocolSelector, setShowProtocolSelector] = useState(false);
+
   // 🔄 Derive current protocol and version from versionControl state
   useEffect(() => {
     if (versionControl.currentProtocolId) {
@@ -75,85 +79,104 @@ export function ProtocolWorkbench({
     }
   }, [versionControl.currentProtocolId, versionControl.currentVersionId, versionControl.savedProtocols]);
 
-  // 🔄 AUTO-LOAD: Load project's protocol automatically if no initial IDs provided
+  // 🔄 PROTOCOL SELECTOR: Show modal if no initial IDs provided and protocols exist
   useEffect(() => {
     if (!initialProtocolId && !initialVersionId && currentProject && !hasAttemptedAutoLoad) {
-      console.log('🔄 Auto-load check for project:', currentProject.name);
+      console.log('🔄 Protocol selector check for project:', currentProject.name);
       setHasAttemptedAutoLoad(true);
-      
+
       try {
         const protocols = storage.protocols.getAll(currentProject.id);
-        
+
         if (protocols.length > 0) {
-          // Get the most recently modified protocol
-          const sortedProtocols = [...protocols].sort((a, b) => 
-            new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime()
-          );
-          
-          const mostRecentProtocol = sortedProtocols[0];
-          
-          // Get the latest non-archived version
-          const activeVersions = mostRecentProtocol.versions.filter((v: any) => v.status !== 'archived');
-          
-          if (activeVersions.length > 0) {
-            const latestVersion = activeVersions[0]; // Already sorted by date
-            
-            console.log('✅ Auto-loading protocol:', {
-              protocolNumber: mostRecentProtocol.protocolNumber,
-              versionNumber: latestVersion.versionNumber,
-              studyType: currentProject.studyDesign?.type
-            });
-            
-            // Load the protocol
-            setIsLoadingProtocol(true);
-            const version = versionControl.loadProtocolVersion(
-              mostRecentProtocol.id, 
-              latestVersion.id
-            );
-            
-            if (version) {
-              // Load schema blocks
-              schemaState.setSchemaBlocks(version.schemaBlocks || []);
-              // Always provide all required ProtocolContent fields
-              protocolState.loadProtocol(
-                version.metadata,
-                {
-                  primaryObjective: typeof version.protocolContent?.primaryObjective === 'string' ? version.protocolContent.primaryObjective : '',
-                  secondaryObjectives: typeof version.protocolContent?.secondaryObjectives === 'string' ? version.protocolContent.secondaryObjectives : '',
-                  inclusionCriteria: typeof version.protocolContent?.inclusionCriteria === 'string' ? version.protocolContent.inclusionCriteria : '',
-                  exclusionCriteria: typeof version.protocolContent?.exclusionCriteria === 'string' ? version.protocolContent.exclusionCriteria : '',
-                  statisticalPlan: typeof version.protocolContent?.statisticalPlan === 'string' ? version.protocolContent.statisticalPlan : '',
-                }
-              );
-              // Check schema locking (pass version and protocolNumber)
-              setCurrentProtocol(mostRecentProtocol);
-              setCurrentVersion(version);
-              setIsSchemaLocked(!canEditProtocolVersion(version, mostRecentProtocol.protocolNumber, currentProject?.id).canEdit);
-              
-              // Set auto-load info for UI banner
-              setAutoLoadedProtocol({
-                protocolNumber: mostRecentProtocol.protocolNumber,
-                studyType: currentProject.studyDesign?.type || 'Unknown'
-              });
-              
-              console.log('✅ Auto-load complete');
-            }
-            
-            setIsLoadingProtocol(false);
-          } else {
-            console.log('ℹ️ No active versions found for protocol');
-          }
+          // Show protocol selection modal
+          console.log('📋 Showing protocol selection modal (', protocols.length, 'protocols available)');
+          setShowProtocolSelector(true);
         } else {
-          console.log('ℹ️ No protocols found for project - showing blank state');
+          console.log('ℹ️ No protocols found - showing blank state');
         }
       } catch (error) {
-        console.error('❌ Auto-load failed:', error);
-        setIsLoadingProtocol(false);
+        console.error('❌ Error checking protocols:', error);
       }
     }
   }, [initialProtocolId, initialVersionId, currentProject, hasAttemptedAutoLoad]);
 
-  // Load initial protocol if IDs are provided (existing logic)
+  // 🔄 OLD AUTO-LOAD LOGIC (kept for when protocols are selected via modal or passed as props)
+  const loadProtocol = (protocolId: string, versionId: string) => {
+    console.log('📂 Loading protocol:', { protocolId, versionId });
+    setIsLoadingProtocol(true);
+
+    try {
+      const version = versionControl.loadProtocolVersion(protocolId, versionId);
+
+      if (version) {
+        const protocol = versionControl.savedProtocols.find(p => p.id === protocolId);
+
+        // Load schema blocks
+        schemaState.setSchemaBlocks(version.schemaBlocks || []);
+
+        // Load protocol content
+        protocolState.loadProtocol(
+          version.metadata,
+          {
+            primaryObjective: typeof version.protocolContent?.primaryObjective === 'string' ? version.protocolContent.primaryObjective : '',
+            secondaryObjectives: typeof version.protocolContent?.secondaryObjectives === 'string' ? version.protocolContent.secondaryObjectives : '',
+            inclusionCriteria: typeof version.protocolContent?.inclusionCriteria === 'string' ? version.protocolContent.inclusionCriteria : '',
+            exclusionCriteria: typeof version.protocolContent?.exclusionCriteria === 'string' ? version.protocolContent.exclusionCriteria : '',
+            statisticalPlan: typeof version.protocolContent?.statisticalPlan === 'string' ? version.protocolContent.statisticalPlan : '',
+          }
+        );
+
+        // Check schema locking
+        if (protocol) {
+          setCurrentProtocol(protocol);
+          setCurrentVersion(version);
+          setIsSchemaLocked(!canEditProtocolVersion(version, protocol.protocolNumber, currentProject?.id).canEdit);
+
+          // Set auto-load info for UI banner
+          setAutoLoadedProtocol({
+            protocolNumber: protocol.protocolNumber,
+            studyType: currentProject?.studyDesign?.type || 'Unknown'
+          });
+        }
+
+        console.log('✅ Protocol loaded successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error loading protocol:', error);
+    } finally {
+      setIsLoadingProtocol(false);
+    }
+  };
+
+  // Load protocol when initial IDs are provided
+  useEffect(() => {
+    if (initialProtocolId && initialVersionId && currentProject && !hasAttemptedAutoLoad) {
+      console.log('🔄 Loading protocol from initial IDs');
+      setHasAttemptedAutoLoad(true);
+      loadProtocol(initialProtocolId, initialVersionId);
+    }
+  }, [initialProtocolId, initialVersionId, currentProject, hasAttemptedAutoLoad]);
+
+  // Handle protocol selection modal actions
+  const handleCreateNew = () => {
+    console.log('➕ Creating new protocol');
+    setShowProtocolSelector(false);
+    // Clear any existing protocol
+    schemaState.clearSchema();
+    protocolState.resetProtocol();
+    versionControl.setCurrentProtocolId(null);
+    versionControl.setCurrentVersionId(null);
+    setAutoLoadedProtocol(null);
+  };
+
+  const handleLoadExisting = (protocolId: string, versionId: string) => {
+    console.log('📂 Loading existing protocol from modal');
+    setShowProtocolSelector(false);
+    loadProtocol(protocolId, versionId);
+  };
+
+  // Load initial protocol if IDs are provided (existing logic - now handled by new loadProtocol function above)
   useEffect(() => {
     if (initialProtocolId && initialVersionId) {
       console.log('🔍 [LOAD] Loading specific protocol from library:', {
@@ -647,6 +670,15 @@ export function ProtocolWorkbench({
           onClose={() => setShowVersionConflict(false)}
         />
       )}
+
+      {/* Protocol Selection Modal */}
+      <ProtocolSelectionModal
+        isOpen={showProtocolSelector}
+        availableProtocols={versionControl.savedProtocols}
+        onCreateNew={handleCreateNew}
+        onLoadExisting={handleLoadExisting}
+        onCancel={() => setShowProtocolSelector(false)}
+      />
     </div>
   );
 }

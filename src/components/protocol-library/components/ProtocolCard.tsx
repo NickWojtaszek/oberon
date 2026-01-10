@@ -10,6 +10,7 @@ interface ProtocolCardProps {
   onEditPublishedVersion: (protocolId: string, versionId: string) => void;
   onArchiveProtocol: (protocolId: string) => void;
   onDeleteProtocol: (protocolId: string) => void;
+  onDeleteDraft: (protocolId: string, versionId: string) => void;
 }
 
 export function ProtocolCard({
@@ -18,7 +19,8 @@ export function ProtocolCard({
   onPublishVersion,
   onEditPublishedVersion,
   onArchiveProtocol,
-  onDeleteProtocol
+  onDeleteProtocol,
+  onDeleteDraft
 }: ProtocolCardProps) {
   const { t } = useTranslation('protocolLibrary');
 
@@ -192,6 +194,13 @@ export function ProtocolCard({
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => onDeleteDraft(protocol.id, latestDraftData.id)}
+                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                    title="Delete this draft"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => onNavigateToBuilder(protocol.id, latestDraftData.id)}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
                   >
@@ -283,12 +292,23 @@ export function ProtocolCard({
                           <span className="text-xs text-slate-600">• {version.changeLog}</span>
                         )}
                       </div>
-                      <button
-                        onClick={() => onNavigateToBuilder(protocol.id, version.id)}
-                        className="px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded text-xs font-medium transition-colors"
-                      >
-                        {t('card.view')}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {version.status === 'draft' && (
+                          <button
+                            onClick={() => onDeleteDraft(protocol.id, version.id)}
+                            className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                            title="Delete this draft"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onNavigateToBuilder(protocol.id, version.id)}
+                          className="px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded text-xs font-medium transition-colors"
+                        >
+                          {t('card.view')}
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>

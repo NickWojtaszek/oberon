@@ -1,6 +1,7 @@
-import { FileText, Plus, Search, FolderOpen } from 'lucide-react';
+import { FileText, Plus, Search, FolderOpen, Trash2 } from 'lucide-react';
 import { ProtocolCard, PublishModal, useProtocolLibrary } from './protocol-library';
 import { ContentContainer } from './ui/ContentContainer';
+import { ConfirmationModal } from './ui/ConfirmationModal';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from './ui/EmptyState';
 import { forwardRef, useImperativeHandle } from 'react';
@@ -23,12 +24,18 @@ export const ProtocolLibraryScreen = forwardRef<ProtocolLibraryScreenRef, Protoc
     setSelectedVersionForPublish,
     publishChangeLog,
     setPublishChangeLog,
+    showDeleteDraftModal,
+    setShowDeleteDraftModal,
+    draftToDelete,
+    setDraftToDelete,
     filteredProtocols,
     handlePublishVersion,
     confirmPublishVersion,
     handleEditPublishedVersion,
     handleArchiveProtocol,
-    handleDeleteProtocol
+    handleDeleteProtocol,
+    handleDeleteDraft,
+    confirmDeleteDraft
   } = useProtocolLibrary();
   
   // Expose method to parent via ref
@@ -63,11 +70,12 @@ export const ProtocolLibraryScreen = forwardRef<ProtocolLibraryScreenRef, Protoc
                   protocol={protocol}
                   onNavigateToBuilder={onNavigateToBuilder}
                   onPublishVersion={handlePublishVersion}
-                  onEditPublishedVersion={(protocolId, versionId) => 
+                  onEditPublishedVersion={(protocolId, versionId) =>
                     handleEditPublishedVersion(protocolId, versionId, onNavigateToBuilder)
                   }
                   onArchiveProtocol={handleArchiveProtocol}
                   onDeleteProtocol={handleDeleteProtocol}
+                  onDeleteDraft={handleDeleteDraft}
                 />
               ))}
             </div>
@@ -85,6 +93,25 @@ export const ProtocolLibraryScreen = forwardRef<ProtocolLibraryScreenRef, Protoc
           setShowPublishModal(false);
           setSelectedVersionForPublish(null);
           setPublishChangeLog('');
+        }}
+      />
+
+      {/* Delete Draft Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteDraftModal}
+        variant="danger"
+        icon={Trash2}
+        title={t('modals.deleteDraft.title')}
+        description={
+          draftToDelete
+            ? t('modals.deleteDraft.description', { version: draftToDelete.versionNumber })
+            : ''
+        }
+        confirmText={t('modals.deleteDraft.confirm')}
+        onConfirm={confirmDeleteDraft}
+        onClose={() => {
+          setShowDeleteDraftModal(false);
+          setDraftToDelete(null);
         }}
       />
     </div>
