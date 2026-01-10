@@ -97,24 +97,29 @@ export function AISuggestionButton({
 
   const isConfigured = isGeminiConfigured();
   const hasPICO = pico.population || pico.intervention || pico.comparison || pico.outcome;
+  const canSuggest = isConfigured && hasPICO;
 
-  // Don't show if Gemini not configured or no PICO data
-  if (!isConfigured || !hasPICO) {
-    return null;
-  }
+  // Always show button, but disabled with tooltip if not ready
+  const getDisabledReason = () => {
+    if (!isConfigured) return 'Configure Gemini API key in settings';
+    if (!hasPICO) return 'Complete PICO in Research Wizard first';
+    return '';
+  };
 
   return (
     <div className="relative inline-block">
       <button
         ref={buttonRef}
-        onClick={handleClick}
-        disabled={disabled || isLoading}
+        onClick={canSuggest ? handleClick : undefined}
+        disabled={disabled || isLoading || !canSuggest}
         className={`p-1.5 rounded-lg transition-all ${
-          isOpen 
-            ? 'bg-amber-100 text-amber-600' 
-            : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
-        title="Get AI suggestion based on PICO"
+          !canSuggest
+            ? 'text-slate-300 cursor-not-allowed'
+            : isOpen 
+              ? 'bg-amber-100 text-amber-600' 
+              : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
+        } disabled:opacity-50`}
+        title={canSuggest ? 'Get AI suggestion based on PICO' : getDisabledReason()}
       >
         {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />

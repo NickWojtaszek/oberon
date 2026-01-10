@@ -136,6 +136,7 @@ export function ResearchWizard({
   const [synthesis, setSynthesis] = useState<Awaited<ReturnType<typeof synthesizeFoundationalPapers>> | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
 
   // PROJECT CONTEXT - for storing hypothesis properly
   const { currentProject, updateProject } = useProject();
@@ -1280,29 +1281,29 @@ export function ResearchWizard({
                   {foundationalPapers.map((paper, index) => (
                     <div
                       key={index}
-                      className="p-3 bg-purple-50 border border-purple-200 rounded-lg"
+                      className="p-2 bg-purple-50 border border-purple-200 rounded-lg"
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-purple-900 truncate" title={paper.title}>
+                          <div className="text-[10px] font-medium text-purple-900 truncate leading-tight" title={paper.title}>
                             {paper.title}
                           </div>
-                          <div className="text-[10px] text-purple-700">
+                          <div className="text-[9px] text-purple-700 leading-tight">
                             {paper.authors} ({paper.year})
                           </div>
                         </div>
                         <button
                           onClick={() => removePaper(index)}
-                          className="p-1 text-purple-400 hover:text-red-500 transition-colors"
+                          className="p-0.5 text-purple-400 hover:text-red-500 transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 rounded text-[9px] font-medium text-purple-700">
-                          🏛️ Base Study
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-purple-100 rounded text-[8px] font-medium text-purple-700">
+                          🏛️ Base
                         </span>
-                        <span className="text-[9px] text-purple-600">{paper.studyDesign}</span>
+                        <span className="text-[8px] text-purple-600">{paper.studyDesign}</span>
                       </div>
                     </div>
                   ))}
@@ -1311,10 +1312,17 @@ export function ResearchWizard({
 
               {/* Comparative Synthesis Table - Shows when 2+ papers uploaded */}
               {foundationalPapers.length >= 2 && (
-                <div className="mt-4 overflow-x-auto">
-                  <div className="flex items-center gap-2 mb-3">
-                    <GitCompare className="w-4 h-4 text-indigo-600" />
-                    <h4 className="text-xs font-semibold text-slate-800">Paper Comparison</h4>
+                <div 
+                  className="mt-4 overflow-x-auto cursor-pointer hover:ring-2 hover:ring-indigo-300 rounded-lg transition-all"
+                  onClick={() => setShowComparisonModal(true)}
+                  title="Click to expand"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <GitCompare className="w-4 h-4 text-indigo-600" />
+                      <h4 className="text-xs font-semibold text-slate-800">Paper Comparison</h4>
+                    </div>
+                    <span className="text-[9px] text-slate-400">Click to expand</span>
                   </div>
                   
                   <div className="min-w-full">
@@ -1523,6 +1531,176 @@ export function ResearchWizard({
           </div>
         </div>
       </div>
+
+      {/* Paper Comparison Modal */}
+      {showComparisonModal && foundationalPapers.length >= 2 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowComparisonModal(false)}>
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+              <div className="flex items-center gap-3">
+                <GitCompare className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-lg font-semibold text-slate-900">Foundational Paper Comparison</h2>
+              </div>
+              <button
+                onClick={() => setShowComparisonModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-auto max-h-[calc(90vh-80px)]">
+              {/* Paper Legend */}
+              <div className="flex flex-wrap gap-3 mb-6">
+                {foundationalPapers.map((paper, idx) => (
+                  <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                    <span className="font-bold text-indigo-600">Paper {String.fromCharCode(65 + idx)}:</span>
+                    <span className="text-sm text-slate-700 truncate max-w-[300px]" title={paper.title}>
+                      {paper.title}
+                    </span>
+                    <span className="text-xs text-slate-500">({paper.year})</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Full Comparison Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100">
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 border border-slate-200 w-32">Element</th>
+                      {foundationalPapers.map((paper, idx) => (
+                        <th key={idx} className="px-4 py-3 text-left font-semibold text-slate-700 border border-slate-200">
+                          Paper {String.fromCharCode(65 + idx)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-blue-50">Population</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.pico.population || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-green-50">Intervention</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.pico.intervention || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-amber-50">Comparison</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.pico.comparison || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-purple-50">Outcome</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.pico.outcome || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">Sample Size</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          N={paper.protocolElements.sampleSize || '?'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">Study Design</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.studyDesign || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">Primary Endpoint</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.protocolElements.primaryEndpoint || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">Follow-up</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.protocolElements.followUpDuration || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">Statistical Approach</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.protocolElements.statisticalApproach || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-emerald-50">Inclusion Criteria</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          <ul className="list-disc list-inside space-y-1">
+                            {paper.protocolElements.inclusionCriteria?.map((c, i) => (
+                              <li key={i}>{c}</li>
+                            )) || '—'}
+                          </ul>
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-red-50">Exclusion Criteria</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          <ul className="list-disc list-inside space-y-1">
+                            {paper.protocolElements.exclusionCriteria?.map((c, i) => (
+                              <li key={i}>{c}</li>
+                            )) || '—'}
+                          </ul>
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">Key Findings</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.keyFindings || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">Limitations</td>
+                      {foundationalPapers.map((paper, idx) => (
+                        <td key={idx} className="px-4 py-3 text-slate-600 border border-slate-200 align-top">
+                          {paper.limitations || '—'}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
