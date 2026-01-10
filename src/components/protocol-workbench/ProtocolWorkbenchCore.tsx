@@ -264,6 +264,17 @@ export function ProtocolWorkbench({
       return;
     }
 
+    // Use currentProtocolId from versionControl state (updates after saves) OR initialProtocolId from props
+    const protocolIdToUse = versionControl.currentProtocolId || initialProtocolId;
+
+    console.log('💾 [Manual Save] Saving protocol:', {
+      protocolTitle,
+      protocolNumber,
+      status,
+      protocolIdToUse,
+      willUpdateExisting: !!protocolIdToUse
+    });
+
     // If we're editing an existing protocol, pass the protocol ID to maintain the same protocol
     versionControl.saveProtocol(
       protocolTitle,
@@ -272,7 +283,7 @@ export function ProtocolWorkbench({
       protocolState.protocolMetadata,
       protocolState.protocolContent,
       status,
-      initialProtocolId // Pass the protocol ID if we're editing
+      protocolIdToUse // Pass the protocol ID if we're editing
     );
   };
 
@@ -280,10 +291,14 @@ export function ProtocolWorkbench({
   useEffect(() => {
     const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
 
+    // Use currentProtocolId from versionControl state (updates after saves) OR initialProtocolId from props
+    const protocolIdToUse = versionControl.currentProtocolId || initialProtocolId;
+
     console.log('⏱️  [Auto-save] Effect triggered', {
       hasTitle: !!protocolTitle,
       hasNumber: !!protocolNumber,
-      protocolId: initialProtocolId
+      protocolId: protocolIdToUse,
+      source: versionControl.currentProtocolId ? 'versionControl.currentProtocolId' : 'initialProtocolId'
     });
 
     // Only auto-save if title and number are present
@@ -294,7 +309,12 @@ export function ProtocolWorkbench({
 
     // Debounce the save
     const timeoutId = setTimeout(() => {
-      console.log('💾 [Auto-save] Saving draft:', { protocolTitle, protocolNumber });
+      console.log('💾 [Auto-save] Saving draft:', {
+        protocolTitle,
+        protocolNumber,
+        protocolIdToUse,
+        willUpdateExisting: !!protocolIdToUse
+      });
       versionControl.saveProtocol(
         protocolTitle,
         protocolNumber,
@@ -302,7 +322,7 @@ export function ProtocolWorkbench({
         protocolState.protocolMetadata,
         protocolState.protocolContent,
         'draft',
-        initialProtocolId
+        protocolIdToUse
       );
     }, 1200);
 
@@ -312,6 +332,7 @@ export function ProtocolWorkbench({
     protocolState.protocolContent,
     schemaState.schemaBlocks,
     initialProtocolId,
+    versionControl.currentProtocolId,
     versionControl
   ]);
 
