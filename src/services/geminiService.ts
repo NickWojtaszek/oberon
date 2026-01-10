@@ -121,7 +121,7 @@ async function callGemini(prompt: string): Promise<string> {
 
 /**
  * Helper: Robustly extract JSON from Gemini response text
- * Handles markdown code blocks, extra backticks, and other common formatting issues
+ * Handles markdown code blocks, extra backticks, arrays, objects, and malformed JSON
  */
 function extractJSONFromResponse(responseText: string): any {
   let jsonText = responseText;
@@ -138,14 +138,46 @@ function extractJSONFromResponse(responseText: string): any {
     jsonText = jsonText.replace(/^`+|`+$/g, '').trim();
   }
 
-  // Find the first { and last } to extract just the JSON object
+  // Determine if this is an object or array
   const firstBrace = jsonText.indexOf('{');
-  const lastBrace = jsonText.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+  const firstBracket = jsonText.indexOf('[');
+
+  // Extract JSON based on whether it's an object or array
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    // It's an object - find matching braces
+    const lastBrace = jsonText.lastIndexOf('}');
+    if (lastBrace !== -1 && lastBrace > firstBrace) {
+      jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+    }
+  } else if (firstBracket !== -1) {
+    // It's an array - find matching brackets
+    const lastBracket = jsonText.lastIndexOf(']');
+    if (lastBracket !== -1 && lastBracket > firstBracket) {
+      jsonText = jsonText.substring(firstBracket, lastBracket + 1);
+    }
   }
 
-  return JSON.parse(jsonText);
+  try {
+    return JSON.parse(jsonText);
+  } catch (error) {
+    // If parsing fails, try more aggressive cleanup
+    console.warn('Initial JSON parse failed, attempting cleanup...', error);
+
+    // Remove common issues: trailing commas, unescaped newlines in strings, etc.
+    let cleanedJson = jsonText
+      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas before } or ]
+      .replace(/\n/g, '\\n') // Escape literal newlines
+      .replace(/\r/g, '\\r') // Escape literal carriage returns
+      .replace(/\t/g, '\\t'); // Escape literal tabs
+
+    try {
+      return JSON.parse(cleanedJson);
+    } catch (secondError) {
+      console.error('JSON parsing failed after cleanup. Original text:', responseText);
+      console.error('Cleaned text:', cleanedJson);
+      throw new Error(`Failed to parse JSON from Gemini response: ${secondError instanceof Error ? secondError.message : 'Unknown error'}`);
+    }
+  }
 }
 
 /**

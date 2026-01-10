@@ -146,7 +146,7 @@ export function ResearchWizard({
 
 
 
-  // Load existing hypothesis from project if available
+  // Load existing hypothesis and foundational papers from project if available
   useEffect(() => {
     if (currentProject?.studyMethodology?.hypothesis) {
       const existing = currentProject.studyMethodology.hypothesis;
@@ -178,26 +178,44 @@ export function ResearchWizard({
         }
       }
     }
+
+    // ✅ FIX: Load foundational papers from project storage
+    if (currentProject?.studyMethodology?.foundationalPapers) {
+      const savedPapers = currentProject.studyMethodology.foundationalPapers;
+      if (Array.isArray(savedPapers) && savedPapers.length > 0) {
+        console.log('📂 Loading', savedPapers.length, 'foundational papers from project');
+        setFoundationalPapers(savedPapers as FoundationalPaperExtraction[]);
+        // Note: Synthesis will be triggered separately if needed
+      }
+    }
   }, [currentProject?.id]);
 
   // Auto-save PICO and foundational papers when they change (debounced)
-  // Use refs to avoid dependency on currentProject object changing
+  // Use refs to avoid infinite loop from currentProject changes
   const projectIdRef = useRef(currentProject?.id);
-  projectIdRef.current = currentProject?.id;
-  
+  const currentProjectRef = useRef(currentProject);
+
   useEffect(() => {
-    if (!currentProject?.id) return;
-    
+    projectIdRef.current = currentProject?.id;
+    currentProjectRef.current = currentProject;
+  }, [currentProject?.id]); // Only update refs when ID changes
+
+  useEffect(() => {
+    const projectId = projectIdRef.current;
+    const project = currentProjectRef.current;
+
+    if (!projectId || !project) return;
+
     // Don't save while uploading
     if (isUploadingPaper) return;
-    
+
     // Only save if we have some content
-    const hasContent = picoFields.population.value || picoFields.intervention.value || 
+    const hasContent = picoFields.population.value || picoFields.intervention.value ||
                        picoFields.comparison.value || picoFields.outcome.value ||
                        foundationalPapers.length > 0;
-    
+
     if (!hasContent) return;
-    
+
     const saveTimeout = setTimeout(() => {
       const hypothesis = {
         picoFramework: {
@@ -211,12 +229,12 @@ export function ResearchWizard({
         validatedAt: new Date().toISOString(),
       };
 
-      updateProject(currentProject.id, {
+      updateProject(projectId, {
         studyMethodology: {
-          ...currentProject.studyMethodology,
-          studyType: currentProject.studyMethodology?.studyType || 'rct',
-          configuredAt: currentProject.studyMethodology?.configuredAt || new Date().toISOString(),
-          configuredBy: currentProject.studyMethodology?.configuredBy || 'current-user',
+          ...project.studyMethodology,
+          studyType: project.studyMethodology?.studyType || 'rct',
+          configuredAt: project.studyMethodology?.configuredAt || new Date().toISOString(),
+          configuredBy: project.studyMethodology?.configuredBy || 'current-user',
           hypothesis,
           foundationalPapers: foundationalPapers.map(p => ({
             title: p.title,
@@ -236,13 +254,14 @@ export function ResearchWizard({
 
     return () => clearTimeout(saveTimeout);
   }, [
-    picoFields.population.value, 
-    picoFields.intervention.value, 
-    picoFields.comparison.value, 
+    picoFields.population.value,
+    picoFields.intervention.value,
+    picoFields.comparison.value,
     picoFields.outcome.value,
     foundationalPapers.length, // Only trigger on length change, not content
     rawObservation,
     isUploadingPaper,
+    updateProject, // Include updateProject in dependencies
   ]);
 
   // Check if AI is available
@@ -715,6 +734,56 @@ export function ResearchWizard({
   // State for autonomy mode
   const [autonomyMode, setAutonomyMode] = useState<AutonomyMode>('audit');
 
+  // Track if there are unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const pendingNavigationRef = useRef<(() => void) | null>(null);
+
+  // Detect unsaved changes
+  useEffect(() => {
+    const hasContent = picoFields.population.value || picoFields.intervention.value ||
+                       picoFields.comparison.value || picoFields.outcome.value ||
+                       foundationalPapers.length > 0 || rawObservation.length > 50;
+    setHasUnsavedChanges(hasContent);
+  }, [
+    picoFields.population.value,
+    picoFields.intervention.value,
+    picoFields.comparison.value,
+    picoFields.outcome.value,
+    foundationalPapers.length,
+    rawObservation
+  ]);
+
+  // Handle navigation with unsaved changes check
+  const handleNavigationAttempt = (callback: () => void) => {
+    if (hasUnsavedChanges) {
+      pendingNavigationRef.current = callback;
+      setShowUnsavedModal(true);
+    } else {
+      callback();
+    }
+  };
+
+  const handleSaveAndNavigate = () => {
+    saveHypothesisToProject();
+    setShowUnsavedModal(false);
+    if (pendingNavigationRef.current) {
+      // Wait for save to complete
+      setTimeout(() => {
+        pendingNavigationRef.current?.();
+        pendingNavigationRef.current = null;
+      }, 500);
+    }
+  };
+
+  const handleAbandonAndNavigate = () => {
+    setShowUnsavedModal(false);
+    if (pendingNavigationRef.current) {
+      pendingNavigationRef.current();
+      pendingNavigationRef.current = null;
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-slate-50">
       {/* Global Header */}
@@ -744,7 +813,7 @@ export function ResearchWizard({
         secondaryActions={[
           {
             label: 'Cancel',
-            onClick: () => onCancel?.(),
+            onClick: () => handleNavigationAttempt(() => onCancel?.()),
             icon: X
           }
         ]}
@@ -879,7 +948,7 @@ export function ResearchWizard({
 
                 <div className="flex justify-between mt-8 pt-6 border-t border-slate-200">
                   <button
-                    onClick={onCancel}
+                    onClick={() => handleNavigationAttempt(() => onCancel?.())}
                     className="px-6 py-2 text-slate-600 hover:text-slate-900 transition-colors"
                   >
                     Cancel
@@ -1652,10 +1721,50 @@ export function ResearchWizard({
         </div>
       </div>
 
+      {/* Unsaved Changes Modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <h2 className="text-lg font-semibold text-slate-900">Unsaved Changes</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-slate-600 mb-4">
+                You have unsaved PICO data and foundational papers. Would you like to save your progress before leaving?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSaveAndNavigate}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Save & Leave
+                </button>
+                <button
+                  onClick={handleAbandonAndNavigate}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Abandon Changes
+                </button>
+                <button
+                  onClick={() => setShowUnsavedModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Paper Comparison Modal */}
       {showComparisonModal && foundationalPapers.length >= 2 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowComparisonModal(false)}>
-          <div 
+          <div
             className="bg-white rounded-xl shadow-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
