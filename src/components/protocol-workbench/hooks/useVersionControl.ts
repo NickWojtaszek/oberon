@@ -66,10 +66,10 @@ export function useVersionControl() {
     // Simulate save delay with progress
     setTimeout(() => {
       const protocolId = existingProtocolId || currentProtocolId || `PROTO-${Date.now()}`;
-      const versionId = `v${Date.now()}`;
-      
+      let finalVersionId = `v${Date.now()}`; // Will be updated if we're reusing an existing draft
+
       const newVersion: ProtocolVersion = {
-        id: versionId,
+        id: finalVersionId,
         versionNumber: status === 'draft' ? `Draft ${new Date().toLocaleDateString()}` : `v1.${savedProtocols.length}`,
         status,
         createdAt: new Date(),
@@ -87,18 +87,49 @@ export function useVersionControl() {
 
       setSavedProtocols(prev => {
         const existingIndex = prev.findIndex(p => p.id === protocolId);
-        
+
         if (existingIndex >= 0) {
           // Update existing protocol
           const updated = [...prev];
           const existingProtocol = updated[existingIndex];
-          
+
+          // Find if there's already a draft version we should update
+          const existingDraftIndex = existingProtocol.versions.findIndex(
+            v => v.status === 'draft' && v.versionNumber.startsWith('Draft')
+          );
+
+          let updatedVersions: ProtocolVersion[];
+          if (status === 'draft' && existingDraftIndex >= 0) {
+            // UPDATE existing draft version instead of creating new one
+            const existingDraft = existingProtocol.versions[existingDraftIndex];
+            finalVersionId = existingDraft.id; // Reuse existing version ID
+
+            updatedVersions = [...existingProtocol.versions];
+            updatedVersions[existingDraftIndex] = {
+              ...newVersion,
+              id: existingDraft.id, // Keep same version ID
+              createdAt: existingDraft.createdAt, // Keep original creation time
+            };
+            console.log('🔄 [useVersionControl] Updating existing draft version:', {
+              versionId: finalVersionId,
+              protocolId
+            });
+          } else {
+            // ADD new version (for published versions or first draft)
+            updatedVersions = [...existingProtocol.versions, newVersion];
+            console.log('➕ [useVersionControl] Adding new version:', {
+              versionId: newVersion.id,
+              status,
+              protocolId
+            });
+          }
+
           updated[existingIndex] = {
             ...existingProtocol,
             protocolTitle: protocolTitle, // ✅ FIXED: Use correct field name
             protocolNumber: protocolNumber, // ✅ FIXED: Use correct field name
             modifiedAt: new Date(),
-            versions: [...existingProtocol.versions, newVersion],
+            versions: updatedVersions,
             currentVersion: newVersion.versionNumber, // Update currentVersion reference to version number
           };
           return updated;
@@ -119,14 +150,14 @@ export function useVersionControl() {
       });
 
       setCurrentProtocolId(protocolId);
-      setCurrentVersionId(versionId);
+      setCurrentVersionId(finalVersionId); // Use the final version ID (existing or new)
       setIsSaving(false);
       setSaveStatus('saved');
       
-      console.log('✅ [useVersionControl] Protocol saved:', { 
-        protocolId, 
-        versionId, 
-        project: currentProject.name 
+      console.log('✅ [useVersionControl] Protocol saved:', {
+        protocolId,
+        versionId: finalVersionId,
+        project: currentProject.name
       });
 
       // Reset status after 3 seconds
