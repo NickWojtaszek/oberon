@@ -180,6 +180,56 @@ export function ResearchWizard({
     }
   }, [currentProject?.id]);
 
+  // Auto-save PICO and foundational papers when they change (debounced)
+  useEffect(() => {
+    if (!currentProject) return;
+    
+    // Only save if we have some content
+    const hasContent = picoFields.population.value || picoFields.intervention.value || 
+                       picoFields.comparison.value || picoFields.outcome.value ||
+                       foundationalPapers.length > 0;
+    
+    if (!hasContent) return;
+    
+    const saveTimeout = setTimeout(() => {
+      const hypothesis = {
+        picoFramework: {
+          population: picoFields.population.value,
+          intervention: picoFields.intervention.value,
+          comparison: picoFields.comparison.value,
+          outcome: picoFields.outcome.value,
+        },
+        researchQuestion: rawObservation,
+        variables: [],
+        validatedAt: new Date().toISOString(),
+      };
+
+      updateProject(currentProject.id, {
+        studyMethodology: {
+          ...currentProject.studyMethodology,
+          studyType: currentProject.studyMethodology?.studyType || 'rct',
+          configuredAt: currentProject.studyMethodology?.configuredAt || new Date().toISOString(),
+          configuredBy: currentProject.studyMethodology?.configuredBy || 'current-user',
+          hypothesis,
+          foundationalPapers: foundationalPapers.map(p => ({
+            title: p.title,
+            authors: p.authors,
+            year: p.year,
+            journal: p.journal,
+            doi: p.doi,
+            fileName: p.fileName,
+            extractedAt: p.extractedAt,
+            pico: p.pico,
+            protocolElements: p.protocolElements,
+          })),
+        },
+      });
+      console.log('📝 Auto-saved PICO and foundational papers');
+    }, 1500); // Debounce 1.5 seconds
+
+    return () => clearTimeout(saveTimeout);
+  }, [picoFields, foundationalPapers, rawObservation, currentProject?.id]);
+
   // Check if AI is available
   const aiAvailable = isGeminiConfigured();
   const [aiError, setAiError] = useState<string | null>(null);

@@ -492,11 +492,11 @@ export function ProtocolWorkbench({
               onUpdateContent={protocolState.updateContent}
               activeField={activeField}
               onActiveFieldChange={setActiveField}
-              pico={currentProject?.studyMethodology?.hypothesis ? {
-                population: currentProject.studyMethodology.hypothesis.population || '',
-                intervention: currentProject.studyMethodology.hypothesis.intervention || '',
-                comparison: currentProject.studyMethodology.hypothesis.comparison || '',
-                outcome: currentProject.studyMethodology.hypothesis.outcome || '',
+              pico={currentProject?.studyMethodology?.hypothesis?.picoFramework ? {
+                population: currentProject.studyMethodology.hypothesis.picoFramework.population || '',
+                intervention: currentProject.studyMethodology.hypothesis.picoFramework.intervention || '',
+                comparison: currentProject.studyMethodology.hypothesis.picoFramework.comparison || '',
+                outcome: currentProject.studyMethodology.hypothesis.picoFramework.outcome || '',
               } : undefined}
               foundationalPapers={currentProject?.studyMethodology?.foundationalPapers}
             />
