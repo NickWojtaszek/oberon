@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield } from 'lucide-react';
 import { VariableLibrary, SchemaEditor, ProtocolDocument, DependencyGraph, ProtocolAudit, SettingsModal, DependencyModalAdvanced, VersionTagModal, SchemaGeneratorModal, SchemaTemplateLibrary, PrePublishValidationModal } from './components';
 import { ProtocolSelectionModal } from './components/modals/ProtocolSelectionModal';
+import { SaveDraftModal } from './components/modals/SaveDraftModal';
 import { ProtocolUnifiedSidebar } from './components/ProtocolUnifiedSidebar';
 import { useSchemaState, useProtocolState, useVersionControl } from './hooks';
 import type { SchemaBlock, ConditionalDependency, SchemaTemplate } from './types';
@@ -60,6 +61,9 @@ export function ProtocolWorkbench({
 
   // 🆕 Protocol Selection Modal
   const [showProtocolSelector, setShowProtocolSelector] = useState(false);
+
+  // 🆕 Save Draft Modal
+  const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
 
   // 🔄 Derive current protocol and version from versionControl state
   useEffect(() => {
@@ -287,6 +291,20 @@ export function ProtocolWorkbench({
       return;
     }
 
+    // For draft saves, show modal with details
+    if (status === 'draft') {
+      setShowSaveDraftModal(true);
+      return;
+    }
+
+    // For published saves, proceed directly (handled by PublishProtocolButton)
+    performSave(status);
+  };
+
+  // Actual save logic (separated for reuse)
+  const performSave = (status: 'draft' | 'published' = 'draft') => {
+    const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
+
     // Use currentProtocolId from versionControl state (updates after saves) OR initialProtocolId from props
     const protocolIdToUse = versionControl.currentProtocolId || initialProtocolId;
 
@@ -308,6 +326,11 @@ export function ProtocolWorkbench({
       status,
       protocolIdToUse // Pass the protocol ID if we're editing
     );
+  };
+
+  const handleConfirmSaveDraft = () => {
+    performSave('draft');
+    setShowSaveDraftModal(false);
   };
 
   // === AUTO-SAVE: Save draft on metadata/content change (debounced) ===
@@ -678,6 +701,16 @@ export function ProtocolWorkbench({
         onCreateNew={handleCreateNew}
         onLoadExisting={handleLoadExisting}
         onCancel={() => setShowProtocolSelector(false)}
+      />
+
+      {/* Save Draft Modal */}
+      <SaveDraftModal
+        isOpen={showSaveDraftModal}
+        onClose={() => setShowSaveDraftModal(false)}
+        onConfirm={handleConfirmSaveDraft}
+        protocolMetadata={protocolState.protocolMetadata}
+        schemaBlocksCount={schemaState.schemaBlocks.length}
+        dependenciesCount={schemaState.schemaBlocks.filter(b => b.conditionalDependencies && b.conditionalDependencies.length > 0).length}
       />
     </div>
   );

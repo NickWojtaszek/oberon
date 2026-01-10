@@ -1,7 +1,8 @@
-import { FileText, Calendar, CheckCircle2, Edit3, Eye, Archive, GitBranch, Clock, Trash2, ArrowUpCircle } from 'lucide-react';
+import { FileText, Calendar, CheckCircle2, Edit3, Eye, Archive, GitBranch, Clock, Trash2, ArrowUpCircle, XCircle, AlertCircle, Blocks, FileCheck, Shield } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SavedProtocol, ProtocolVersion } from '../../protocol-workbench/types';
+import { calculateProtocolCompleteness, getMissingItemsCount } from '../utils/completenessCalculator';
 
 interface ProtocolCardProps {
   protocol: SavedProtocol;
@@ -54,6 +55,13 @@ export function ProtocolCard({
     // Fallback: find any draft version
     return protocol.versions.find(v => v.status === 'draft') || null;
   }, [protocol.latestDraftVersion, protocol.versions]);
+
+  // Calculate completeness for the latest draft or current version
+  const completeness = useMemo(() => {
+    const versionToCheck = latestDraftData || currentVersionData;
+    if (!versionToCheck) return null;
+    return calculateProtocolCompleteness(protocol, versionToCheck);
+  }, [protocol, latestDraftData, currentVersionData]);
 
   const getStatusBadge = (status: 'draft' | 'published' | 'archived') => {
     switch (status) {
@@ -313,6 +321,95 @@ export function ProtocolCard({
                   ))}
               </div>
             </details>
+          )}
+
+          {/* Protocol Completeness Panel */}
+          {completeness && (
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <h4 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                Protocol Completeness
+              </h4>
+
+              <div className="space-y-2">
+                {/* Document */}
+                <div className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-slate-600" />
+                    <span className="text-sm text-slate-700">Document</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-600">{completeness.details.document.percentage}%</span>
+                    {completeness.documentComplete ?
+                      <CheckCircle2 className="w-4 h-4 text-green-600" /> :
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    }
+                  </div>
+                </div>
+
+                {/* Schema */}
+                <div className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Blocks className="w-4 h-4 text-slate-600" />
+                    <span className="text-sm text-slate-700">Schema</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-600">{completeness.details.schema.blocksCount} blocks</span>
+                    {completeness.schemaComplete ?
+                      <CheckCircle2 className="w-4 h-4 text-green-600" /> :
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    }
+                  </div>
+                </div>
+
+                {/* Dependencies */}
+                <div className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-slate-600" />
+                    <span className="text-sm text-slate-700">Dependencies</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-600">{completeness.details.dependencies.dependenciesCount} configured</span>
+                    {completeness.dependenciesComplete ?
+                      <CheckCircle2 className="w-4 h-4 text-green-600" /> :
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                    }
+                  </div>
+                </div>
+
+                {/* Audit Trail */}
+                <div className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-slate-600" />
+                    <span className="text-sm text-slate-700">Audit Trail</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-600">{completeness.details.auditTrail.publishedVersions} published</span>
+                    {completeness.auditTrailComplete ?
+                      <CheckCircle2 className="w-4 h-4 text-green-600" /> :
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Overall Status */}
+              <div className="mt-3 pt-3 border-t border-slate-200">
+                {completeness.overallComplete ? (
+                  <div className="flex items-center gap-2 text-green-700 bg-green-50 p-2 rounded">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="text-sm font-medium">Ready to Publish</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-2 rounded">
+                    <AlertCircle className="w-5 h-5" />
+                    <span className="text-sm font-medium">
+                      {getMissingItemsCount(completeness)} {getMissingItemsCount(completeness) === 1 ? 'item needs' : 'items need'} attention before publishing
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -45,14 +45,16 @@ import {
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
 import { useProject } from '../contexts/ProjectContext';
 import { getPersona } from './ai-personas/core/personaRegistry';
-import { 
-  isGeminiConfigured, 
+import {
+  isGeminiConfigured,
   extractPICOWithGemini,
   extractFromPDF,
   synthesizeFoundationalPapers,
   type FoundationalPaperExtraction
 } from '../services/geminiService';
 import type { AutonomyMode } from '../types/accountability';
+import { SaveProgressModal } from './ResearchWizard/modals/SaveProgressModal';
+import { CommitHypothesisModal } from './ResearchWizard/modals/CommitHypothesisModal';
 
 interface PICOField {
   label: string;
@@ -725,6 +727,28 @@ export function ResearchWizard({
     }
   };
 
+  // Save Progress Modal state
+  const [showSaveProgressModal, setShowSaveProgressModal] = useState(false);
+
+  // Commit Hypothesis Modal state
+  const [showCommitModal, setShowCommitModal] = useState(false);
+
+  const handleSaveProgress = () => {
+    saveHypothesisToProject();
+    setShowSaveProgressModal(false);
+  };
+
+  const handleCommitHypothesis = (redirectToWorkbench: boolean) => {
+    const savedHypothesis = saveHypothesisToProject();
+    setShowCommitModal(false);
+
+    if (redirectToWorkbench && onNavigate) {
+      onNavigate('protocol-workbench');
+    } else {
+      onComplete?.(savedHypothesis);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-slate-50">
       {/* Global Header */}
@@ -741,12 +765,11 @@ export function ResearchWizard({
             : 'Save Progress',
           onClick: () => {
             if (currentStep === 'validation' && !hasConflicts) {
-              // Save to project and complete
-              const savedHypothesis = saveHypothesisToProject();
-              onComplete?.(savedHypothesis);
+              // Show commit modal
+              setShowCommitModal(true);
             } else {
-              // Save progress without completing
-              saveHypothesisToProject();
+              // Show save progress modal
+              setShowSaveProgressModal(true);
             }
           },
           disabled: currentStep === 'validation' ? hasConflicts || (userRole === 'student' && piApprovalStatus !== 'approved') : false
@@ -1871,6 +1894,25 @@ export function ResearchWizard({
           </div>
         </div>
       )}
+
+      {/* Save Progress Modal */}
+      <SaveProgressModal
+        isOpen={showSaveProgressModal}
+        onClose={() => setShowSaveProgressModal(false)}
+        onConfirm={handleSaveProgress}
+        picoFields={picoFields}
+        foundationalPapersCount={foundationalPapers.length}
+        rawObservationLength={rawObservation.length}
+      />
+
+      {/* Commit Hypothesis Modal */}
+      <CommitHypothesisModal
+        isOpen={showCommitModal}
+        onClose={() => setShowCommitModal(false)}
+        onCommit={handleCommitHypothesis}
+        picoFields={picoFields}
+        hasConflicts={hasConflicts}
+      />
     </div>
   );
 }
