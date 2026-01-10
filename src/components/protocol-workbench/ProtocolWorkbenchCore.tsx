@@ -1,4 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+// Debounce utility
+function useDebouncedCallback(callback: () => void, deps: any[], delay: number) {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(callback, delay);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield } from 'lucide-react';
 import { VariableLibrary, SchemaEditor, ProtocolDocument, DependencyGraph, ProtocolAudit, SettingsModal, DependencyModalAdvanced, VersionTagModal, SchemaGeneratorModal, SchemaTemplateLibrary, PrePublishValidationModal } from './components';
@@ -93,9 +105,7 @@ export function ProtocolWorkbench({
           const mostRecentProtocol = sortedProtocols[0];
           
           // Get the latest non-archived version
-          const activeVersions = mostRecentProtocol.versions.filter(v => 
-            v.status !== 'archived'
-          );
+          const activeVersions = mostRecentProtocol.versions.filter((v: any) => v.status !== 'archived');
           
           if (activeVersions.length > 0) {
             const latestVersion = activeVersions[0]; // Already sorted by date
@@ -116,23 +126,21 @@ export function ProtocolWorkbench({
             if (version) {
               // Load schema blocks
               schemaState.setSchemaBlocks(version.schemaBlocks || []);
-              
-              // Load protocol metadata and content
+              // Always provide all required ProtocolContent fields
               protocolState.loadProtocol(
                 version.metadata,
-                version.protocolContent || {
-                  primaryObjective: '',
-                  secondaryObjectives: '',
-                  inclusionCriteria: '',
-                  exclusionCriteria: '',
-                  statisticalPlan: '',
+                {
+                  primaryObjective: typeof version.protocolContent?.primaryObjective === 'string' ? version.protocolContent.primaryObjective : '',
+                  secondaryObjectives: typeof version.protocolContent?.secondaryObjectives === 'string' ? version.protocolContent.secondaryObjectives : '',
+                  inclusionCriteria: typeof version.protocolContent?.inclusionCriteria === 'string' ? version.protocolContent.inclusionCriteria : '',
+                  exclusionCriteria: typeof version.protocolContent?.exclusionCriteria === 'string' ? version.protocolContent.exclusionCriteria : '',
+                  statisticalPlan: typeof version.protocolContent?.statisticalPlan === 'string' ? version.protocolContent.statisticalPlan : '',
                 }
               );
-              
-              // Check schema locking
+              // Check schema locking (pass version and protocolNumber)
               setCurrentProtocol(mostRecentProtocol);
               setCurrentVersion(version);
-              setIsSchemaLocked(!canEditProtocolVersion(mostRecentProtocol, version));
+              setIsSchemaLocked(!canEditProtocolVersion(version, mostRecentProtocol.protocolNumber, currentProject?.id).canEdit);
               
               // Set auto-load info for UI banner
               setAutoLoadedProtocol({
@@ -178,25 +186,23 @@ export function ProtocolWorkbench({
         
         // Load schema blocks
         schemaState.setSchemaBlocks(version.schemaBlocks || []);
-        
-        // Load protocol metadata and content
+        // Always provide all required ProtocolContent fields
         protocolState.loadProtocol(
           version.metadata,
-          version.protocolContent || {
-            primaryObjective: '',
-            secondaryObjectives: '',
-            inclusionCriteria: '',
-            exclusionCriteria: '',
-            statisticalPlan: '',
+          {
+            primaryObjective: typeof version.protocolContent?.primaryObjective === 'string' ? version.protocolContent.primaryObjective : '',
+            secondaryObjectives: typeof version.protocolContent?.secondaryObjectives === 'string' ? version.protocolContent.secondaryObjectives : '',
+            inclusionCriteria: typeof version.protocolContent?.inclusionCriteria === 'string' ? version.protocolContent.inclusionCriteria : '',
+            exclusionCriteria: typeof version.protocolContent?.exclusionCriteria === 'string' ? version.protocolContent.exclusionCriteria : '',
+            statisticalPlan: typeof version.protocolContent?.statisticalPlan === 'string' ? version.protocolContent.statisticalPlan : '',
           }
         );
-        
-        // Check schema locking
+        // Check schema locking (pass version and protocolNumber)
         const protocol = storage.protocols.getById(initialProtocolId, currentProject?.id);
         if (protocol) {
           setCurrentProtocol(protocol);
           setCurrentVersion(version);
-          setIsSchemaLocked(!canEditProtocolVersion(protocol, version));
+          setIsSchemaLocked(!canEditProtocolVersion(version, protocol.protocolNumber, currentProject?.id).canEdit);
         }
         
         console.log('✅ Protocol loaded successfully from library');
@@ -274,6 +280,23 @@ export function ProtocolWorkbench({
       initialProtocolId // Pass the protocol ID if we're editing
     );
   };
+
+    // === AUTO-SAVE: Save draft on metadata/content change (debounced) ===
+    useDebouncedCallback(() => {
+      // Only auto-save if title and number are present
+      const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
+      if (protocolTitle && protocolNumber) {
+        versionControl.saveProtocol(
+          protocolTitle,
+          protocolNumber,
+          schemaState.schemaBlocks,
+          protocolState.protocolMetadata,
+          protocolState.protocolContent,
+          'draft',
+          initialProtocolId
+        );
+      }
+    }, [protocolState.protocolMetadata, protocolState.protocolContent, schemaState.schemaBlocks, initialProtocolId], 1200);
 
   // Export JSON helper function
   const handleExportJSON = () => {
@@ -488,8 +511,8 @@ export function ProtocolWorkbench({
             <ProtocolDocument
               metadata={protocolState.protocolMetadata}
               content={protocolState.protocolContent}
-              onUpdateMetadata={protocolState.updateMetadata}
-              onUpdateContent={protocolState.updateContent}
+              onUpdateMetadata={(field, value) => protocolState.updateMetadata(field as keyof typeof protocolState.protocolMetadata, value)}
+              onUpdateContent={(field, value) => protocolState.updateContent(field as keyof typeof protocolState.protocolContent, value)}
               activeField={activeField}
               onActiveFieldChange={setActiveField}
               pico={currentProject?.studyMethodology?.hypothesis?.picoFramework ? {
@@ -498,7 +521,16 @@ export function ProtocolWorkbench({
                 comparison: currentProject.studyMethodology.hypothesis.picoFramework.comparison || '',
                 outcome: currentProject.studyMethodology.hypothesis.picoFramework.outcome || '',
               } : undefined}
-              foundationalPapers={currentProject?.studyMethodology?.foundationalPapers}
+              foundationalPapers={Array.isArray(currentProject?.studyMethodology?.foundationalPapers)
+                ? currentProject.studyMethodology.foundationalPapers
+                    .filter((p: any) => p && typeof p.title === 'string' && typeof p.authors === 'string' && typeof p.year === 'string' && typeof p.journal === 'string' && typeof p.pico === 'object' && typeof p.protocolElements === 'object')
+                    .map((p: any) => ({
+                        ...p,
+                        studyDesign: typeof p.studyDesign === 'string' ? p.studyDesign : '',
+                        keyFindings: typeof p.keyFindings === 'string' ? p.keyFindings : '',
+                        limitations: typeof p.limitations === 'string' ? p.limitations : '',
+                    }))
+                : []}
             />
             <ProtocolUnifiedSidebar
               activeTab={activeTab}
@@ -507,8 +539,8 @@ export function ProtocolWorkbench({
               protocolContent={protocolState.protocolContent}
               studyType={currentProject?.studyDesign?.type}
               activeField={activeField}
-              onUpdateMetadata={protocolState.updateMetadata}
-              onUpdateContent={protocolState.updateContent}
+              onUpdateMetadata={(field, value) => protocolState.updateMetadata(field as keyof typeof protocolState.protocolMetadata, value)}
+              onUpdateContent={(field, value) => protocolState.updateContent(field as keyof typeof protocolState.protocolContent, value)}
               onNavigateToSection={(section) => {
                 // Could add logic to scroll to specific section in ProtocolDocument
                 console.log('Navigate to section:', section);
@@ -574,8 +606,6 @@ export function ProtocolWorkbench({
       {/* NEW: Version Conflict Modal */}
       {showVersionConflict && (
         <VersionConflictModal
-          protocol={currentProtocol}
-          version={currentVersion}
           onClose={() => setShowVersionConflict(false)}
         />
       )}
