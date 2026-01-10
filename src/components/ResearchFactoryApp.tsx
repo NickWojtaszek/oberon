@@ -335,7 +335,7 @@ export function ResearchFactoryApp() {
                 onNavigateToLibrary={() => {
                   setLoadProtocolId(undefined);
                   setLoadVersionId(undefined);
-                  setActivePage('protocol-library');
+                  setActiveTab('protocol-library');
                 }}
               />
             </div>
@@ -364,7 +364,7 @@ export function ResearchFactoryApp() {
                   // Set protocol IDs and navigate to workbench
                   setLoadProtocolId(protocolId);
                   setLoadVersionId(versionId);
-                  setActivePage('protocol-workbench');
+                  setActiveTab('protocol-workbench');
                 }}
               />
             </div>
