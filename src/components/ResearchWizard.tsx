@@ -1309,6 +1309,89 @@ export function ResearchWizard({
                 </div>
               )}
 
+              {/* Comparative Synthesis Table - Shows when 2+ papers uploaded */}
+              {foundationalPapers.length >= 2 && (
+                <div className="mt-4 overflow-x-auto">
+                  <div className="flex items-center gap-2 mb-3">
+                    <GitCompare className="w-4 h-4 text-indigo-600" />
+                    <h4 className="text-xs font-semibold text-slate-800">Paper Comparison</h4>
+                  </div>
+                  
+                  <div className="min-w-full">
+                    <table className="w-full text-[10px] border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th className="px-2 py-1.5 text-left font-medium text-slate-600 border border-slate-200 w-20">Element</th>
+                          {foundationalPapers.map((paper, idx) => (
+                            <th key={idx} className="px-2 py-1.5 text-left font-medium text-slate-600 border border-slate-200" title={paper.title}>
+                              <div className="truncate max-w-[80px]">Paper {String.fromCharCode(65 + idx)}</div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="px-2 py-1.5 font-medium text-slate-700 border border-slate-200 bg-blue-50">Population</td>
+                          {foundationalPapers.map((paper, idx) => (
+                            <td key={idx} className="px-2 py-1.5 text-slate-600 border border-slate-200">
+                              <div className="max-h-[40px] overflow-y-auto">{paper.pico.population || '—'}</div>
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="px-2 py-1.5 font-medium text-slate-700 border border-slate-200 bg-green-50">Intervention</td>
+                          {foundationalPapers.map((paper, idx) => (
+                            <td key={idx} className="px-2 py-1.5 text-slate-600 border border-slate-200">
+                              <div className="max-h-[40px] overflow-y-auto">{paper.pico.intervention || '—'}</div>
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="px-2 py-1.5 font-medium text-slate-700 border border-slate-200 bg-amber-50">Comparison</td>
+                          {foundationalPapers.map((paper, idx) => (
+                            <td key={idx} className="px-2 py-1.5 text-slate-600 border border-slate-200">
+                              <div className="max-h-[40px] overflow-y-auto">{paper.pico.comparison || '—'}</div>
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="px-2 py-1.5 font-medium text-slate-700 border border-slate-200 bg-purple-50">Outcome</td>
+                          {foundationalPapers.map((paper, idx) => (
+                            <td key={idx} className="px-2 py-1.5 text-slate-600 border border-slate-200">
+                              <div className="max-h-[40px] overflow-y-auto">{paper.pico.outcome || '—'}</div>
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="px-2 py-1.5 font-medium text-slate-700 border border-slate-200 bg-slate-50">Sample Size</td>
+                          {foundationalPapers.map((paper, idx) => (
+                            <td key={idx} className="px-2 py-1.5 text-slate-600 border border-slate-200">
+                              N={paper.protocolElements.sampleSize || '?'}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="px-2 py-1.5 font-medium text-slate-700 border border-slate-200 bg-slate-50">Design</td>
+                          {foundationalPapers.map((paper, idx) => (
+                            <td key={idx} className="px-2 py-1.5 text-slate-600 border border-slate-200">
+                              {paper.studyDesign || '—'}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="px-2 py-1.5 font-medium text-slate-700 border border-slate-200 bg-slate-50">Stats</td>
+                          {foundationalPapers.map((paper, idx) => (
+                            <td key={idx} className="px-2 py-1.5 text-slate-600 border border-slate-200">
+                              <div className="max-h-[40px] overflow-y-auto">{paper.protocolElements.statisticalApproach || '—'}</div>
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {/* Synthesized Suggestions */}
               {synthesis && (
                 <div className="mt-4 space-y-3">
