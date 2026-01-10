@@ -556,8 +556,8 @@ export function ResearchFactoryApp() {
             <ResearchWizard 
               onComplete={(hypothesis) => {
                 console.log('Hypothesis completed:', hypothesis);
-                // Store hypothesis and navigate to academic writing
-                setActiveTab('academic-writing');
+                // Navigate to Protocol Workbench where AI can help pre-fill objectives, criteria, and stats plan
+                setActiveTab('protocol-workbench');
               }}
               onCancel={() => {
                 setActiveTab('dashboard');

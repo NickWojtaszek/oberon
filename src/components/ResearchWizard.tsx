@@ -485,29 +485,19 @@ export function ResearchWizard({
     }));
   };
 
-  // Save foundational papers to project
-  const saveFoundationalPapersToProject = () => {
-    if (!currentProject) return;
-    
-    updateProject(currentProject.id, {
-      studyMethodology: {
-        ...currentProject.studyMethodology,
-        studyType: currentProject.studyMethodology?.studyType || 'rct',
-        configuredAt: currentProject.studyMethodology?.configuredAt || new Date().toISOString(),
-        configuredBy: currentProject.studyMethodology?.configuredBy || 'current-user',
-        foundationalPapers: foundationalPapers.map(p => ({
-          title: p.title,
-          authors: p.authors,
-          year: p.year,
-          journal: p.journal,
-          doi: p.doi,
-          fileName: p.fileName,
-          extractedAt: p.extractedAt,
-          pico: p.pico,
-          protocolElements: p.protocolElements,
-        })),
-      },
-    });
+  // Save foundational papers to project - called automatically with saveHypothesisToProject
+  const getFoundationalPapersForSave = () => {
+    return foundationalPapers.map(p => ({
+      title: p.title,
+      authors: p.authors,
+      year: p.year,
+      journal: p.journal,
+      doi: p.doi,
+      fileName: p.fileName,
+      extractedAt: p.extractedAt,
+      pico: p.pico,
+      protocolElements: p.protocolElements,
+    }));
   };
 
   // Step 2 → Step 3: Validate PICO completeness
@@ -582,6 +572,7 @@ export function ResearchWizard({
         configuredAt: currentProject.studyMethodology?.configuredAt || new Date().toISOString(),
         configuredBy: currentProject.studyMethodology?.configuredBy || 'current-user',
         hypothesis,
+        foundationalPapers: getFoundationalPapersForSave(),
       },
     });
 
@@ -891,8 +882,8 @@ export function ResearchWizard({
                               onChange={(e) => updatePicoField(key, e.target.value)}
                               onBlur={() => validateGrounding(key)}
                               placeholder={`Enter ${field.label.toLowerCase()}...`}
-                              className="w-full px-3 py-2 text-sm text-slate-700 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none min-h-[60px]"
-                              rows={2}
+                              className="w-full px-3 py-2 text-sm text-slate-700 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y min-h-[120px]"
+                              rows={4}
                             />
                             {field.linkedVariable && (
                               <div className="text-xs text-slate-500 mt-2">
