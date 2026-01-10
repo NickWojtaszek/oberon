@@ -201,79 +201,9 @@ export function ResearchWizard({
     loadedProjectIdRef.current = currentProject?.id;
   }, [currentProject?.id]);
 
-  // Auto-save PICO and foundational papers when they change (debounced)
-  // Use refs to avoid infinite loop from currentProject changes
-  const projectIdRef = useRef(currentProject?.id);
-  const currentProjectRef = useRef(currentProject);
-
-  useEffect(() => {
-    projectIdRef.current = currentProject?.id;
-    currentProjectRef.current = currentProject;
-  }, [currentProject?.id]); // Only update refs when ID changes
-
-  useEffect(() => {
-    const projectId = projectIdRef.current;
-    const project = currentProjectRef.current;
-
-    if (!projectId || !project) return;
-
-    // Don't save while uploading
-    if (isUploadingPaper) return;
-
-    // Only save if we have some content
-    const hasContent = picoFields.population.value || picoFields.intervention.value ||
-                       picoFields.comparison.value || picoFields.outcome.value ||
-                       foundationalPapers.length > 0;
-
-    if (!hasContent) return;
-
-    const saveTimeout = setTimeout(() => {
-      const hypothesis = {
-        picoFramework: {
-          population: picoFields.population.value,
-          intervention: picoFields.intervention.value,
-          comparison: picoFields.comparison.value,
-          outcome: picoFields.outcome.value,
-        },
-        researchQuestion: rawObservation,
-        variables: [],
-        validatedAt: new Date().toISOString(),
-      };
-
-      updateProject(projectId, {
-        studyMethodology: {
-          ...project.studyMethodology,
-          studyType: project.studyMethodology?.studyType || 'rct',
-          configuredAt: project.studyMethodology?.configuredAt || new Date().toISOString(),
-          configuredBy: project.studyMethodology?.configuredBy || 'current-user',
-          hypothesis,
-          foundationalPapers: foundationalPapers.map(p => ({
-            title: p.title,
-            authors: p.authors,
-            year: p.year,
-            journal: p.journal,
-            doi: p.doi,
-            fileName: p.fileName,
-            extractedAt: p.extractedAt,
-            pico: p.pico,
-            protocolElements: p.protocolElements,
-          })),
-        },
-      });
-      console.log('📝 Auto-saved PICO and foundational papers');
-    }, 2000); // Debounce 2 seconds
-
-    return () => clearTimeout(saveTimeout);
-  }, [
-    picoFields.population.value,
-    picoFields.intervention.value,
-    picoFields.comparison.value,
-    picoFields.outcome.value,
-    foundationalPapers.length, // Only trigger on length change, not content
-    rawObservation,
-    isUploadingPaper,
-    updateProject, // Include updateProject in dependencies
-  ]);
+  // ✅ DISABLED AUTO-SAVE - Use manual save on exit instead to prevent infinite loop
+  // The auto-save was causing: save → updateProject → load → setState → save → infinite loop
+  // Now we only save when user explicitly exits or commits the hypothesis
 
   // Check if AI is available
   const aiAvailable = isGeminiConfigured();
