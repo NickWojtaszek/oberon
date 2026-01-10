@@ -2,6 +2,8 @@ import { BookOpen, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { ContentContainer } from '../../ui/ContentContainer';
 import { ProtocolDocumentSidebar } from './ProtocolDocumentSidebar';
+import { AISuggestionButton } from './AISuggestionButton';
+import type { FoundationalPaperExtraction } from '../../../services/geminiService';
 
 interface ProtocolDocumentProps {
   metadata: {
@@ -25,6 +27,14 @@ interface ProtocolDocumentProps {
   onUpdateContent: (field: string, value: string) => void;
   activeField?: string;
   onActiveFieldChange?: (field: string) => void;
+  // NEW: AI suggestion context
+  pico?: {
+    population: string;
+    intervention: string;
+    comparison: string;
+    outcome: string;
+  };
+  foundationalPapers?: FoundationalPaperExtraction[];
 }
 
 export function ProtocolDocument({
@@ -34,6 +44,8 @@ export function ProtocolDocument({
   onUpdateContent,
   activeField: externalActiveField,
   onActiveFieldChange,
+  pico = { population: '', intervention: '', comparison: '', outcome: '' },
+  foundationalPapers = [],
 }: ProtocolDocumentProps) {
   const [internalActiveField, setInternalActiveField] = useState<string>('protocolTitle');
   
@@ -129,9 +141,17 @@ export function ProtocolDocument({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Study Phase
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Study Phase
+                  </label>
+                  <AISuggestionButton
+                    field="studyPhase"
+                    pico={pico}
+                    foundationalPapers={foundationalPapers}
+                    onApply={(value) => onUpdateMetadata('studyPhase', value)}
+                  />
+                </div>
                 <select
                   value={metadata.studyPhase}
                   onChange={(e) => onUpdateMetadata('studyPhase', e.target.value)}
@@ -147,9 +167,17 @@ export function ProtocolDocument({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Therapeutic Area
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Therapeutic Area
+                  </label>
+                  <AISuggestionButton
+                    field="therapeuticArea"
+                    pico={pico}
+                    foundationalPapers={foundationalPapers}
+                    onApply={(value) => onUpdateMetadata('therapeuticArea', value)}
+                  />
+                </div>
                 <input
                   type="text"
                   value={metadata.therapeuticArea}
@@ -161,9 +189,17 @@ export function ProtocolDocument({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Estimated Enrollment
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Estimated Enrollment
+                  </label>
+                  <AISuggestionButton
+                    field="estimatedEnrollment"
+                    pico={pico}
+                    foundationalPapers={foundationalPapers}
+                    onApply={(value) => onUpdateMetadata('estimatedEnrollment', value)}
+                  />
+                </div>
                 <input
                   type="text"
                   value={metadata.estimatedEnrollment}
@@ -175,9 +211,17 @@ export function ProtocolDocument({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Study Duration
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Study Duration
+                  </label>
+                  <AISuggestionButton
+                    field="studyDuration"
+                    pico={pico}
+                    foundationalPapers={foundationalPapers}
+                    onApply={(value) => onUpdateMetadata('studyDuration', value)}
+                  />
+                </div>
                 <input
                   type="text"
                   value={metadata.studyDuration}
@@ -196,9 +240,17 @@ export function ProtocolDocument({
           <h3 className="font-medium text-slate-900">Protocol Content</h3>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Primary Objective
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Primary Objective
+              </label>
+              <AISuggestionButton
+                field="primaryObjective"
+                pico={pico}
+                foundationalPapers={foundationalPapers}
+                onApply={(value) => onUpdateContent('primaryObjective', value)}
+              />
+            </div>
             <textarea
               value={content.primaryObjective}
               onChange={(e) => onUpdateContent('primaryObjective', e.target.value)}
@@ -210,9 +262,17 @@ export function ProtocolDocument({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Secondary Objectives
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Secondary Objectives
+              </label>
+              <AISuggestionButton
+                field="secondaryObjectives"
+                pico={pico}
+                foundationalPapers={foundationalPapers}
+                onApply={(value) => onUpdateContent('secondaryObjectives', value)}
+              />
+            </div>
             <textarea
               value={content.secondaryObjectives}
               onChange={(e) => onUpdateContent('secondaryObjectives', e.target.value)}
@@ -224,9 +284,17 @@ export function ProtocolDocument({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Inclusion Criteria
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Inclusion Criteria
+              </label>
+              <AISuggestionButton
+                field="inclusionCriteria"
+                pico={pico}
+                foundationalPapers={foundationalPapers}
+                onApply={(value) => onUpdateContent('inclusionCriteria', value)}
+              />
+            </div>
             <textarea
               value={content.inclusionCriteria}
               onChange={(e) => onUpdateContent('inclusionCriteria', e.target.value)}
@@ -238,9 +306,17 @@ export function ProtocolDocument({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Exclusion Criteria
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Exclusion Criteria
+              </label>
+              <AISuggestionButton
+                field="exclusionCriteria"
+                pico={pico}
+                foundationalPapers={foundationalPapers}
+                onApply={(value) => onUpdateContent('exclusionCriteria', value)}
+              />
+            </div>
             <textarea
               value={content.exclusionCriteria}
               onChange={(e) => onUpdateContent('exclusionCriteria', e.target.value)}
@@ -252,9 +328,17 @@ export function ProtocolDocument({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Statistical Analysis Plan
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Statistical Analysis Plan
+              </label>
+              <AISuggestionButton
+                field="statisticalPlan"
+                pico={pico}
+                foundationalPapers={foundationalPapers}
+                onApply={(value) => onUpdateContent('statisticalPlan', value)}
+              />
+            </div>
             <textarea
               value={content.statisticalPlan}
               onChange={(e) => onUpdateContent('statisticalPlan', e.target.value)}

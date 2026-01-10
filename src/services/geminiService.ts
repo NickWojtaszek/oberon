@@ -508,3 +508,112 @@ async function fileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Protocol field types that can receive AI suggestions
+ */
+export type ProtocolSuggestionField = 
+  | 'studyPhase'
+  | 'therapeuticArea'
+  | 'estimatedEnrollment'
+  | 'studyDuration'
+  | 'primaryObjective'
+  | 'secondaryObjectives'
+  | 'inclusionCriteria'
+  | 'exclusionCriteria'
+  | 'statisticalPlan';
+
+export interface ProtocolFieldSuggestion {
+  value: string;
+  rationale: string;
+  confidence: 'high' | 'medium' | 'low';
+  sources: string[];
+}
+
+/**
+ * Generate a protocol field suggestion based on PICO and foundational papers
+ */
+export async function generateProtocolSuggestion(
+  field: ProtocolSuggestionField,
+  pico: {
+    population: string;
+    intervention: string;
+    comparison: string;
+    outcome: string;
+  },
+  foundationalPapers: FoundationalPaperExtraction[]
+): Promise<ProtocolFieldSuggestion> {
+  
+  const fieldDescriptions: Record<ProtocolSuggestionField, string> = {
+    studyPhase: 'Study Phase (e.g., Phase I, Phase II, Phase III, Phase IV, Pilot, Observational)',
+    therapeuticArea: 'Therapeutic Area (medical specialty or disease category)',
+    estimatedEnrollment: 'Estimated Enrollment target number with brief justification',
+    studyDuration: 'Study Duration (e.g., 12 months, 24 months) with rationale',
+    primaryObjective: 'Primary Objective - the main goal of the study in 1-3 sentences',
+    secondaryObjectives: 'Secondary Objectives - additional goals, one per line',
+    inclusionCriteria: 'Inclusion Criteria - who can participate, one criterion per line',
+    exclusionCriteria: 'Exclusion Criteria - who cannot participate, one criterion per line',
+    statisticalPlan: 'Statistical Analysis Plan - key methods, tests, and approach',
+  };
+
+  const papersContext = foundationalPapers.length > 0 
+    ? `\n\nFOUNDATIONAL PAPERS FOR REFERENCE:\n${foundationalPapers.map((p, i) => `
+Paper ${i + 1}: "${p.title}" (${p.year})
+- Study Design: ${p.studyDesign}
+- Population: ${p.pico.population}
+- Intervention: ${p.pico.intervention}
+- Primary Endpoint: ${p.protocolElements.primaryEndpoint}
+- Sample Size: ${p.protocolElements.sampleSize}
+- Inclusion: ${p.protocolElements.inclusionCriteria.join('; ')}
+- Exclusion: ${p.protocolElements.exclusionCriteria.join('; ')}
+- Stats: ${p.protocolElements.statisticalApproach}
+`).join('\n')}`
+    : '';
+
+  const prompt = `You are an expert clinical research protocol designer. Generate a suggestion for a specific protocol field based on the PICO framework and reference papers.
+
+STUDY PICO FRAMEWORK:
+- Population: ${pico.population || 'Not specified'}
+- Intervention: ${pico.intervention || 'Not specified'}
+- Comparison: ${pico.comparison || 'Not specified'}
+- Outcome: ${pico.outcome || 'Not specified'}
+${papersContext}
+
+TASK: Generate a suggestion for the field: "${fieldDescriptions[field]}"
+
+The suggestion should:
+1. Be directly informed by the PICO framework
+2. Draw from patterns in the foundational papers where applicable
+3. Be specific and actionable, not generic
+4. Use appropriate clinical/scientific language
+
+Respond in JSON format:
+{
+  "value": "The actual suggested content for this field",
+  "rationale": "Brief explanation of why this suggestion fits (1-2 sentences)",
+  "confidence": "high" | "medium" | "low",
+  "sources": ["List paper titles or 'PICO framework' that informed this suggestion"]
+}`;
+
+  try {
+    const responseText = await callGemini(prompt);
+    
+    let jsonText = responseText;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1];
+    }
+    jsonText = jsonText.trim();
+    
+    const parsed = JSON.parse(jsonText);
+    return {
+      value: parsed.value || '',
+      rationale: parsed.rationale || 'Based on study design',
+      confidence: parsed.confidence || 'medium',
+      sources: parsed.sources || ['PICO framework'],
+    };
+  } catch (error) {
+    console.error('Protocol suggestion generation failed:', error);
+    throw error;
+  }
+}

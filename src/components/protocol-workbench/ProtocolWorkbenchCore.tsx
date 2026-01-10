@@ -492,6 +492,13 @@ export function ProtocolWorkbench({
               onUpdateContent={protocolState.updateContent}
               activeField={activeField}
               onActiveFieldChange={setActiveField}
+              pico={currentProject?.studyMethodology?.hypothesis ? {
+                population: currentProject.studyMethodology.hypothesis.population || '',
+                intervention: currentProject.studyMethodology.hypothesis.intervention || '',
+                comparison: currentProject.studyMethodology.hypothesis.comparison || '',
+                outcome: currentProject.studyMethodology.hypothesis.outcome || '',
+              } : undefined}
+              foundationalPapers={currentProject?.studyMethodology?.foundationalPapers}
             />
             <ProtocolUnifiedSidebar
               activeTab={activeTab}

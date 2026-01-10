@@ -8,6 +8,7 @@ export { DependencyGraph } from './DependencyGraph';
 export { DependencyHelpSidebar } from './DependencyHelpSidebar';
 export { ProtocolAudit } from './ProtocolAudit';
 export { SchemaTemplateLibrary } from './SchemaTemplateLibrary';
+export { AISuggestionButton } from './AISuggestionButton';
 
 // Block components
 export { SchemaBlockAdvanced } from './blocks/SchemaBlockAdvanced';
