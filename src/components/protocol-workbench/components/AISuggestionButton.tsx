@@ -112,13 +112,13 @@ export function AISuggestionButton({
         ref={buttonRef}
         onClick={canSuggest ? handleClick : undefined}
         disabled={disabled || isLoading || !canSuggest}
-        className={`p-1.5 rounded-lg transition-all ${
+        className={`p-1.5 rounded-lg transition-all border ${
           !canSuggest
-            ? 'text-slate-300 cursor-not-allowed'
+            ? 'text-slate-400 border-slate-200 bg-slate-50 cursor-not-allowed'
             : isOpen 
-              ? 'bg-amber-100 text-amber-600' 
-              : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
-        } disabled:opacity-50`}
+              ? 'bg-amber-100 text-amber-600 border-amber-300' 
+              : 'text-amber-500 border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300'
+        }`}
         title={canSuggest ? 'Get AI suggestion based on PICO' : getDisabledReason()}
       >
         {isLoading ? (
