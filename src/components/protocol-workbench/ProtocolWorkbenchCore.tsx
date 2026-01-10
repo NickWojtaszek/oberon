@@ -1,16 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-// Debounce utility
-function useDebouncedCallback(callback: () => void, deps: any[], delay: number) {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  useEffect(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(callback, delay);
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-}
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield } from 'lucide-react';
 import { VariableLibrary, SchemaEditor, ProtocolDocument, DependencyGraph, ProtocolAudit, SettingsModal, DependencyModalAdvanced, VersionTagModal, SchemaGeneratorModal, SchemaTemplateLibrary, PrePublishValidationModal } from './components';
@@ -288,31 +276,44 @@ export function ProtocolWorkbench({
     );
   };
 
-    // === AUTO-SAVE: Save draft on metadata/content change (debounced) ===
-    useDebouncedCallback(() => {
-      // Only auto-save if title and number are present
-      const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
-      console.log('⏱️  [Auto-save] Debounced callback triggered', {
-        hasTitle: !!protocolTitle,
-        hasNumber: !!protocolNumber,
-        protocolId: initialProtocolId
-      });
+  // === AUTO-SAVE: Save draft on metadata/content change (debounced) ===
+  useEffect(() => {
+    const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
 
-      if (protocolTitle && protocolNumber) {
-        console.log('💾 [Auto-save] Saving draft:', { protocolTitle, protocolNumber });
-        versionControl.saveProtocol(
-          protocolTitle,
-          protocolNumber,
-          schemaState.schemaBlocks,
-          protocolState.protocolMetadata,
-          protocolState.protocolContent,
-          'draft',
-          initialProtocolId
-        );
-      } else {
-        console.warn('⚠️  [Auto-save] Skipped - missing title or number');
-      }
-    }, [protocolState.protocolMetadata, protocolState.protocolContent, schemaState.schemaBlocks, initialProtocolId], 1200);
+    console.log('⏱️  [Auto-save] Effect triggered', {
+      hasTitle: !!protocolTitle,
+      hasNumber: !!protocolNumber,
+      protocolId: initialProtocolId
+    });
+
+    // Only auto-save if title and number are present
+    if (!protocolTitle || !protocolNumber) {
+      console.warn('⚠️  [Auto-save] Skipped - missing title or number');
+      return;
+    }
+
+    // Debounce the save
+    const timeoutId = setTimeout(() => {
+      console.log('💾 [Auto-save] Saving draft:', { protocolTitle, protocolNumber });
+      versionControl.saveProtocol(
+        protocolTitle,
+        protocolNumber,
+        schemaState.schemaBlocks,
+        protocolState.protocolMetadata,
+        protocolState.protocolContent,
+        'draft',
+        initialProtocolId
+      );
+    }, 1200);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    protocolState.protocolMetadata,
+    protocolState.protocolContent,
+    schemaState.schemaBlocks,
+    initialProtocolId,
+    versionControl
+  ]);
 
   // Export JSON helper function
   const handleExportJSON = () => {
