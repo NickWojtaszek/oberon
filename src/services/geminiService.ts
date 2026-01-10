@@ -80,9 +80,9 @@ export function isGeminiConfigured(): boolean {
 /**
  * Call Gemini API with a prompt
  */
-async function callGemini(prompt: string): Promise<string> {
+async function callGemini(prompt: string, maxOutputTokens: number = 1024): Promise<string> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error('VITE_GEMINI_API_KEY not configured');
   }
@@ -100,7 +100,7 @@ async function callGemini(prompt: string): Promise<string> {
       }],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 1024,
+        maxOutputTokens,
       }
     })
   });
@@ -111,7 +111,7 @@ async function callGemini(prompt: string): Promise<string> {
   }
 
   const data: GeminiResponse = await response.json();
-  
+
   if (!data.candidates || data.candidates.length === 0) {
     throw new Error('No response from Gemini');
   }
@@ -511,7 +511,8 @@ Respond in valid JSON format:
 }`;
 
   try {
-    const responseText = await callGemini(prompt);
+    // Use higher token limit for synthesis (complex JSON response)
+    const responseText = await callGemini(prompt, 4096);
     return extractJSONFromResponse(responseText);
   } catch (error) {
     console.error('Paper synthesis failed:', error);

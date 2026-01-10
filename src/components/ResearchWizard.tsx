@@ -146,8 +146,16 @@ export function ResearchWizard({
 
 
 
+  // Track if we've already loaded papers for this project to prevent infinite loop
+  const loadedProjectIdRef = useRef<string | undefined>();
+
   // Load existing hypothesis and foundational papers from project if available
   useEffect(() => {
+    // Only load once per project
+    if (loadedProjectIdRef.current === currentProject?.id) {
+      return;
+    }
+
     if (currentProject?.studyMethodology?.hypothesis) {
       const existing = currentProject.studyMethodology.hypothesis;
       if (existing.picoFramework) {
@@ -179,7 +187,7 @@ export function ResearchWizard({
       }
     }
 
-    // ✅ FIX: Load foundational papers from project storage
+    // ✅ FIX: Load foundational papers from project storage (only once)
     if (currentProject?.studyMethodology?.foundationalPapers) {
       const savedPapers = currentProject.studyMethodology.foundationalPapers;
       if (Array.isArray(savedPapers) && savedPapers.length > 0) {
@@ -188,6 +196,9 @@ export function ResearchWizard({
         // Note: Synthesis will be triggered separately if needed
       }
     }
+
+    // Mark this project as loaded
+    loadedProjectIdRef.current = currentProject?.id;
   }, [currentProject?.id]);
 
   // Auto-save PICO and foundational papers when they change (debounced)
