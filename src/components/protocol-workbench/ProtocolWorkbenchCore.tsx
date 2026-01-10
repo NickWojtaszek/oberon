@@ -28,7 +28,7 @@ export function ProtocolWorkbench({
 }: ProtocolWorkbenchProps = {}) {
   const { t } = useTranslation('ui');
   const { currentProject } = useProject();
-  
+
   // State management hooks
   const schemaState = useSchemaState();
   const protocolState = useProtocolState();

@@ -120,6 +120,35 @@ async function callGemini(prompt: string): Promise<string> {
 }
 
 /**
+ * Helper: Robustly extract JSON from Gemini response text
+ * Handles markdown code blocks, extra backticks, and other common formatting issues
+ */
+function extractJSONFromResponse(responseText: string): any {
+  let jsonText = responseText;
+
+  // Try to extract JSON from markdown code blocks (```json ... ```)
+  const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    jsonText = jsonMatch[1];
+  }
+  jsonText = jsonText.trim();
+
+  // If still starts with backticks, remove them
+  if (jsonText.startsWith('`')) {
+    jsonText = jsonText.replace(/^`+|`+$/g, '').trim();
+  }
+
+  // Find the first { and last } to extract just the JSON object
+  const firstBrace = jsonText.indexOf('{');
+  const lastBrace = jsonText.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+  }
+
+  return JSON.parse(jsonText);
+}
+
+/**
  * Extract PICO framework from clinical text using Gemini
  */
 export async function extractPICOWithGemini(clinicalText: string): Promise<PICOExtraction> {
@@ -148,20 +177,8 @@ Respond in valid JSON format only, with no additional text:
 
   try {
     const responseText = await callGemini(prompt);
-    
-    // Extract JSON from response (Gemini sometimes wraps in markdown code blocks)
-    let jsonText = responseText;
-    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[1];
-    }
-    
-    // Clean up any leading/trailing whitespace
-    jsonText = jsonText.trim();
-    
-    // Parse the JSON
-    const parsed = JSON.parse(jsonText) as PICOExtraction;
-    
+    const parsed = extractJSONFromResponse(responseText) as PICOExtraction;
+
     return {
       population: parsed.population || '(Could not extract population)',
       intervention: parsed.intervention || '(Could not extract intervention)',
@@ -230,23 +247,15 @@ Respond in valid JSON format only:
 
   try {
     const responseText = await callGemini(prompt);
-    
-    let jsonText = responseText;
-    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[1];
-    }
-    jsonText = jsonText.trim();
-    
-    const parsed = JSON.parse(jsonText);
-    
+    const parsed = extractJSONFromResponse(responseText);
+
     const groundedCount = [
       parsed.population?.grounded,
       parsed.intervention?.grounded,
       parsed.comparison?.grounded,
       parsed.outcome?.grounded
     ].filter(Boolean).length;
-    
+
     return {
       isGrounded: groundedCount >= 3, // At least 3 of 4 fields grounded
       groundedFields: {
@@ -363,15 +372,8 @@ Respond in valid JSON format only:
     const responseText = data.candidates[0].content.parts[0].text;
     
     // Extract JSON from response
-    let jsonText = responseText;
-    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[1];
-    }
-    jsonText = jsonText.trim();
-    
-    const parsed = JSON.parse(jsonText);
-    
+    const parsed = extractJSONFromResponse(responseText);
+
     return {
       title: parsed.title || 'Unknown Title',
       authors: parsed.authors || 'Unknown Authors',
@@ -478,15 +480,7 @@ Respond in valid JSON format:
 
   try {
     const responseText = await callGemini(prompt);
-    
-    let jsonText = responseText;
-    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[1];
-    }
-    jsonText = jsonText.trim();
-    
-    return JSON.parse(jsonText);
+    return extractJSONFromResponse(responseText);
   } catch (error) {
     console.error('Paper synthesis failed:', error);
     throw error;
@@ -612,15 +606,7 @@ Respond in JSON format:
 
   try {
     const responseText = await callGemini(prompt);
-    
-    let jsonText = responseText;
-    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[1];
-    }
-    jsonText = jsonText.trim();
-    
-    const parsed = JSON.parse(jsonText);
+    const parsed = extractJSONFromResponse(responseText);
     return {
       value: parsed.value || '',
       rationale: parsed.rationale || 'Based on study design',

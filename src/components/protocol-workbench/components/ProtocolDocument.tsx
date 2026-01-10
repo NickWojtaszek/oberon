@@ -48,7 +48,7 @@ export function ProtocolDocument({
   foundationalPapers = [],
 }: ProtocolDocumentProps) {
   const [internalActiveField, setInternalActiveField] = useState<string>('protocolTitle');
-  
+
   const activeField = externalActiveField || internalActiveField;
 
   const handleFieldFocus = (fieldName: string) => {
