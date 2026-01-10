@@ -168,20 +168,27 @@ export function ProtocolWorkbench({
   // Load initial protocol if IDs are provided (existing logic)
   useEffect(() => {
     if (initialProtocolId && initialVersionId) {
-      console.log('🔍 Loading specific protocol from library:', initialProtocolId, initialVersionId);
+      console.log('🔍 [LOAD] Loading specific protocol from library:', {
+        initialProtocolId,
+        initialVersionId,
+        currentProject: currentProject?.name
+      });
       setIsLoadingProtocol(true);
-      
+
       // Clear any auto-loaded protocol state
       setAutoLoadedProtocol(null);
-      
+
       const version = versionControl.loadProtocolVersion(initialProtocolId, initialVersionId);
-      
+      console.log('📦 [LOAD] Version loaded from storage:', version ? 'SUCCESS' : 'FAILED', version);
+
       if (version) {
-        console.log('✅ Loaded version data:', {
+        console.log('✅ [LOAD] Loaded version data:', {
           protocolId: initialProtocolId,
           versionId: initialVersionId,
           hasSchemaBlocks: !!version.schemaBlocks,
-          blockCount: version.schemaBlocks?.length || 0
+          blockCount: version.schemaBlocks?.length || 0,
+          hasMetadata: !!version.metadata,
+          hasContent: !!version.protocolContent
         });
         
         // Load schema blocks
@@ -285,7 +292,14 @@ export function ProtocolWorkbench({
     useDebouncedCallback(() => {
       // Only auto-save if title and number are present
       const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
+      console.log('⏱️  [Auto-save] Debounced callback triggered', {
+        hasTitle: !!protocolTitle,
+        hasNumber: !!protocolNumber,
+        protocolId: initialProtocolId
+      });
+
       if (protocolTitle && protocolNumber) {
+        console.log('💾 [Auto-save] Saving draft:', { protocolTitle, protocolNumber });
         versionControl.saveProtocol(
           protocolTitle,
           protocolNumber,
@@ -295,6 +309,8 @@ export function ProtocolWorkbench({
           'draft',
           initialProtocolId
         );
+      } else {
+        console.warn('⚠️  [Auto-save] Skipped - missing title or number');
       }
     }, [protocolState.protocolMetadata, protocolState.protocolContent, schemaState.schemaBlocks, initialProtocolId], 1200);
 
