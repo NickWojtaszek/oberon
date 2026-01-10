@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield } from 'lucide-react';
+import { Switch } from '../ui/switch';
 import { VariableLibrary, SchemaEditor, ProtocolDocument, DependencyGraph, ProtocolAudit, SettingsModal, DependencyModalAdvanced, VersionTagModal, SchemaGeneratorModal, SchemaTemplateLibrary, PrePublishValidationModal } from './components';
 import { ProtocolSelectionModal } from './components/modals/ProtocolSelectionModal';
 import { SaveDraftModal } from './components/modals/SaveDraftModal';
@@ -64,6 +65,32 @@ export function ProtocolWorkbench({
 
   // 🆕 Save Draft Modal
   const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
+
+  // ✨ AI Suggestions State
+  const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState(true);
+  const [protocolDocumentText, setProtocolDocumentText] = useState<string | undefined>(undefined);
+
+  // Prepare protocol context for AI suggestions
+  const protocolContext = useMemo(() => {
+    return {
+      primaryObjective: protocolState.protocolContent.primaryObjective,
+      secondaryObjectives: protocolState.protocolContent.secondaryObjectives,
+      statisticalPlan: protocolState.protocolContent.statisticalPlan,
+      studyPhase: protocolState.protocolMetadata.studyPhase,
+      therapeuticArea: protocolState.protocolMetadata.therapeuticArea,
+      fullProtocolText: protocolDocumentText,
+      existingFields: schemaState.schemaBlocks.map(block => ({
+        name: block.variable.name,
+        role: block.role as string,
+        endpointTier: block.endpointTier || null
+      }))
+    };
+  }, [
+    protocolState.protocolContent,
+    protocolState.protocolMetadata,
+    protocolDocumentText,
+    schemaState.schemaBlocks
+  ]);
 
   // 🔄 Derive current protocol and version from versionControl state
   useEffect(() => {
@@ -543,6 +570,35 @@ export function ProtocolWorkbench({
         </button>
       </div>
 
+      {/* AI Assistant Toggle (only shown on schema tab) */}
+      {activeTab === 'schema' && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-200 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              <div>
+                <div className="text-sm font-semibold text-slate-900">
+                  AI Configuration Assistant
+                </div>
+                <div className="text-xs text-slate-600">
+                  Dr. Puck analyzes your protocol to suggest optimal field settings
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-slate-700">
+                {aiSuggestionsEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+              <Switch
+                checked={aiSuggestionsEnabled}
+                onCheckedChange={setAiSuggestionsEnabled}
+                className="data-[state=checked]:bg-purple-600"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {activeTab === 'schema' ? (
@@ -566,6 +622,8 @@ export function ProtocolWorkbench({
               onShowSchemaGenerator={() => setShowSchemaGenerator(true)}
               onShowTemplateLibrary={() => setShowTemplateLibrary(true)}
               onSaveDraft={() => handleSave('draft')}
+              aiSuggestionsEnabled={aiSuggestionsEnabled}
+              protocolContext={protocolContext}
             />
             <ProtocolUnifiedSidebar
               activeTab={activeTab}

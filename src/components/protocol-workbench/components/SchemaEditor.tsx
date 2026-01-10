@@ -23,6 +23,20 @@ interface SchemaEditorProps {
   onShowSchemaGenerator?: () => void;
   onShowTemplateLibrary?: () => void;
   onSaveDraft?: () => void;
+  aiSuggestionsEnabled?: boolean;
+  protocolContext?: {
+    primaryObjective?: string;
+    secondaryObjectives?: string;
+    statisticalPlan?: string;
+    studyPhase?: string;
+    therapeuticArea?: string;
+    fullProtocolText?: string;
+    existingFields?: Array<{
+      name: string;
+      role: string;
+      endpointTier: string | null;
+    }>;
+  };
 }
 
 export function SchemaEditor({
@@ -40,6 +54,8 @@ export function SchemaEditor({
   onShowSchemaGenerator,
   onShowTemplateLibrary,
   onSaveDraft,
+  aiSuggestionsEnabled = true,
+  protocolContext,
 }: SchemaEditorProps) {
   const { t } = useTranslation('ui');
   
@@ -121,6 +137,8 @@ export function SchemaEditor({
                   onShowDependencies={onShowDependencies}
                   onShowVersionTag={onShowVersionTag}
                   onDuplicate={onDuplicate}
+                  aiSuggestionsEnabled={aiSuggestionsEnabled}
+                  protocolContext={protocolContext}
                 />
               ))}
             </ContentContainer>

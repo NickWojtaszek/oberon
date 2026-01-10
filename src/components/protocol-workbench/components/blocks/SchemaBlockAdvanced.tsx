@@ -22,6 +22,20 @@ interface SchemaBlockAdvancedProps {
   onShowDependencies: (block: SchemaBlock) => void;
   onShowVersionTag: (block: SchemaBlock) => void;
   onDuplicate?: (block: SchemaBlock) => void;
+  aiSuggestionsEnabled?: boolean;
+  protocolContext?: {
+    primaryObjective?: string;
+    secondaryObjectives?: string;
+    statisticalPlan?: string;
+    studyPhase?: string;
+    therapeuticArea?: string;
+    fullProtocolText?: string;
+    existingFields?: Array<{
+      name: string;
+      role: string;
+      endpointTier: string | null;
+    }>;
+  };
 }
 
 const ITEM_TYPE = 'schema-block';
@@ -39,6 +53,8 @@ export function SchemaBlockAdvanced({
   onShowDependencies,
   onShowVersionTag,
   onDuplicate,
+  aiSuggestionsEnabled = true,
+  protocolContext,
 }: SchemaBlockAdvancedProps) {
   const { t } = useTranslation('protocol');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -360,7 +376,12 @@ export function SchemaBlockAdvanced({
 
         {/* Configuration HUD (appears on hover) */}
         {showConfigHUD && isHovered && !isEditingName && !isSection && (
-          <ConfigurationHUD block={block} onUpdate={onUpdate} />
+          <ConfigurationHUD
+            block={block}
+            onUpdate={onUpdate}
+            aiSuggestionsEnabled={aiSuggestionsEnabled}
+            protocolContext={protocolContext}
+          />
         )}
       </div>
 
@@ -387,6 +408,8 @@ export function SchemaBlockAdvanced({
               onShowDependencies={onShowDependencies}
               onShowVersionTag={onShowVersionTag}
               onDuplicate={onDuplicate}
+              aiSuggestionsEnabled={aiSuggestionsEnabled}
+              protocolContext={protocolContext}
             />
           ))}
         </div>

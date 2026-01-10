@@ -651,3 +651,233 @@ Respond in JSON format:
     throw error;
   }
 }
+
+/**
+ * AI-assisted schema field configuration
+ */
+export interface SchemaFieldSuggestion {
+  role: 'Predictor' | 'Outcome' | 'Structure' | 'All';
+  roleConfidence: number;
+  roleRationale: string;
+  endpointTier: 'primary' | 'secondary' | 'exploratory' | null;
+  endpointConfidence: number;
+  endpointRationale: string;
+  analysisMethod: 'survival' | 'frequency' | 'mean-comparison' | 'non-parametric' | 'chi-square' | null;
+  analysisConfidence: number;
+  analysisRationale: string;
+  dataType: 'Continuous' | 'Categorical' | 'Boolean' | 'Date' | 'Text' | 'Multi-Select';
+  dataTypeConfidence: number;
+  dataTypeRationale: string;
+  suggestedDependencies?: Array<{
+    targetFieldName: string;
+    conditionType: 'show' | 'hide' | 'require' | 'disable';
+    conditionOperator: 'equals' | 'not-equals' | 'greater-than' | 'less-than' | 'exists';
+    conditionValue?: string | number;
+    reasoning: string;
+    confidence: number;
+  }>;
+}
+
+/**
+ * Suggest optimal configuration for a schema field based on protocol context
+ */
+export async function suggestFieldConfiguration(
+  fieldName: string,
+  protocolContext: {
+    primaryObjective?: string;
+    secondaryObjectives?: string;
+    statisticalPlan?: string;
+    studyPhase?: string;
+    therapeuticArea?: string;
+    fullProtocolText?: string;
+    existingFields?: Array<{
+      name: string;
+      role: string;
+      endpointTier: string | null;
+    }>;
+  }
+): Promise<SchemaFieldSuggestion> {
+
+  const existingFieldsContext = protocolContext.existingFields && protocolContext.existingFields.length > 0
+    ? `\n**Existing Schema Fields:**\n${protocolContext.existingFields.map(f =>
+        `- ${f.name} (Role: ${f.role}, Endpoint: ${f.endpointTier || 'None'})`
+      ).join('\n')}`
+    : '';
+
+  const fullProtocolContext = protocolContext.fullProtocolText
+    ? `\n**Full Protocol Document (excerpt):**\n${protocolContext.fullProtocolText.substring(0, 12000)}\n`
+    : '';
+
+  const prompt = `You are Dr. Puck, the Schema Architect persona from the Oberon research platform. Your expertise is in designing optimal clinical trial data collection schemas that align perfectly with protocol requirements.
+
+**Protocol Context:**
+- Primary Objective: ${protocolContext.primaryObjective || 'Not specified'}
+- Secondary Objectives: ${protocolContext.secondaryObjectives || 'Not specified'}
+- Statistical Analysis Plan: ${protocolContext.statisticalPlan || 'Not specified'}
+- Study Phase: ${protocolContext.studyPhase || 'Not specified'}
+- Therapeutic Area: ${protocolContext.therapeuticArea || 'Not specified'}
+${fullProtocolContext}${existingFieldsContext}
+
+**New Field to Configure:**
+Field Name: "${fieldName}"
+
+**Your Task:**
+Analyze the protocol context and suggest the optimal configuration for this field. Consider:
+1. The field's role in the study (Predictor/Outcome/Structure/All)
+2. Whether it's an endpoint (primary/secondary/exploratory/none)
+3. The appropriate statistical analysis method
+4. The correct data type for collection
+5. Any logical dependencies with existing fields
+
+Return a JSON object with this EXACT structure:
+{
+  "role": "Predictor" | "Outcome" | "Structure" | "All",
+  "roleConfidence": 0-100,
+  "roleRationale": "Brief explanation why this role fits",
+  "endpointTier": "primary" | "secondary" | "exploratory" | null,
+  "endpointConfidence": 0-100,
+  "endpointRationale": "How this aligns with protocol endpoints",
+  "analysisMethod": "survival" | "frequency" | "mean-comparison" | "non-parametric" | "chi-square" | null,
+  "analysisConfidence": 0-100,
+  "analysisRationale": "Based on statistical plan and data type",
+  "dataType": "Continuous" | "Categorical" | "Boolean" | "Date" | "Text" | "Multi-Select",
+  "dataTypeConfidence": 0-100,
+  "dataTypeRationale": "Why this data type is appropriate",
+  "suggestedDependencies": [
+    {
+      "targetFieldName": "exact name of existing field",
+      "conditionType": "show" | "hide" | "require" | "disable",
+      "conditionOperator": "equals" | "not-equals" | "greater-than" | "less-than" | "exists",
+      "conditionValue": "specific value" | number,
+      "reasoning": "Clinical or logical reason for dependency",
+      "confidence": 0-100
+    }
+  ]
+}
+
+Guidelines:
+- Predictor: Variables that predict or influence outcomes (treatments, demographics, baseline)
+- Outcome: Variables measuring study results (endpoints, efficacy, safety)
+- Structure: Organizational variables (visit number, site ID, subject ID)
+- All: Variables that don't fit clearly (use sparingly)
+- Only suggest dependencies if there's a clear logical relationship
+- Be conservative with confidence scores - use 70-85 for typical cases, 90+ only when very certain`;
+
+  try {
+    const responseText = await callGemini(prompt, 2048);
+    const parsed = extractJSONFromResponse(responseText);
+
+    return {
+      role: parsed.role || 'All',
+      roleConfidence: parsed.roleConfidence || 70,
+      roleRationale: parsed.roleRationale || 'Based on field name and protocol context',
+      endpointTier: parsed.endpointTier || null,
+      endpointConfidence: parsed.endpointConfidence || 70,
+      endpointRationale: parsed.endpointRationale || 'Based on protocol objectives',
+      analysisMethod: parsed.analysisMethod || null,
+      analysisConfidence: parsed.analysisConfidence || 70,
+      analysisRationale: parsed.analysisRationale || 'Based on data type and statistical plan',
+      dataType: parsed.dataType || 'Text',
+      dataTypeConfidence: parsed.dataTypeConfidence || 70,
+      dataTypeRationale: parsed.dataTypeRationale || 'Based on field semantics',
+      suggestedDependencies: parsed.suggestedDependencies || []
+    };
+  } catch (error) {
+    console.error('Field configuration suggestion failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Analyze multiple existing fields and suggest configuration improvements
+ */
+export async function analyzeBulkFieldConfiguration(
+  fields: Array<{
+    id: string;
+    name: string;
+    currentRole: string;
+    currentEndpointTier: string | null;
+    currentAnalysisMethod: string | null;
+    dataType: string;
+  }>,
+  protocolContext: {
+    primaryObjective?: string;
+    secondaryObjectives?: string;
+    statisticalPlan?: string;
+    studyPhase?: string;
+    fullProtocolText?: string;
+  }
+): Promise<Map<string, SchemaFieldSuggestion>> {
+
+  const fullProtocolContext = protocolContext.fullProtocolText
+    ? `\n**Full Protocol Document (excerpt):**\n${protocolContext.fullProtocolText.substring(0, 10000)}\n`
+    : '';
+
+  const prompt = `You are Dr. Puck, Schema Architect. Review this existing clinical trial schema and suggest improvements.
+
+**Protocol Context:**
+- Primary Objective: ${protocolContext.primaryObjective || 'Not specified'}
+- Secondary Objectives: ${protocolContext.secondaryObjectives || 'Not specified'}
+- Statistical Plan: ${protocolContext.statisticalPlan || 'Not specified'}
+- Study Phase: ${protocolContext.studyPhase || 'Not specified'}
+${fullProtocolContext}
+
+**Existing Fields to Review:**
+${fields.map(f => `
+- ${f.name}
+  Current: Role=${f.currentRole}, Endpoint=${f.currentEndpointTier || 'None'}, Analysis=${f.currentAnalysisMethod || 'None'}, Type=${f.dataType}
+`).join('\n')}
+
+**Task:** For EACH field, determine if configuration changes are needed. Only suggest changes if current configuration is suboptimal based on protocol.
+
+Return JSON array:
+[
+  {
+    "fieldId": "field-id",
+    "fieldName": "field name",
+    "needsChange": true/false,
+    "suggestedRole": "Predictor" | "Outcome" | "Structure" | "All",
+    "suggestedEndpointTier": "primary" | "secondary" | "exploratory" | null,
+    "suggestedAnalysisMethod": "survival" | "frequency" | "mean-comparison" | "non-parametric" | "chi-square" | null,
+    "confidence": 0-100,
+    "rationale": "Why this configuration based on protocol objectives and endpoints"
+  }
+]
+
+Only include fields where needsChange=true in the output.`;
+
+  try {
+    const responseText = await callGemini(prompt, 4096);
+    const parsed = extractJSONFromResponse(responseText);
+
+    const suggestionMap = new Map<string, SchemaFieldSuggestion>();
+
+    const suggestions = Array.isArray(parsed) ? parsed : [];
+
+    for (const item of suggestions) {
+      if (item.needsChange) {
+        const field = fields.find(f => f.id === item.fieldId);
+        suggestionMap.set(item.fieldId, {
+          role: item.suggestedRole || 'All',
+          roleConfidence: item.confidence || 70,
+          roleRationale: item.rationale || 'Based on protocol analysis',
+          endpointTier: item.suggestedEndpointTier || null,
+          endpointConfidence: item.confidence || 70,
+          endpointRationale: item.rationale || 'Based on protocol analysis',
+          analysisMethod: item.suggestedAnalysisMethod || null,
+          analysisConfidence: item.confidence || 70,
+          analysisRationale: item.rationale || 'Based on protocol analysis',
+          dataType: (field?.dataType as any) || 'Text',
+          dataTypeConfidence: 100,
+          dataTypeRationale: 'Existing data type retained',
+          suggestedDependencies: []
+        });
+      }
+    }
+
+    return suggestionMap;
+  } catch (error) {
+    console.error('Bulk field analysis failed:', error);
+    throw error;
+  }
+}
