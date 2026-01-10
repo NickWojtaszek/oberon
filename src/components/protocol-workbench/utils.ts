@@ -291,3 +291,102 @@ export const toggleExpandById = (blocks: SchemaBlock[], blockId: string): Schema
     return b;
   });
 };
+
+/**
+ * Update parentId recursively when moving a block
+ * The block itself gets the new parentId, children keep pointing to their direct parent
+ */
+export const updateParentIdRecursively = (
+  block: SchemaBlock,
+  newParentId: string | undefined
+): SchemaBlock => {
+  return {
+    ...block,
+    parentId: newParentId,
+    // Children keep their parentId as the block's id (unchanged relationship)
+    children: block.children?.map(child => ({
+      ...child,
+      parentId: block.id
+    }))
+  };
+};
+
+/**
+ * Insert a block at a specific position (before/after) relative to a target block
+ * Uses immutable operations (no splice mutations)
+ */
+export const insertBlockAtPosition = (
+  blocks: SchemaBlock[],
+  targetId: string,
+  blockToInsert: SchemaBlock,
+  position: 'before' | 'after'
+): SchemaBlock[] => {
+  // First check if target is at root level
+  const rootIndex = blocks.findIndex(b => b.id === targetId);
+  if (rootIndex !== -1) {
+    const insertIndex = position === 'before' ? rootIndex : rootIndex + 1;
+    return [
+      ...blocks.slice(0, insertIndex),
+      blockToInsert,
+      ...blocks.slice(insertIndex)
+    ];
+  }
+
+  // Target is nested - find parent and insert there
+  return blocks.map(block => {
+    if (block.children) {
+      const childIndex = block.children.findIndex(c => c.id === targetId);
+      if (childIndex !== -1) {
+        const insertIndex = position === 'before' ? childIndex : childIndex + 1;
+        return {
+          ...block,
+          children: [
+            ...block.children.slice(0, insertIndex),
+            { ...blockToInsert, parentId: block.id },
+            ...block.children.slice(insertIndex)
+          ]
+        };
+      }
+      // Recursively search in children
+      return { ...block, children: insertBlockAtPosition(block.children, targetId, blockToInsert, position) };
+    }
+    return block;
+  });
+};
+
+/**
+ * Get all section blocks (blocks with dataType === 'Section')
+ * Useful for parent dropdown in ordering controls
+ */
+export const getAllSections = (blocks: SchemaBlock[]): SchemaBlock[] => {
+  return getAllBlocks(blocks).filter(b => b.dataType === 'Section');
+};
+
+/**
+ * Get position info for a block (index within siblings, total siblings count)
+ * Returns null if block not found
+ */
+export const getBlockPosition = (
+  blocks: SchemaBlock[],
+  blockId: string
+): { index: number; total: number; parentId?: string } | null => {
+  // Check root level
+  const rootIndex = blocks.findIndex(b => b.id === blockId);
+  if (rootIndex !== -1) {
+    return { index: rootIndex, total: blocks.length, parentId: undefined };
+  }
+
+  // Search in children recursively
+  for (const block of blocks) {
+    if (block.children) {
+      const childIndex = block.children.findIndex(c => c.id === blockId);
+      if (childIndex !== -1) {
+        return { index: childIndex, total: block.children.length, parentId: block.id };
+      }
+      const nestedResult = getBlockPosition(block.children, blockId);
+      if (nestedResult) return nestedResult;
+    }
+  }
+
+  return null;
+};

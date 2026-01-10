@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { GripVertical, ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,8 @@ import { BlockBadges } from './BlockBadges';
 import { BlockToolbar } from './BlockToolbar';
 import { ConfigurationHUD } from './ConfigurationHUD';
 import type { SchemaBlock } from '../../types';
+
+type DropPosition = 'before' | 'after' | 'inside' | null;
 
 interface SchemaBlockAdvancedProps {
   block: SchemaBlock;
@@ -42,6 +44,8 @@ export function SchemaBlockAdvanced({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(block.variable.name);
   const [showConfigHUD, setShowConfigHUD] = useState(false);
+  const [dropPosition, setDropPosition] = useState<DropPosition>(null);
+  const blockRef = useRef<HTMLDivElement>(null);
 
   const isSection = block.dataType === 'Section';
   const Icon = block.variable.icon;
@@ -56,26 +60,71 @@ export function SchemaBlockAdvanced({
   };
   const roleColor = roleColorMap[block.role] || 'slate';
 
-  // Drag and drop
+  // Drag and drop with enhanced position detection
   const [{ isDragging }, drag] = useDrag({
     type: ITEM_TYPE,
     item: { id: block.id },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
+    end: () => {
+      setDropPosition(null);
+    },
   });
 
   const [{ isOver }, drop] = useDrop({
     accept: ITEM_TYPE,
-    drop: (item: { id: string }) => {
-      if (item.id === block.id) return;
-      const position = isSection ? 'inside' : 'after';
-      onReorder(item.id, block.id, position);
+    hover: (item: { id: string }, monitor) => {
+      if (item.id === block.id) {
+        setDropPosition(null);
+        return;
+      }
+
+      const hoverBoundingRect = blockRef.current?.getBoundingClientRect();
+      if (!hoverBoundingRect) return;
+
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) return;
+
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      const blockHeight = hoverBoundingRect.bottom - hoverBoundingRect.top;
+
+      if (isSection) {
+        // For sections: top 20% = before, middle 60% = inside, bottom 20% = after
+        const topZone = blockHeight * 0.2;
+        const bottomZone = blockHeight * 0.8;
+
+        if (hoverClientY < topZone) {
+          setDropPosition('before');
+        } else if (hoverClientY > bottomZone) {
+          setDropPosition('after');
+        } else {
+          setDropPosition('inside');
+        }
+      } else {
+        // For fields: top 50% = before, bottom 50% = after
+        const midPoint = blockHeight / 2;
+        setDropPosition(hoverClientY < midPoint ? 'before' : 'after');
+      }
+    },
+    drop: (item: { id: string }, monitor) => {
+      if (item.id === block.id || !dropPosition) return;
+
+      // Only handle drop if this is the actual drop target (not a parent)
+      if (monitor.didDrop()) return;
+
+      onReorder(item.id, block.id, dropPosition);
+      setDropPosition(null);
     },
     collect: (monitor) => ({
       isOver: monitor.isOver({ shallow: true }),
     }),
   });
+
+  // Clear drop position when not hovering
+  const handleDragLeave = () => {
+    setDropPosition(null);
+  };
 
   const handleNameSave = () => {
     if (editedName.trim()) {
@@ -84,9 +133,15 @@ export function SchemaBlockAdvanced({
     setIsEditingName(false);
   };
 
+  // Combine refs for drag, drop, and position tracking
+  const combinedRef = (node: HTMLDivElement | null) => {
+    drag(drop(node));
+    (blockRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+  };
+
   return (
     <div
-      ref={(node) => drag(drop(node))}
+      ref={combinedRef}
       className={`group relative ${isDragging ? 'opacity-50' : ''}`}
       style={{ marginLeft: `${depth * 32}px` }}
       onMouseEnter={() => {
@@ -96,8 +151,14 @@ export function SchemaBlockAdvanced({
       onMouseLeave={() => {
         onHover(null);
         setShowConfigHUD(false);
+        handleDragLeave();
       }}
     >
+      {/* Drop zone indicator - BEFORE */}
+      {isOver && dropPosition === 'before' && (
+        <div className="absolute -top-1 left-0 right-0 h-1 bg-blue-500 rounded-full z-20 shadow-lg shadow-blue-500/50" />
+      )}
+
       {/* Connecting line for nested items */}
       {depth > 0 && (
         <>
@@ -118,11 +179,21 @@ export function SchemaBlockAdvanced({
         } ${
           isHovered
             ? 'shadow-md border-blue-300 bg-blue-50/30'
+            : isOver && dropPosition === 'inside'
+            ? 'border-2 border-dashed border-blue-400 bg-blue-50/30'
             : isOver
             ? 'border-blue-200 bg-blue-50/20'
             : 'hover:border-slate-300 hover:shadow-sm'
         }`}
       >
+        {/* Drop zone indicator - INSIDE (for sections) */}
+        {isOver && dropPosition === 'inside' && isSection && (
+          <div className="absolute inset-0 bg-blue-100/40 rounded-lg pointer-events-none z-10 flex items-center justify-center">
+            <span className="text-xs font-medium text-blue-600 bg-white px-2 py-1 rounded shadow">
+              Drop inside section
+            </span>
+          </div>
+        )}
         {/* Section Header Style */}
         {isSection ? (
           <div className="px-4 py-3">
@@ -292,6 +363,11 @@ export function SchemaBlockAdvanced({
           <ConfigurationHUD block={block} onUpdate={onUpdate} />
         )}
       </div>
+
+      {/* Drop zone indicator - AFTER */}
+      {isOver && dropPosition === 'after' && (
+        <div className="absolute -bottom-1 left-0 right-0 h-1 bg-blue-500 rounded-full z-20 shadow-lg shadow-blue-500/50" />
+      )}
 
       {/* Children (Recursive) */}
       {isSection && block.isExpanded && block.children && block.children.length > 0 && (

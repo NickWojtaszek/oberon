@@ -6,7 +6,7 @@ import { ProtocolUnifiedSidebar } from './components/ProtocolUnifiedSidebar';
 import { useSchemaState, useProtocolState, useVersionControl } from './hooks';
 import type { SchemaBlock, ConditionalDependency, SchemaTemplate } from './types';
 import type { ProtocolAuditResult, AuditIssue } from './auditTypes';
-import { getAllBlocks, validateAndImportSchema } from './utils';
+import { getAllBlocks, validateAndImportSchema, getAllSections, getBlockPosition } from './utils';
 import { PublishProtocolButton } from '../PublishProtocolButton';
 import { VersionConflictModal } from '../VersionConflictModal';
 import { canEditProtocolVersion, updateDataCollectionStats } from '../../utils/schemaLocking';
@@ -519,13 +519,25 @@ export function ProtocolWorkbench({
       </div>
 
       {/* Modals */}
-      {selectedBlockForSettings && (
-        <SettingsModal
-          block={selectedBlockForSettings}
-          onClose={() => setSelectedBlockForSettings(null)}
-          onSave={schemaState.updateBlock}
-        />
-      )}
+      {selectedBlockForSettings && (() => {
+        const position = getBlockPosition(schemaState.schemaBlocks, selectedBlockForSettings.id);
+        const canMoveUp = position ? position.index > 0 : false;
+        const canMoveDown = position ? position.index < position.total - 1 : false;
+
+        return (
+          <SettingsModal
+            block={selectedBlockForSettings}
+            onClose={() => setSelectedBlockForSettings(null)}
+            onSave={schemaState.updateBlock}
+            availableSections={getAllSections(schemaState.schemaBlocks)}
+            onMoveUp={schemaState.moveBlockUp}
+            onMoveDown={schemaState.moveBlockDown}
+            onChangeParent={schemaState.changeBlockParent}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
+          />
+        );
+      })()}
 
       {selectedBlockForDependency && (
         <DependencyModalAdvanced

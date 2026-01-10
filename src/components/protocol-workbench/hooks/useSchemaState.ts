@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { SchemaBlock, Variable } from '../types';
-import { addChildToBlock, removeBlockById, updateBlockById, toggleExpandById, getAllBlocks } from '../utils';
+import { addChildToBlock, removeBlockById, updateBlockById, toggleExpandById, getAllBlocks, insertBlockAtPosition, updateParentIdRecursively, getAllSections, getBlockPosition } from '../utils';
 import { variableLibrary } from '../constants';
 
 export function useSchemaState() {
@@ -57,34 +57,126 @@ export function useSchemaState() {
       const draggedBlock = allBlocks.find(b => b.id === draggedId);
       if (!draggedBlock) return prev;
 
-      // Remove from original position
-      let newBlocks = removeBlockById(prev, draggedId);
-
-      // Add to new position
+      // Prevent dropping a section into itself or its descendants
       if (position === 'inside') {
-        newBlocks = addChildToBlock(newBlocks, targetId, draggedBlock);
-      } else {
-        // Find target and add before/after
-        const targetBlock = getAllBlocks(newBlocks).find(b => b.id === targetId);
-        if (!targetBlock) return prev;
-
-        if (targetBlock.parentId) {
-          // Target has parent, add as sibling
-          const parent = getAllBlocks(newBlocks).find(b => b.id === targetBlock.parentId);
-          if (parent?.children) {
-            const targetIndex = parent.children.findIndex(c => c.id === targetId);
-            const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
-            parent.children.splice(insertIndex, 0, { ...draggedBlock, parentId: targetBlock.parentId });
-          }
-        } else {
-          // Target is root level
-          const targetIndex = newBlocks.findIndex(b => b.id === targetId);
-          const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
-          newBlocks.splice(insertIndex, 0, { ...draggedBlock, parentId: undefined });
+        const targetAndDescendants = getAllBlocks([draggedBlock]);
+        if (targetAndDescendants.some(b => b.id === targetId)) {
+          return prev; // Cannot drop into self or descendant
         }
       }
 
-      return [...newBlocks];
+      // Remove from original position
+      let newBlocks = removeBlockById(prev, draggedId);
+
+      // Prepare the block with updated parentId
+      const preparedBlock = position === 'inside'
+        ? updateParentIdRecursively(draggedBlock, targetId)
+        : (() => {
+            const targetBlock = getAllBlocks(newBlocks).find(b => b.id === targetId);
+            return updateParentIdRecursively(draggedBlock, targetBlock?.parentId);
+          })();
+
+      // Add to new position using immutable insertion
+      if (position === 'inside') {
+        newBlocks = addChildToBlock(newBlocks, targetId, preparedBlock);
+      } else {
+        newBlocks = insertBlockAtPosition(newBlocks, targetId, preparedBlock, position);
+      }
+
+      return newBlocks;
+    });
+  }, []);
+
+  // Move block up within its sibling array
+  const moveBlockUp = useCallback((blockId: string) => {
+    setSchemaBlocks(prev => {
+      const block = getAllBlocks(prev).find(b => b.id === blockId);
+      if (!block) return prev;
+
+      if (block.parentId) {
+        // Block is inside a section - find parent and swap with previous sibling
+        const parent = getAllBlocks(prev).find(b => b.id === block.parentId);
+        if (!parent?.children) return prev;
+
+        const index = parent.children.findIndex(c => c.id === blockId);
+        if (index <= 0) return prev; // Already first
+
+        const newChildren = [...parent.children];
+        [newChildren[index - 1], newChildren[index]] = [newChildren[index], newChildren[index - 1]];
+        return updateBlockById(prev, parent.id, { children: newChildren });
+      } else {
+        // Block is at root level
+        const index = prev.findIndex(b => b.id === blockId);
+        if (index <= 0) return prev; // Already first
+
+        const newBlocks = [...prev];
+        [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
+        return newBlocks;
+      }
+    });
+  }, []);
+
+  // Move block down within its sibling array
+  const moveBlockDown = useCallback((blockId: string) => {
+    setSchemaBlocks(prev => {
+      const block = getAllBlocks(prev).find(b => b.id === blockId);
+      if (!block) return prev;
+
+      if (block.parentId) {
+        // Block is inside a section
+        const parent = getAllBlocks(prev).find(b => b.id === block.parentId);
+        if (!parent?.children) return prev;
+
+        const index = parent.children.findIndex(c => c.id === blockId);
+        if (index >= parent.children.length - 1) return prev; // Already last
+
+        const newChildren = [...parent.children];
+        [newChildren[index], newChildren[index + 1]] = [newChildren[index + 1], newChildren[index]];
+        return updateBlockById(prev, parent.id, { children: newChildren });
+      } else {
+        // Block is at root level
+        const index = prev.findIndex(b => b.id === blockId);
+        if (index >= prev.length - 1) return prev; // Already last
+
+        const newBlocks = [...prev];
+        [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
+        return newBlocks;
+      }
+    });
+  }, []);
+
+  // Change block's parent (move to different section or root)
+  const changeBlockParent = useCallback((blockId: string, newParentId: string | undefined) => {
+    setSchemaBlocks(prev => {
+      const block = getAllBlocks(prev).find(b => b.id === blockId);
+      if (!block) return prev;
+
+      // Don't move if already at the same parent
+      if (block.parentId === newParentId) return prev;
+
+      // Prevent moving a section into itself or its descendants
+      if (newParentId) {
+        const blockAndDescendants = getAllBlocks([block]);
+        if (blockAndDescendants.some(b => b.id === newParentId)) {
+          return prev; // Cannot move into self or descendant
+        }
+      }
+
+      // Remove from current location
+      let newBlocks = removeBlockById(prev, blockId);
+
+      // Prepare block with new parentId
+      const preparedBlock = updateParentIdRecursively(block, newParentId);
+
+      // Add to new parent or root
+      if (newParentId) {
+        newBlocks = addChildToBlock(newBlocks, newParentId, preparedBlock);
+      } else {
+        // Add to root (at the end)
+        newBlocks = [...newBlocks, preparedBlock];
+      }
+
+      return newBlocks;
     });
   }, []);
 
@@ -126,6 +218,9 @@ export function useSchemaState() {
     updateBlock,
     toggleExpanded,
     reorderBlocks,
+    moveBlockUp,
+    moveBlockDown,
+    changeBlockParent,
     clearSchema,
     loadSchema
   };

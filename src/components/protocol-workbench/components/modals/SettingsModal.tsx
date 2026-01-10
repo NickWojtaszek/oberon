@@ -1,4 +1,4 @@
-import { X, Save } from 'lucide-react';
+import { X, Save, ChevronUp, ChevronDown, FolderTree } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SchemaBlock, DataType } from '../../types';
@@ -8,11 +8,31 @@ interface SettingsModalProps {
   block: SchemaBlock;
   onClose: () => void;
   onSave: (blockId: string, updates: Partial<SchemaBlock>) => void;
+  // Ordering controls (optional for backward compatibility)
+  availableSections?: SchemaBlock[];
+  onMoveUp?: (blockId: string) => void;
+  onMoveDown?: (blockId: string) => void;
+  onChangeParent?: (blockId: string, newParentId: string | undefined) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
-export function SettingsModal({ block, onClose, onSave }: SettingsModalProps) {
+export function SettingsModal({
+  block,
+  onClose,
+  onSave,
+  availableSections = [],
+  onMoveUp,
+  onMoveDown,
+  onChangeParent,
+  canMoveUp = false,
+  canMoveDown = false,
+}: SettingsModalProps) {
   const { t } = useTranslation('ui');
   const [localBlock, setLocalBlock] = useState<SchemaBlock>(block);
+
+  // Filter out self and descendants from available sections (prevent circular nesting)
+  const validSections = availableSections.filter(section => section.id !== block.id);
 
   useEffect(() => {
     setLocalBlock(block);
@@ -288,6 +308,72 @@ export function SettingsModal({ block, onClose, onSave }: SettingsModalProps) {
                 />
               </div>
             </>
+          )}
+
+          {/* Position & Nesting Section */}
+          {(onMoveUp || onMoveDown || onChangeParent) && (
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <FolderTree className="w-4 h-4 text-slate-600" />
+                <label className="text-sm font-medium text-slate-700">
+                  Position & Nesting
+                </label>
+              </div>
+
+              {/* Parent Section Selector */}
+              {onChangeParent && (
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                    Parent Section
+                  </label>
+                  <select
+                    value={block.parentId || 'root'}
+                    onChange={(e) => {
+                      const newParentId = e.target.value === 'root' ? undefined : e.target.value;
+                      onChangeParent(block.id, newParentId);
+                    }}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="root">Root Level (No Parent)</option>
+                    {validSections.map(section => (
+                      <option key={section.id} value={section.id}>
+                        {section.variable.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Move this block into a different section
+                  </p>
+                </div>
+              )}
+
+              {/* Move Up/Down Buttons */}
+              {(onMoveUp || onMoveDown) && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                    Position Within Current Container
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onMoveUp?.(block.id)}
+                      disabled={!canMoveUp}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                      Move Up
+                    </button>
+                    <button
+                      onClick={() => onMoveDown?.(block.id)}
+                      disabled={!canMoveDown}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                      Move Down
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
