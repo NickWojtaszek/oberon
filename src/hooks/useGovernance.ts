@@ -7,7 +7,7 @@
  */
 
 import { useAuth } from '../contexts/AuthContext';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { 
   getUserRole, 
   getUserPermissions, 

@@ -35,7 +35,7 @@ import {
 import { usePersonas } from '../core/personaContext';
 import { getAllPersonas } from '../core/personaRegistry';
 import type { PersonaId, PersonaConfig } from '../core/personaTypes';
-import { useProject } from '../../../contexts/ProjectContext';
+import { useProject } from '../../../contexts/ProtocolContext';
 import { PermissionBadge, AIAutonomyBadge } from '../../ui/StatusBadge';
 import { PersonaConfigurationPanel } from './PersonaConfigurationPanel';
 import type { PersonaCustomization } from '../../../types/aiGovernance';

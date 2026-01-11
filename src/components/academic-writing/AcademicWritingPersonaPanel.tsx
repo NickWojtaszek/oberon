@@ -16,7 +16,7 @@ import { usePersonas } from '../ai-personas/core/personaContext';
 import { getPersona, getAllPersonas } from '../ai-personas/core/personaRegistry';
 import { DataConnectionPanel } from './DataConnectionPanel';
 import type { ValidationResult } from '../../services/manuscriptValidationService';
-import { useProject } from '../../contexts/ProjectContext';
+import { useProject } from '../../contexts/ProtocolContext';
 
 export interface DataConnection {
   source: string;

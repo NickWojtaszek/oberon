@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useProject } from '../../../contexts/ProjectContext';
+import { useProject } from '../../../contexts/ProtocolContext';
 import { storage } from '../../../utils/storageService';
 import type { SavedProtocol, ProtocolVersion } from '../../protocol-workbench/types';
 import type { DatabaseTable } from '../utils/schemaGenerator';

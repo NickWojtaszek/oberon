@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Crown, GraduationCap, BarChart3, Database, Building, ChevronDown, Info } from 'lucide-react';
 import { FEATURE_FLAGS } from '../../config/featureFlags';
 import { useGovernance } from '../../hooks/useGovernance';
-import { useProject } from '../../contexts/ProjectContext';
+import { useProject } from '../../contexts/ProtocolContext';
 import type { UserRole } from '../../types/governance';
 import { ROLE_DISPLAY_NAMES, ROLE_DESCRIPTIONS } from '../../types/governance';
 

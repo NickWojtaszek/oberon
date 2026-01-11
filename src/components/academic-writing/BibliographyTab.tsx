@@ -1,11 +1,11 @@
 // Bibliography Tab - Auto-Generated References
 
-import { useState, useMemo, useContext } from 'react';
+import { useState, useMemo } from 'react';
 import { Copy, Check, Plus, Trash2, BookOpen, Download, ExternalLink } from 'lucide-react';
 import type { BibliographyEntry, CitationStyle } from '../../types/aiMode';
 import type { SourceDocument } from '../../types/manuscript';
 import { copyToClipboard } from '../../utils/clipboard';
-import { ProjectContext } from '../../contexts/ProjectContext';
+import { useProtocol } from '../../contexts/ProtocolContext';
 
 interface BibliographyTabProps {
   usedCitations: { citationKey: string; count: number }[];
@@ -14,17 +14,17 @@ interface BibliographyTabProps {
   onStyleChange: (style: CitationStyle) => void;
 }
 
-export function BibliographyTab({ 
-  usedCitations, 
+export function BibliographyTab({
+  usedCitations,
   sources,
   citationStyle,
-  onStyleChange 
+  onStyleChange
 }: BibliographyTabProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  
-  // Get foundational papers from project context
-  const projectContext = useContext(ProjectContext);
-  const foundationalPapers = projectContext?.currentProject?.studyMethodology?.foundationalPapers || [];
+
+  // Get foundational papers from protocol context
+  const { currentProtocol } = useProtocol();
+  const foundationalPapers = currentProtocol?.studyMethodology?.foundationalPapers || [];
 
   // Build bibliography entries from used citations
   const bibliographyEntries: BibliographyEntry[] = usedCitations

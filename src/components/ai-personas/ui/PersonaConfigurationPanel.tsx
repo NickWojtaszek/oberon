@@ -51,7 +51,7 @@ import {
   OPTIONAL_INFERENCE_TYPES,
 } from '../../../types/aiGovernance';
 import { aiAuditLogger } from '../../../services/aiAuditLogger';
-import { useProject } from '../../../contexts/ProjectContext';
+import { useProject } from '../../../contexts/ProtocolContext';
 
 interface PersonaConfigurationPanelProps {
   persona: PersonaConfig;

@@ -43,7 +43,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { getPersona } from './ai-personas/core/personaRegistry';
 import {
   isGeminiConfigured,

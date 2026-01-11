@@ -1,6 +1,6 @@
 import { useState, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { Plus, Search, FolderOpen, ArrowRight } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { ProjectCreationModal } from './ProjectCreationModal';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from './ui/EmptyState';

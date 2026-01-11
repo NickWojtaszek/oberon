@@ -1,19 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useProject } from '../../../contexts/ProjectContext';
 import { storage } from '../../../utils/storageService';
 import type { SavedProtocol, ProtocolVersion, SchemaBlock } from '../types';
 
-// REMOVED: Legacy storage key - now using centralized storage service
-// const STORAGE_KEY = 'clinical-intelligence-protocols';
+// SIMPLIFIED: No project scoping - protocols are globally accessible
 
 export function useVersionControl() {
-  const { currentProject } = useProject();
-
   const [savedProtocols, setSavedProtocols] = useState<SavedProtocol[]>(() => {
-    // 🔄 NEW: Load from project-scoped storage
-    if (typeof window !== 'undefined' && currentProject) {
-      console.log('📂 [useVersionControl] Loading protocols for project:', currentProject.name);
-      return storage.protocols.getAll(currentProject.id);
+    // Load from global storage
+    if (typeof window !== 'undefined') {
+      console.log('[useVersionControl] Loading protocols from global storage');
+      return storage.protocols.getAll();
     }
     return [];
   });
@@ -23,26 +19,21 @@ export function useVersionControl() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // 🔄 NEW: Persist to project-scoped storage whenever savedProtocols changes
+  // Persist to global storage whenever savedProtocols changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && currentProject && savedProtocols.length >= 0) {
-      console.log('💾 [useVersionControl] Saving', savedProtocols.length, 'protocols to project storage');
-      storage.protocols.save(savedProtocols, currentProject.id);
+    if (typeof window !== 'undefined' && savedProtocols.length >= 0) {
+      console.log('[useVersionControl] Saving', savedProtocols.length, 'protocols to storage');
+      storage.protocols.save(savedProtocols);
     }
-  }, [savedProtocols, currentProject]);
+  }, [savedProtocols]);
 
-  // 🔄 NEW: Reload protocols when project changes
+  // Load protocols on mount
   useEffect(() => {
-    if (currentProject) {
-      console.log('🔄 [useVersionControl] Project changed, reloading protocols:', currentProject.name);
-      const protocols = storage.protocols.getAll(currentProject.id);
-      setSavedProtocols(protocols);
-      console.log(`  📦 Loaded ${protocols.length} protocols`);
-    } else {
-      console.log('ℹ️  [useVersionControl] No current project, clearing protocols');
-      setSavedProtocols([]);
-    }
-  }, [currentProject?.id]); // Only depend on ID to avoid infinite loops
+    console.log('[useVersionControl] Loading protocols');
+    const protocols = storage.protocols.getAll();
+    setSavedProtocols(protocols);
+    console.log(`[useVersionControl] Loaded ${protocols.length} protocols`);
+  }, []);
 
   const saveProtocol = useCallback((
     protocolTitle: string,
@@ -53,13 +44,6 @@ export function useVersionControl() {
     status: 'draft' | 'published' = 'draft',
     existingProtocolId?: string // Optional parameter to update existing protocol
   ) => {
-    // 🛡️ Guard: Require project context
-    if (!currentProject) {
-      console.error('❌ [useVersionControl] Cannot save protocol: No current project');
-      setSaveStatus('error');
-      return;
-    }
-
     setIsSaving(true);
     setSaveStatus('saving');
 
@@ -153,11 +137,10 @@ export function useVersionControl() {
       setCurrentVersionId(finalVersionId); // Use the final version ID (existing or new)
       setIsSaving(false);
       setSaveStatus('saved');
-      
-      console.log('✅ [useVersionControl] Protocol saved:', {
+
+      console.log('[useVersionControl] Protocol saved:', {
         protocolId,
-        versionId: finalVersionId,
-        project: currentProject.name
+        versionId: finalVersionId
       });
 
       // Reset status after 3 seconds
@@ -165,7 +148,7 @@ export function useVersionControl() {
         setSaveStatus('idle');
       }, 3000);
     }, 1000);
-  }, [currentProtocolId, savedProtocols.length, currentProject]);
+  }, [currentProtocolId, savedProtocols.length]);
 
   const loadProtocolVersion = useCallback((protocolId: string, versionId: string) => {
     console.log('📖 [useVersionControl] Loading protocol version:', { protocolId, versionId });
@@ -190,19 +173,14 @@ export function useVersionControl() {
   }, [savedProtocols]);
 
   const deleteProtocol = useCallback((protocolId: string) => {
-    if (!currentProject) {
-      console.error('❌ [useVersionControl] Cannot delete protocol: No current project');
-      return;
-    }
-
-    console.log('🗑️  [useVersionControl] Deleting protocol:', protocolId);
+    console.log('[useVersionControl] Deleting protocol:', protocolId);
     setSavedProtocols(prev => prev.filter(p => p.id !== protocolId));
-    
+
     if (currentProtocolId === protocolId) {
       setCurrentProtocolId(null);
       setCurrentVersionId(null);
     }
-  }, [currentProtocolId, currentProject]);
+  }, [currentProtocolId]);
 
   return {
     savedProtocols,

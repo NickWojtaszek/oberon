@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, BookOpen, Sparkles, ShieldCheck, BarChart3, Target, AlertTriangle, X, GitBranch, Users } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { usePersonas } from './ai-personas/core/personaContext';
 import { createDemoManuscript, shouldLoadDemoData, markDemoAsLoaded } from '../utils/demoAcademicData';
 import { useManuscriptState } from '../hooks/useManuscriptState.refactored';

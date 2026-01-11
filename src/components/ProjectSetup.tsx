@@ -26,7 +26,7 @@ import {
   AlertTriangle,
   Award
 } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
 import type { AutonomyMode } from '../types/accountability';
 import { StudyMethodologySelector } from './project/StudyMethodologySelector';

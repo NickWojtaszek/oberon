@@ -28,7 +28,7 @@ import {
   BarChart3,
   Database
 } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { IRBSubmissionCard } from './ethics-board/IRBSubmissionCard';
 import { DocumentUploadPanel } from './ethics-board/DocumentUploadPanel';
 import { RegulatoryAssistant } from './ethics-board/RegulatoryAssistant';

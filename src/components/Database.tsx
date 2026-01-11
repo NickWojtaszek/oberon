@@ -3,7 +3,7 @@ import { SchemaView, DataEntryView, DataBrowserView, QueryView, useDatabase } fr
 import { Analytics } from './Analytics';
 import { ContentContainer } from './ui/ContentContainer';
 import { ModulePersonaPanel } from './ai-personas/ui/ModulePersonaPanel';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { getRecordsByProtocol } from '../utils/dataStorage';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

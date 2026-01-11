@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import type { AutonomyMode, JournalProfile } from '../../types/accountability';
 import { FEATURE_FLAGS } from '../../config/featureFlags';
 import { useGovernance } from '../../hooks/useGovernance';
-import { useProject } from '../../contexts/ProjectContext';
+import { useProtocol } from '../../contexts/ProtocolContext';
 import { STUDY_METHODOLOGIES } from '../../config/studyMethodology';
 import { StatusBadge } from '../ui/StatusBadge';
 import { LanguageToggle } from './LanguageToggle';
@@ -68,13 +68,13 @@ export function GlobalHeader({
   // Translation hooks
   const { t } = useTranslation('navigation');
   const { t: tCommon } = useTranslation('common');
-  
+
   // Get governance state
   const governance = FEATURE_FLAGS.ENABLE_RBAC ? useGovernance() : null;
-  
-  // Phase 4: Get methodology configuration
-  const { currentProject } = useProject();
-  const methodology = currentProject?.studyMethodology;
+
+  // Get protocol context (replaces project)
+  const { currentProtocol } = useProtocol();
+  const methodology = currentProtocol?.studyMethodology;
   
   // Helper function to get blinding status translation key
   const getBlindingStatusText = (blindingState: any) => {
@@ -162,20 +162,20 @@ export function GlobalHeader({
           ))}
         </div>
         
-        {/* Project Identifier - Show when project is selected */}
-        {currentProject && (
+        {/* Protocol Identifier - Show when protocol is selected */}
+        {currentProtocol && (
           <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-slate-600 bg-slate-800 text-slate-200">
             <Building className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-xs font-medium">
-              {currentProject.studyNumber}
+              {currentProtocol.protocolNumber}
             </span>
-            {currentProject.studyName && (
+            {currentProtocol.protocolTitle && (
               <>
                 <span className="text-xs text-slate-400">•</span>
-                <span className="text-xs" title={currentProject.studyName}>
-                  {currentProject.studyName.length > 20 
-                    ? `${currentProject.studyName.slice(0, 20)}...` 
-                    : currentProject.studyName}
+                <span className="text-xs" title={currentProtocol.protocolTitle}>
+                  {currentProtocol.protocolTitle.length > 20
+                    ? `${currentProtocol.protocolTitle.slice(0, 20)}...`
+                    : currentProtocol.protocolTitle}
                 </span>
               </>
             )}

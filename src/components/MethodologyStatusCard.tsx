@@ -4,7 +4,7 @@
  */
 
 import { FlaskConical, Users, EyeOff, Eye, AlertCircle, CheckCircle, Settings } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { STUDY_METHODOLOGIES } from '../config/studyMethodology';
 import { StatusBadge, RigorBadge } from './ui/StatusBadge';
 import { useTranslation } from 'react-i18next';

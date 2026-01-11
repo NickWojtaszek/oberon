@@ -3,8 +3,8 @@
  * Unified Workspace with Golden Grid Layout
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { useProject } from '../contexts/ProjectContext';
+import { useState, useRef } from 'react';
+import { useProject, useProtocol } from '../contexts/ProtocolContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { storage } from '../utils/storageService';
@@ -41,7 +41,8 @@ import type { NavigationTab } from './unified-workspace/NavigationPanel';
 import type { MismatchCard, AutonomyMode, PaperType, JournalProfile } from '../types/accountability';
 
 export function ResearchFactoryApp() {
-  const { currentProject } = useProject();
+  const { currentProject } = useProject(); // Compatibility shim from ProtocolContext
+  const { currentProtocol } = useProtocol(); // Direct protocol access
   const { user } = useAuth();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
@@ -624,7 +625,7 @@ export function ResearchFactoryApp() {
           <NavigationPanel
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            projectName={currentProject?.name}
+            projectName={currentProtocol?.protocolTitle || currentProject?.name}
           />
         }
         utilitySidebar={

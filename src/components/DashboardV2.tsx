@@ -1,6 +1,6 @@
 import { CheckCircle2, Circle, Lock, ArrowRight, TrendingUp, LayoutDashboard } from 'lucide-react';
 import { calculateWorkflowProgress } from '../utils/workflowProgress';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import type { WorkflowStepDetails } from '../utils/workflowProgress';
 import { MethodologyStatusCard } from './MethodologyStatusCard';
 import { ContentContainer } from './ui/ContentContainer';

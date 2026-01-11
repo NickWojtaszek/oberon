@@ -3,7 +3,7 @@ import { Lock, CheckCircle2, AlertTriangle, Shield } from 'lucide-react';
 import type { ProtocolVersion, SavedProtocol } from '../types/shared';
 import type { ProtocolAuditResult } from './protocol-workbench/auditTypes';
 import { lockProtocolVersion, canEditProtocolVersion } from '../utils/schemaLocking';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { runProtocolAudit } from './protocol-workbench/auditEngine';
 import { PrePublishValidationModal } from './protocol-workbench/components/modals/PrePublishValidationModal';
 

@@ -13,7 +13,7 @@ import { getAllBlocks, validateAndImportSchema, getAllSections, getBlockPosition
 import { PublishProtocolButton } from '../PublishProtocolButton';
 import { VersionConflictModal } from '../VersionConflictModal';
 import { canEditProtocolVersion, updateDataCollectionStats } from '../../utils/schemaLocking';
-import { useProject } from '../../contexts/ProjectContext';
+import { useProject } from '../../contexts/ProtocolContext';
 import { storage } from '../../utils/storageService';
 import { migrateProjectProtocols } from '../../utils/protocolMigration';
 import { runProtocolAudit } from './auditEngine';
@@ -188,7 +188,7 @@ export function ProtocolWorkbench({
           // Set auto-load info for UI banner
           setAutoLoadedProtocol({
             protocolNumber: protocol.protocolNumber,
-            studyType: currentProject?.studyDesign?.type || 'Unknown'
+            studyType: currentProject?.studyDesign?.studyType || 'Unknown'
           });
         }
 
@@ -330,6 +330,12 @@ export function ProtocolWorkbench({
 
   // === AUTO-SAVE: Save draft on metadata/content change (debounced) ===
   useEffect(() => {
+    // 🛡️ GUARD: Skip auto-save while loading a protocol (prevents race condition)
+    if (isLoadingProtocol) {
+      console.log('⏸️  [Auto-save] Skipped - loading in progress');
+      return;
+    }
+
     const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
 
     // Use currentProtocolId from versionControl state (updates after saves) OR initialProtocolId from props
@@ -369,6 +375,7 @@ export function ProtocolWorkbench({
 
     return () => clearTimeout(timeoutId);
   }, [
+    isLoadingProtocol,
     protocolState.protocolMetadata,
     protocolState.protocolContent,
     schemaState.schemaBlocks,
@@ -597,7 +604,7 @@ export function ProtocolWorkbench({
               schemaBlocks={schemaState.schemaBlocks}
               protocolMetadata={protocolState.protocolMetadata}
               protocolContent={protocolState.protocolContent}
-              studyType={currentProject?.studyDesign?.type}
+              studyType={currentProject?.studyDesign?.studyType}
               onProtocolExtracted={(extractedText, fileName) => {
                 setProtocolDocumentText(extractedText);
                 setProtocolFileName(fileName);
@@ -655,7 +662,7 @@ export function ProtocolWorkbench({
               schemaBlocks={schemaState.schemaBlocks}
               protocolMetadata={protocolState.protocolMetadata}
               protocolContent={protocolState.protocolContent}
-              studyType={currentProject?.studyDesign?.type}
+              studyType={currentProject?.studyDesign?.studyType}
               activeField={activeField}
               onUpdateMetadata={(field, value) => protocolState.updateMetadata(field as keyof typeof protocolState.protocolMetadata, value)}
               onUpdateContent={(field, value) => protocolState.updateContent(field as keyof typeof protocolState.protocolContent, value)}

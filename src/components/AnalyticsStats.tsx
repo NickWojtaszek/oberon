@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BarChart3, TrendingUp, Activity, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { storage } from '../utils/storageService';
 import { SchemaExplorer } from './analytics-stats/SchemaExplorer';
 import { StatisticianWorkbench } from './analytics-stats/StatisticianWorkbench';

@@ -1,17 +1,16 @@
 /**
  * Type-safe storage hooks for React components
  * Use these instead of direct localStorage access
- * 
- * IMPORTANT: All methods now support optional projectId parameter.
- * When used with useProject() hook, pass currentProject.id to scope data.
+ *
+ * SIMPLIFIED: Project layer removed. All data is now globally scoped
+ * or scoped to protocol (not project).
  */
 
 import { STORAGE_KEYS } from './storageKeys';
-import type { 
-  Project, 
-  SavedProtocol, 
+import type {
+  SavedProtocol,
   UserPersona,
-  SchemaTemplate 
+  SchemaTemplate
 } from '../types/shared';
 import type { ClinicalDataRecord } from './dataStorage';
 import type { StatisticalManifest } from '../components/analytics-stats/types';
@@ -19,51 +18,15 @@ import type { ManuscriptManifest } from '../types/manuscript';
 
 /**
  * Core storage service implementation
+ * All data is now globally scoped (no project isolation)
  */
 class StorageService {
   /**
-   * Projects
+   * Protocols - Now the top-level entity
    */
-  getProjects(): Project[] {
+  getProtocols(): SavedProtocol[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.PROJECTS);
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Failed to load projects:', error);
-      return [];
-    }
-  }
-
-  saveProjects(projects: Project[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
-    } catch (error) {
-      console.error('Failed to save projects:', error);
-    }
-  }
-
-  getProjectById(id: string): Project | null {
-    const projects = this.getProjects();
-    return projects.find(p => p.id === id) || null;
-  }
-
-  getCurrentProjectId(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.CURRENT_PROJECT);
-  }
-
-  setCurrentProjectId(id: string): void {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_PROJECT, id);
-  }
-
-  /**
-   * Protocols
-   */
-  getProtocols(projectId?: string): SavedProtocol[] {
-    try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'protocols')
-        : STORAGE_KEYS.PROTOCOLS;
-      const stored = localStorage.getItem(key);
+      const stored = localStorage.getItem(STORAGE_KEYS.PROTOCOLS);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Failed to load protocols:', error);
@@ -71,31 +34,33 @@ class StorageService {
     }
   }
 
-  saveProtocols(protocols: SavedProtocol[], projectId?: string): void {
+  saveProtocols(protocols: SavedProtocol[]): void {
     try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'protocols')
-        : STORAGE_KEYS.PROTOCOLS;
-      localStorage.setItem(key, JSON.stringify(protocols));
+      localStorage.setItem(STORAGE_KEYS.PROTOCOLS, JSON.stringify(protocols));
     } catch (error) {
       console.error('Failed to save protocols:', error);
     }
   }
 
-  getProtocolById(id: string, projectId?: string): SavedProtocol | null {
-    const protocols = this.getProtocols(projectId);
+  getProtocolById(id: string): SavedProtocol | null {
+    const protocols = this.getProtocols();
     return protocols.find(p => p.id === id) || null;
   }
 
+  getCurrentProtocolId(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.CURRENT_PROJECT); // Reusing key for current protocol
+  }
+
+  setCurrentProtocolId(id: string): void {
+    localStorage.setItem(STORAGE_KEYS.CURRENT_PROJECT, id);
+  }
+
   /**
-   * Clinical Data
+   * Clinical Data - Now globally scoped, filtered by protocol
    */
-  getClinicalData(projectId?: string): ClinicalDataRecord[] {
+  getClinicalData(): ClinicalDataRecord[] {
     try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'clinical_data')
-        : STORAGE_KEYS.CLINICAL_DATA;
-      const stored = localStorage.getItem(key);
+      const stored = localStorage.getItem(STORAGE_KEYS.CLINICAL_DATA);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Failed to load clinical data:', error);
@@ -103,23 +68,19 @@ class StorageService {
     }
   }
 
-  saveClinicalData(records: ClinicalDataRecord[], projectId?: string): void {
+  saveClinicalData(records: ClinicalDataRecord[]): void {
     try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'clinical_data')
-        : STORAGE_KEYS.CLINICAL_DATA;
-      localStorage.setItem(key, JSON.stringify(records));
+      localStorage.setItem(STORAGE_KEYS.CLINICAL_DATA, JSON.stringify(records));
     } catch (error) {
       console.error('Failed to save clinical data:', error);
     }
   }
 
   getClinicalDataByProtocol(
-    protocolNumber: string, 
-    version?: string, 
-    projectId?: string
+    protocolNumber: string,
+    version?: string
   ): ClinicalDataRecord[] {
-    const allRecords = this.getClinicalData(projectId);
+    const allRecords = this.getClinicalData();
     return allRecords.filter(record => {
       if (record.protocolNumber !== protocolNumber) return false;
       if (version && record.protocolVersion !== version) return false;
@@ -128,14 +89,11 @@ class StorageService {
   }
 
   /**
-   * Schema Templates
+   * Schema Templates - Globally scoped
    */
-  getSchemaTemplates(projectId?: string): SchemaTemplate[] {
+  getSchemaTemplates(): SchemaTemplate[] {
     try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'schema_templates')
-        : STORAGE_KEYS.SCHEMA_TEMPLATES;
-      const stored = localStorage.getItem(key);
+      const stored = localStorage.getItem(STORAGE_KEYS.SCHEMA_TEMPLATES);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Failed to load schema templates:', error);
@@ -143,26 +101,20 @@ class StorageService {
     }
   }
 
-  saveSchemaTemplates(templates: SchemaTemplate[], projectId?: string): void {
+  saveSchemaTemplates(templates: SchemaTemplate[]): void {
     try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'schema_templates')
-        : STORAGE_KEYS.SCHEMA_TEMPLATES;
-      localStorage.setItem(key, JSON.stringify(templates));
+      localStorage.setItem(STORAGE_KEYS.SCHEMA_TEMPLATES, JSON.stringify(templates));
     } catch (error) {
       console.error('Failed to save schema templates:', error);
     }
   }
 
   /**
-   * Personas
+   * Personas - Globally scoped
    */
-  getPersonas(projectId?: string): UserPersona[] {
+  getPersonas(): UserPersona[] {
     try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'personas')
-        : STORAGE_KEYS.PERSONAS;
-      const stored = localStorage.getItem(key);
+      const stored = localStorage.getItem(STORAGE_KEYS.PERSONAS);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Failed to load personas:', error);
@@ -170,23 +122,20 @@ class StorageService {
     }
   }
 
-  savePersonas(personas: UserPersona[], projectId?: string): void {
+  savePersonas(personas: UserPersona[]): void {
     try {
-      const key = projectId 
-        ? STORAGE_KEYS.getProjectKey(projectId, 'personas')
-        : STORAGE_KEYS.PERSONAS;
-      localStorage.setItem(key, JSON.stringify(personas));
+      localStorage.setItem(STORAGE_KEYS.PERSONAS, JSON.stringify(personas));
     } catch (error) {
       console.error('Failed to save personas:', error);
     }
   }
 
   /**
-   * Manuscripts (for Academic Writing module)
+   * Manuscripts - Scoped by protocol ID (not project)
    */
-  getManuscripts(projectId: string): ManuscriptManifest[] {
+  getManuscripts(protocolId?: string): ManuscriptManifest[] {
     try {
-      const key = `manuscripts-${projectId}`;
+      const key = protocolId ? `manuscripts-${protocolId}` : 'manuscripts-global';
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
@@ -195,9 +144,9 @@ class StorageService {
     }
   }
 
-  getManuscript(manuscriptId: string, projectId: string): ManuscriptManifest | null {
+  getManuscript(manuscriptId: string, protocolId?: string): ManuscriptManifest | null {
     try {
-      const manuscripts = this.getManuscripts(projectId);
+      const manuscripts = this.getManuscripts(protocolId);
       return manuscripts.find(m => m.id === manuscriptId) || null;
     } catch (error) {
       console.error('Failed to load manuscript:', error);
@@ -205,30 +154,30 @@ class StorageService {
     }
   }
 
-  saveManuscript(manuscript: ManuscriptManifest, projectId: string): void {
+  saveManuscript(manuscript: ManuscriptManifest, protocolId?: string): void {
     try {
-      const manuscripts = this.getManuscripts(projectId);
+      const manuscripts = this.getManuscripts(protocolId);
       const existingIndex = manuscripts.findIndex(m => m.id === manuscript.id);
-      
+
       if (existingIndex >= 0) {
         manuscripts[existingIndex] = manuscript;
       } else {
         manuscripts.push(manuscript);
       }
-      
-      const key = `manuscripts-${projectId}`;
+
+      const key = protocolId ? `manuscripts-${protocolId}` : 'manuscripts-global';
       localStorage.setItem(key, JSON.stringify(manuscripts));
-      console.log('💾 Manuscript saved for project:', projectId);
+      console.log('💾 Manuscript saved:', protocolId || 'global');
     } catch (error) {
-      console.warn('⚠️ Failed to save manuscript (handled):', projectId);
+      console.warn('⚠️ Failed to save manuscript (handled):', protocolId);
     }
   }
 
-  deleteManuscript(manuscriptId: string, projectId: string): void {
+  deleteManuscript(manuscriptId: string, protocolId?: string): void {
     try {
-      const manuscripts = this.getManuscripts(projectId);
+      const manuscripts = this.getManuscripts(protocolId);
       const filtered = manuscripts.filter(m => m.id !== manuscriptId);
-      const key = `manuscripts-${projectId}`;
+      const key = protocolId ? `manuscripts-${protocolId}` : 'manuscripts-global';
       localStorage.setItem(key, JSON.stringify(filtered));
     } catch (error) {
       console.error('Failed to delete manuscript:', error);
@@ -236,11 +185,11 @@ class StorageService {
   }
 
   /**
-   * Statistical Manifests (for Analytics & Statistics module)
+   * Statistical Manifests - Scoped by protocol ID (not project)
    */
-  getAllStatisticalManifests(projectId: string): StatisticalManifest[] {
+  getAllStatisticalManifests(protocolId?: string): StatisticalManifest[] {
     try {
-      const key = `statistical-manifests-${projectId}`;
+      const key = protocolId ? `statistical-manifests-${protocolId}` : 'statistical-manifests-global';
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
@@ -249,49 +198,48 @@ class StorageService {
     }
   }
 
-  saveStatisticalManifest(manifest: StatisticalManifest, projectId: string): void {
+  saveStatisticalManifest(manifest: StatisticalManifest, protocolId?: string): void {
     try {
-      // ✅ DEFENSIVE: Validate manifest structure
+      // Validate manifest structure
       if (!manifest || !manifest.manifestMetadata) {
         console.warn('⚠️ Invalid statistical manifest structure, skipping save:', manifest);
         return;
       }
 
-      const manifests = this.getAllStatisticalManifests(projectId);
+      const manifests = this.getAllStatisticalManifests(protocolId);
       const existingIndex = manifests.findIndex(
         m => m.manifestMetadata?.protocolId === manifest.manifestMetadata.protocolId &&
              m.manifestMetadata?.protocolVersion === manifest.manifestMetadata.protocolVersion
       );
-      
+
       if (existingIndex >= 0) {
         manifests[existingIndex] = manifest;
       } else {
         manifests.push(manifest);
       }
-      
-      const key = `statistical-manifests-${projectId}`;
+
+      const key = protocolId ? `statistical-manifests-${protocolId}` : 'statistical-manifests-global';
       localStorage.setItem(key, JSON.stringify(manifests));
-      console.log('💾 Statistical manifest saved for project:', projectId);
+      console.log('💾 Statistical manifest saved:', protocolId || 'global');
     } catch (error) {
       console.error('Failed to save statistical manifest:', error);
     }
   }
 
-  getStatisticalManifest(projectId: string): StatisticalManifest | null {
-    // Get the most recent manifest
-    const manifests = this.getAllStatisticalManifests(projectId);
+  getStatisticalManifest(protocolId?: string): StatisticalManifest | null {
+    const manifests = this.getAllStatisticalManifests(protocolId);
     if (manifests.length === 0) return null;
-    return manifests.sort((a, b) => 
+    return manifests.sort((a, b) =>
       (b.manifestMetadata?.generatedAt || 0) - (a.manifestMetadata?.generatedAt || 0)
     )[0];
   }
 
   /**
-   * Manuscript Manifests (for Manuscript module)
+   * Manuscript Manifests - Scoped by protocol ID
    */
-  getManuscriptManifest(projectId: string): ManuscriptManifest | null {
+  getManuscriptManifest(protocolId?: string): ManuscriptManifest | null {
     try {
-      const key = `manuscript-manifest-${projectId}`;
+      const key = protocolId ? `manuscript-manifest-${protocolId}` : 'manuscript-manifest-global';
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
@@ -300,11 +248,11 @@ class StorageService {
     }
   }
 
-  saveManuscriptManifest(manifest: ManuscriptManifest, projectId: string): void {
+  saveManuscriptManifest(manifest: ManuscriptManifest, protocolId?: string): void {
     try {
-      const key = `manuscript-manifest-${projectId}`;
+      const key = protocolId ? `manuscript-manifest-${protocolId}` : 'manuscript-manifest-global';
       localStorage.setItem(key, JSON.stringify(manifest));
-      console.log('💾 Manuscript manifest saved for project:', projectId);
+      console.log('💾 Manuscript manifest saved:', protocolId || 'global');
     } catch (error) {
       console.error('Failed to save manuscript manifest:', error);
     }
@@ -373,44 +321,43 @@ const storageService = new StorageService();
 
 /**
  * Public storage API
+ * SIMPLIFIED: Project layer removed. Most methods no longer require projectId.
+ * Methods that previously took projectId now take optional protocolId for scoping.
  */
 export const storage = {
-  projects: {
-    getAll: () => storageService.getProjects(),
-    save: (projects: Project[]) => storageService.saveProjects(projects),
-    getById: (id: string) => storageService.getProjectById(id),
-    getCurrentId: () => storageService.getCurrentProjectId(),
-    setCurrentId: (id: string) => storageService.setCurrentProjectId(id),
-  },
+  // REMOVED: projects namespace - Protocol is now the top-level entity
+
   protocols: {
-    getAll: (projectId?: string) => storageService.getProtocols(projectId),
-    save: (protocols: SavedProtocol[], projectId?: string) => storageService.saveProtocols(protocols, projectId),
-    getById: (id: string, projectId?: string) => storageService.getProtocolById(id, projectId),
+    getAll: () => storageService.getProtocols(),
+    save: (protocols: SavedProtocol[]) => storageService.saveProtocols(protocols),
+    getById: (id: string) => storageService.getProtocolById(id),
+    getCurrentId: () => storageService.getCurrentProtocolId(),
+    setCurrentId: (id: string) => storageService.setCurrentProtocolId(id),
   },
   clinicalData: {
-    getAll: (projectId?: string) => storageService.getClinicalData(projectId),
-    save: (records: ClinicalDataRecord[], projectId?: string) => storageService.saveClinicalData(records, projectId),
-    getByProtocol: (protocolNumber: string, version?: string, projectId?: string) => 
-      storageService.getClinicalDataByProtocol(protocolNumber, version, projectId),
+    getAll: () => storageService.getClinicalData(),
+    save: (records: ClinicalDataRecord[]) => storageService.saveClinicalData(records),
+    getByProtocol: (protocolNumber: string, version?: string) =>
+      storageService.getClinicalDataByProtocol(protocolNumber, version),
   },
   templates: {
-    getAll: (projectId?: string) => storageService.getSchemaTemplates(projectId),
-    save: (templates: SchemaTemplate[], projectId?: string) => storageService.saveSchemaTemplates(templates, projectId),
+    getAll: () => storageService.getSchemaTemplates(),
+    save: (templates: SchemaTemplate[]) => storageService.saveSchemaTemplates(templates),
   },
   personas: {
-    getAll: (projectId?: string) => storageService.getPersonas(projectId),
-    save: (personas: UserPersona[], projectId?: string) => storageService.savePersonas(personas, projectId),
+    getAll: () => storageService.getPersonas(),
+    save: (personas: UserPersona[]) => storageService.savePersonas(personas),
   },
   statisticalManifests: {
-    get: (projectId: string) => storageService.getStatisticalManifest(projectId),
-    getAll: (projectId: string) => storageService.getAllStatisticalManifests(projectId),
-    save: (manifest: StatisticalManifest, projectId: string) => storageService.saveStatisticalManifest(manifest, projectId),
+    get: (protocolId?: string) => storageService.getStatisticalManifest(protocolId),
+    getAll: (protocolId?: string) => storageService.getAllStatisticalManifests(protocolId),
+    save: (manifest: StatisticalManifest, protocolId?: string) => storageService.saveStatisticalManifest(manifest, protocolId),
   },
   manuscripts: {
-    getAll: (projectId: string) => storageService.getManuscripts(projectId),
-    get: (manuscriptId: string, projectId: string) => storageService.getManuscript(manuscriptId, projectId),
-    save: (manuscript: ManuscriptManifest, projectId: string) => storageService.saveManuscript(manuscript, projectId),
-    delete: (manuscriptId: string, projectId: string) => storageService.deleteManuscript(manuscriptId, projectId),
+    getAll: (protocolId?: string) => storageService.getManuscripts(protocolId),
+    get: (manuscriptId: string, protocolId?: string) => storageService.getManuscript(manuscriptId, protocolId),
+    save: (manuscript: ManuscriptManifest, protocolId?: string) => storageService.saveManuscript(manuscript, protocolId),
+    delete: (manuscriptId: string, protocolId?: string) => storageService.deleteManuscript(manuscriptId, protocolId),
   },
   utils: {
     clearAll: () => storageService.clearAll(),

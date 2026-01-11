@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, Upload, Database, AlertTriangle, CheckCircle2, FileText, Info, Clock, Package } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { validateImportFile, formatValidationErrors, type ImportValidationResult } from '../utils/validation/importValidator';
 import { ValidationErrorDisplay } from './ValidationErrorDisplay';
 import { copyToClipboard } from '../utils/clipboard';

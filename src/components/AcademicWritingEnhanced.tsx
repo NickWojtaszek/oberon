@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import { AcademicWriting } from './AcademicWriting';
 import { LiveBudgetTracker } from './unified-workspace/LiveBudgetTracker';
 import { JOURNAL_LIBRARY, getJournalById } from '../data/journalLibrary';
