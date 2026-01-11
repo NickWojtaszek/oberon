@@ -705,8 +705,21 @@ export async function suggestFieldConfiguration(
     : '';
 
   const fullProtocolContext = protocolContext.fullProtocolText
-    ? `\n**Full Protocol Document (excerpt):**\n${protocolContext.fullProtocolText.substring(0, 12000)}\n`
+    ? `\n**Full Protocol Document:**\n${protocolContext.fullProtocolText.substring(0, 20000)}\n`
     : '';
+
+  // Enhanced instructions when full protocol is available
+  const protocolGuidance = protocolContext.fullProtocolText
+    ? `\n**IMPORTANT:** You have access to the full protocol document above. Use it to:
+- Search for explicit mentions of this field name or related concepts
+- Identify if this field is mentioned in endpoints, statistical analysis, or data collection sections
+- Look for CRF/data collection specifications
+- Check if it's part of inclusion/exclusion criteria
+- Verify the exact statistical methods planned for this variable
+- Identify any conditional logic or visit schedules that affect this field
+
+If the field is explicitly mentioned in the protocol, your confidence scores should be 90+. If inferred from context, use 75-85.`
+    : `\n**NOTE:** Only summary protocol information is available. Base suggestions on clinical trial best practices and the field name semantics.`;
 
   const prompt = `You are Dr. Puck, the Schema Architect persona from the Oberon research platform. Your expertise is in designing optimal clinical trial data collection schemas that align perfectly with protocol requirements.
 
@@ -717,12 +730,13 @@ export async function suggestFieldConfiguration(
 - Study Phase: ${protocolContext.studyPhase || 'Not specified'}
 - Therapeutic Area: ${protocolContext.therapeuticArea || 'Not specified'}
 ${fullProtocolContext}${existingFieldsContext}
+${protocolGuidance}
 
 **New Field to Configure:**
 Field Name: "${fieldName}"
 
 **Your Task:**
-Analyze the protocol context and suggest the optimal configuration for this field. Consider:
+Analyze the protocol context thoroughly and suggest the optimal configuration for this field. Consider:
 1. The field's role in the study (Predictor/Outcome/Structure/All)
 2. Whether it's an endpoint (primary/secondary/exploratory/none)
 3. The appropriate statistical analysis method
@@ -810,10 +824,23 @@ export async function analyzeBulkFieldConfiguration(
 ): Promise<Map<string, SchemaFieldSuggestion>> {
 
   const fullProtocolContext = protocolContext.fullProtocolText
-    ? `\n**Full Protocol Document (excerpt):**\n${protocolContext.fullProtocolText.substring(0, 10000)}\n`
+    ? `\n**Full Protocol Document:**\n${protocolContext.fullProtocolText.substring(0, 18000)}\n`
     : '';
 
-  const prompt = `You are Dr. Puck, Schema Architect. Review this existing clinical trial schema and suggest improvements.
+  // Enhanced guidance for bulk analysis when full protocol is available
+  const analysisGuidance = protocolContext.fullProtocolText
+    ? `\n**Analysis Instructions:**
+With access to the full protocol, you should:
+1. Cross-reference each field name against the protocol document
+2. Verify if endpoint classifications match protocol specifications
+3. Check if analysis methods align with the statistical analysis plan
+4. Identify fields that should be grouped or have dependencies
+5. Use high confidence (90+) when protocol explicitly defines the field's purpose
+6. Flag critical misconfigurations (e.g., primary endpoint marked as "All" role)`
+    : `\n**Analysis Instructions:**
+Limited protocol information available. Focus on clinical trial best practices and logical consistency.`;
+
+  const prompt = `You are Dr. Puck, Schema Architect. Review this existing clinical trial schema and suggest improvements based on the protocol.
 
 **Protocol Context:**
 - Primary Objective: ${protocolContext.primaryObjective || 'Not specified'}
@@ -821,6 +848,7 @@ export async function analyzeBulkFieldConfiguration(
 - Statistical Plan: ${protocolContext.statisticalPlan || 'Not specified'}
 - Study Phase: ${protocolContext.studyPhase || 'Not specified'}
 ${fullProtocolContext}
+${analysisGuidance}
 
 **Existing Fields to Review:**
 ${fields.map(f => `
@@ -828,7 +856,7 @@ ${fields.map(f => `
   Current: Role=${f.currentRole}, Endpoint=${f.currentEndpointTier || 'None'}, Analysis=${f.currentAnalysisMethod || 'None'}, Type=${f.dataType}
 `).join('\n')}
 
-**Task:** For EACH field, determine if configuration changes are needed. Only suggest changes if current configuration is suboptimal based on protocol.
+**Task:** For EACH field, determine if configuration changes are needed. Only suggest changes if current configuration is suboptimal or incorrect based on protocol.
 
 Return JSON array:
 [
