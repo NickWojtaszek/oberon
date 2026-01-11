@@ -84,39 +84,81 @@ async function callGemini(prompt: string, maxOutputTokens: number = 1024): Promi
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
   if (!apiKey) {
+    console.error('❌ [Gemini] API key not configured - check VITE_GEMINI_API_KEY in .env');
     throw new Error('VITE_GEMINI_API_KEY not configured');
   }
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }],
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens,
-      }
-    })
+  console.log('🤖 [Gemini] Calling API...', {
+    model: 'gemini-2.0-flash',
+    maxOutputTokens,
+    promptLength: prompt.length
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${error}`);
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorDetails: any = {};
+      try {
+        errorDetails = JSON.parse(errorText);
+      } catch {
+        errorDetails = { rawError: errorText };
+      }
+
+      console.error('❌ [Gemini] API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorDetails,
+        model: 'gemini-2.0-flash',
+        url: GEMINI_API_URL
+      });
+
+      // Provide helpful error messages
+      if (response.status === 400) {
+        console.error('💡 [Gemini] 400 Error - Possible causes: invalid model name, malformed request, or API key issue');
+      } else if (response.status === 401 || response.status === 403) {
+        console.error('💡 [Gemini] Auth Error - Check that your API key is valid and has access to Gemini API');
+      } else if (response.status === 404) {
+        console.error('💡 [Gemini] 404 Error - Model not found. Try: gemini-1.5-flash, gemini-1.5-pro, or gemini-2.0-flash-exp');
+      } else if (response.status === 429) {
+        console.error('💡 [Gemini] Rate limited - Too many requests, please wait and try again');
+      }
+
+      throw new Error(`Gemini API error: ${response.status} - ${JSON.stringify(errorDetails)}`);
+    }
+
+    const data: GeminiResponse = await response.json();
+
+    if (!data.candidates || data.candidates.length === 0) {
+      console.error('❌ [Gemini] No candidates in response:', data);
+      throw new Error('No response from Gemini');
+    }
+
+    console.log('✅ [Gemini] API call successful');
+    return data.candidates[0].content.parts[0].text;
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('❌ [Gemini] Network error - check your internet connection');
+    }
+    throw error;
   }
-
-  const data: GeminiResponse = await response.json();
-
-  if (!data.candidates || data.candidates.length === 0) {
-    throw new Error('No response from Gemini');
-  }
-
-  return data.candidates[0].content.parts[0].text;
 }
 
 /**
