@@ -133,7 +133,7 @@ export function ProtocolWorkbench({
     }
   }, [initialProtocolId, initialVersionId, currentProject, hasAttemptedAutoLoad]);
 
-  // 🔄 OLD AUTO-LOAD LOGIC (kept for when protocols are selected via modal or passed as props)
+  // 🔄 PROTOCOL LOAD FUNCTION (used by modal and initial ID loading)
   const loadProtocol = (protocolId: string, versionId: string) => {
     console.log('📂 Loading protocol:', { protocolId, versionId });
     setIsLoadingProtocol(true);
@@ -144,12 +144,32 @@ export function ProtocolWorkbench({
       if (version) {
         const protocol = versionControl.savedProtocols.find(p => p.id === protocolId);
 
+        console.log('📦 [loadProtocol] Version and Protocol data:', {
+          versionId: version.id,
+          hasMetadata: !!version.metadata,
+          metadataTitle: version.metadata?.protocolTitle,
+          protocolTitle: protocol?.protocolTitle,
+          protocolNumber: protocol?.protocolNumber
+        });
+
         // Load schema blocks
         schemaState.setSchemaBlocks(version.schemaBlocks || []);
 
+        // Build metadata - prefer version.metadata, but fallback to protocol-level fields
+        const metadata = {
+          protocolTitle: version.metadata?.protocolTitle || protocol?.protocolTitle || '',
+          protocolNumber: version.metadata?.protocolNumber || protocol?.protocolNumber || '',
+          principalInvestigator: version.metadata?.principalInvestigator || '',
+          sponsor: version.metadata?.sponsor || '',
+          studyPhase: version.metadata?.studyPhase || '',
+          therapeuticArea: version.metadata?.therapeuticArea || '',
+          estimatedEnrollment: version.metadata?.estimatedEnrollment || '',
+          studyDuration: version.metadata?.studyDuration || '',
+        };
+
         // Load protocol content
         protocolState.loadProtocol(
-          version.metadata,
+          metadata,
           {
             primaryObjective: typeof version.protocolContent?.primaryObjective === 'string' ? version.protocolContent.primaryObjective : '',
             secondaryObjectives: typeof version.protocolContent?.secondaryObjectives === 'string' ? version.protocolContent.secondaryObjectives : '',
@@ -208,62 +228,9 @@ export function ProtocolWorkbench({
     loadProtocol(protocolId, versionId);
   };
 
-  // Load initial protocol if IDs are provided (existing logic - now handled by new loadProtocol function above)
-  useEffect(() => {
-    if (initialProtocolId && initialVersionId) {
-      console.log('🔍 [LOAD] Loading specific protocol from library:', {
-        initialProtocolId,
-        initialVersionId,
-        currentProject: currentProject?.name
-      });
-      setIsLoadingProtocol(true);
-
-      // Clear any auto-loaded protocol state
-      setAutoLoadedProtocol(null);
-
-      const version = versionControl.loadProtocolVersion(initialProtocolId, initialVersionId);
-      console.log('📦 [LOAD] Version loaded from storage:', version ? 'SUCCESS' : 'FAILED', version);
-
-      if (version) {
-        console.log('✅ [LOAD] Loaded version data:', {
-          protocolId: initialProtocolId,
-          versionId: initialVersionId,
-          hasSchemaBlocks: !!version.schemaBlocks,
-          blockCount: version.schemaBlocks?.length || 0,
-          hasMetadata: !!version.metadata,
-          hasContent: !!version.protocolContent
-        });
-        
-        // Load schema blocks
-        schemaState.setSchemaBlocks(version.schemaBlocks || []);
-        // Always provide all required ProtocolContent fields
-        protocolState.loadProtocol(
-          version.metadata,
-          {
-            primaryObjective: typeof version.protocolContent?.primaryObjective === 'string' ? version.protocolContent.primaryObjective : '',
-            secondaryObjectives: typeof version.protocolContent?.secondaryObjectives === 'string' ? version.protocolContent.secondaryObjectives : '',
-            inclusionCriteria: typeof version.protocolContent?.inclusionCriteria === 'string' ? version.protocolContent.inclusionCriteria : '',
-            exclusionCriteria: typeof version.protocolContent?.exclusionCriteria === 'string' ? version.protocolContent.exclusionCriteria : '',
-            statisticalPlan: typeof version.protocolContent?.statisticalPlan === 'string' ? version.protocolContent.statisticalPlan : '',
-          }
-        );
-        // Check schema locking (pass version and protocolNumber)
-        const protocol = storage.protocols.getById(initialProtocolId, currentProject?.id);
-        if (protocol) {
-          setCurrentProtocol(protocol);
-          setCurrentVersion(version);
-          setIsSchemaLocked(!canEditProtocolVersion(version, protocol.protocolNumber, currentProject?.id).canEdit);
-        }
-        
-        console.log('✅ Protocol loaded successfully from library');
-      } else {
-        console.error('❌ No version found for:', initialProtocolId, initialVersionId);
-        alert('Failed to load protocol. It may have been deleted.');
-      }
-      
-      setIsLoadingProtocol(false);
-    }
-  }, [initialProtocolId, initialVersionId]);
+  // REMOVED: Duplicate useEffect that was causing race conditions
+  // Protocol loading is now handled ONLY by the loadProtocol() function
+  // which is called from the useEffect above (lines 185-191)
 
   // Handle duplicate block
   const handleDuplicateBlock = (block: SchemaBlock) => {

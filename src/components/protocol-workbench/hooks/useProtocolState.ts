@@ -68,8 +68,33 @@ export function useProtocolState() {
   }, []);
 
   const loadProtocol = useCallback((metadata: ProtocolMetadata, content: ProtocolContent) => {
-    setProtocolMetadata(metadata);
+    console.log('📝 [useProtocolState] Loading protocol data:', {
+      hasMetadata: !!metadata,
+      protocolTitle: metadata?.protocolTitle,
+      protocolNumber: metadata?.protocolNumber,
+      metadataKeys: metadata ? Object.keys(metadata) : [],
+      hasContent: !!content
+    });
+
+    // Ensure we have valid metadata with required fields
+    const safeMetadata: ProtocolMetadata = {
+      protocolTitle: metadata?.protocolTitle || '',
+      protocolNumber: metadata?.protocolNumber || '',
+      principalInvestigator: metadata?.principalInvestigator || '',
+      sponsor: metadata?.sponsor || '',
+      studyPhase: metadata?.studyPhase || '',
+      therapeuticArea: metadata?.therapeuticArea || '',
+      estimatedEnrollment: metadata?.estimatedEnrollment || '',
+      studyDuration: metadata?.studyDuration || '',
+    };
+
+    setProtocolMetadata(safeMetadata);
     setProtocolContent(content);
+
+    console.log('✅ [useProtocolState] Protocol state updated:', {
+      protocolTitle: safeMetadata.protocolTitle,
+      protocolNumber: safeMetadata.protocolNumber
+    });
   }, []);
 
   return {
