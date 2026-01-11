@@ -407,7 +407,6 @@ export function ProtocolWorkbench({
     schemaState.schemaBlocks,
     initialProtocolId,
     versionControl.currentProtocolId,
-    versionControl
   ]);
 
   // Export JSON helper function
