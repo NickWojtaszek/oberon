@@ -8,7 +8,7 @@
  */
 
 import { useState, useContext } from 'react';
-import { 
+import {
   Sparkles, Sun, Snowflake, Scale, Blocks, Target, Users, Syringe, GitCompare,
   Lock, Clock, CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronUp, Settings2, Zap, Lightbulb, ArrowRight
 } from 'lucide-react';
@@ -17,6 +17,7 @@ import { getPersona } from '../../ai-personas/core/personaRegistry';
 import { usePersonas } from '../../ai-personas/core/personaContext';
 import { ProjectContext } from '../../../contexts/ProjectContext';
 import { PersonaConfigurationPanel } from '../../ai-personas/ui/PersonaConfigurationPanel';
+import { ProtocolUploadWidget } from './ProtocolUploadWidget';
 import type { PersonaCustomization } from '../../../types/aiGovernance';
 import type { PersonaConfig } from '../../ai-personas/core/personaTypes';
 import type { SchemaBlock } from '../types';
@@ -39,12 +40,18 @@ interface ProtocolUnifiedSidebarProps {
   activeField?: string;
   onUpdateMetadata?: (field: string, value: string) => void;
   onUpdateContent?: (field: string, value: string) => void;
+  onProtocolExtracted?: (extractedText: string, fileName: string) => void;
+  onClearProtocol?: () => void;
+  protocolFileName?: string;
 }
 
 export function ProtocolUnifiedSidebar({
   activeTab,
   schemaBlocks,
   studyType,
+  onProtocolExtracted,
+  onClearProtocol,
+  protocolFileName,
 }: ProtocolUnifiedSidebarProps) {
   const [expandedPersona, setExpandedPersona] = useState<string | null>(null);
   const [configPersona, setConfigPersona] = useState<PersonaConfig | null>(null);
@@ -377,6 +384,15 @@ export function ProtocolUnifiedSidebar({
                   Complete the Research Wizard to define your PICO hypothesis. It will appear here to guide your protocol design.
                 </p>
               </div>
+            )}
+
+            {/* Protocol Upload Widget */}
+            {onProtocolExtracted && (
+              <ProtocolUploadWidget
+                onProtocolExtracted={onProtocolExtracted}
+                onClear={onClearProtocol}
+                currentFileName={protocolFileName}
+              />
             )}
 
             {personas.map(persona => renderPersonaCard(persona))}

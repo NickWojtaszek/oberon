@@ -69,6 +69,7 @@ export function ProtocolWorkbench({
   // ✨ AI Suggestions State
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState(true);
   const [protocolDocumentText, setProtocolDocumentText] = useState<string | undefined>(undefined);
+  const [protocolFileName, setProtocolFileName] = useState<string | undefined>(undefined);
 
   // Prepare protocol context for AI suggestions
   const protocolContext = useMemo(() => {
@@ -631,6 +632,15 @@ export function ProtocolWorkbench({
               protocolMetadata={protocolState.protocolMetadata}
               protocolContent={protocolState.protocolContent}
               studyType={currentProject?.studyDesign?.type}
+              onProtocolExtracted={(extractedText, fileName) => {
+                setProtocolDocumentText(extractedText);
+                setProtocolFileName(fileName);
+              }}
+              onClearProtocol={() => {
+                setProtocolDocumentText(undefined);
+                setProtocolFileName(undefined);
+              }}
+              protocolFileName={protocolFileName}
             />
           </>
         ) : activeTab === 'dependencies' ? (
@@ -687,6 +697,15 @@ export function ProtocolWorkbench({
                 // Could add logic to scroll to specific section in ProtocolDocument
                 console.log('Navigate to section:', section);
               }}
+              onProtocolExtracted={(extractedText, fileName) => {
+                setProtocolDocumentText(extractedText);
+                setProtocolFileName(fileName);
+              }}
+              onClearProtocol={() => {
+                setProtocolDocumentText(undefined);
+                setProtocolFileName(undefined);
+              }}
+              protocolFileName={protocolFileName}
             />
           </>
         )}
