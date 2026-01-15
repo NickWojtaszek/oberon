@@ -31,7 +31,7 @@ import { ResearchWizard } from './ResearchWizard';
 import { AcademicWriting } from './AcademicWriting';
 import { GovernanceDashboard } from './governance/GovernanceDashboard';
 import { EthicsBoard } from './EthicsBoard';
-import { ProjectLibraryScreen, type ProjectLibraryScreenRef } from './ProjectLibraryScreen';
+// ProjectLibraryScreen removed - protocols are now the top-level entity
 import { AnalyticsApp } from './AnalyticsApp';
 import { DataImportExport } from './DataImportExport';
 import { Database } from './Database';
@@ -48,8 +48,7 @@ export function ResearchFactoryApp() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
   const [logicAuditOpen, setLogicAuditOpen] = useState(false);
   
-  // Ref for ProjectLibraryScreen to trigger create modal
-  const projectLibraryRef = useRef<ProjectLibraryScreenRef>(null);
+  // ProjectLibraryScreen ref removed - protocols are now the top-level entity
   
   // Ref for ProtocolLibraryScreen to trigger create new
   const protocolLibraryRef = useRef<ProtocolLibraryScreenRef>(null);
@@ -227,7 +226,6 @@ export function ResearchFactoryApp() {
               <DashboardV2 onNavigate={(tab) => {
                 // Map dashboard navigation to unified workspace tabs
                 const tabMap: Record<string, NavigationTab> = {
-                  'project-library': 'project-library',
                   'personas': 'persona-editor',
                   'persona-editor': 'persona-editor',
                   'protocol-builder': 'protocol-workbench',
@@ -255,31 +253,7 @@ export function ResearchFactoryApp() {
           </div>
         );
 
-      case 'project-library':
-        return (
-          <div className="h-full flex flex-col">
-            <GlobalHeader
-              breadcrumbs={[
-                { label: 'Project Library' }
-              ]}
-              autonomyMode={autonomyMode}
-              onAutonomyChange={setAutonomyMode}
-              primaryAction={{
-                label: 'Create New Project',
-                onClick: () => projectLibraryRef.current?.openCreateModal(),
-              }}
-            />
-            <div className="flex-1 overflow-y-auto">
-              <ProjectLibraryScreen 
-                ref={projectLibraryRef}
-                onNavigateToProject={(projectId) => {
-                  // Switch back to dashboard after selecting a project
-                  setActiveTab('dashboard');
-                }}
-              />
-            </div>
-          </div>
-        );
+      // project-library case removed - protocols are now the top-level entity
 
       case 'protocol-workbench':
         return (

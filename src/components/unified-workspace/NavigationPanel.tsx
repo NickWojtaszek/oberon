@@ -3,15 +3,14 @@
  * Research Factory - Global Menu (240px fixed)
  */
 
-import { 
-  LayoutDashboard, 
-  FlaskConical, 
+import {
+  LayoutDashboard,
+  FlaskConical,
   FolderOpen,
-  Folder,
-  FileText, 
-  User, 
-  BarChart3, 
-  Database, 
+  FileText,
+  User,
+  BarChart3,
+  Database,
   Upload,
   Shield,
   Settings,
@@ -29,9 +28,8 @@ import { useTranslation } from 'react-i18next';
 import { FEATURE_FLAGS } from '../../config/featureFlags';
 import { useGovernance } from '../../hooks/useGovernance';
 
-export type NavigationTab = 
+export type NavigationTab =
   | 'dashboard'
-  | 'project-library'
   | 'protocol-library'
   | 'ai-personas'
   | 'persona-editor'
@@ -42,10 +40,10 @@ export type NavigationTab =
   | 'database'
   | 'analytics'
   | 'data-management'
-  | 'data-import-export' // Add this for consistency with ResearchFactoryApp
+  | 'data-import-export'
   | 'governance'
   | 'ethics'
-  | 'academic-writing'; // Keep for backwards compatibility
+  | 'academic-writing';
 
 interface NavigationPanelProps {
   activeTab: NavigationTab;
@@ -66,10 +64,10 @@ const NAV_ITEMS: Array<{
     description: 'Progress overview',
   },
   {
-    id: 'project-library',
-    label: 'Project Library',
-    icon: Folder,
-    description: 'Browse projects',
+    id: 'protocol-library',
+    label: 'Protocol Library',
+    icon: FolderOpen,
+    description: 'Browse protocols',
   },
   {
     id: 'research-wizard',
@@ -82,12 +80,6 @@ const NAV_ITEMS: Array<{
     label: 'Protocol Workbench',
     icon: FlaskConical,
     description: 'Build schemas',
-  },
-  {
-    id: 'protocol-library',
-    label: 'Protocol Library',
-    icon: FolderOpen,
-    description: 'Browse protocols',
   },
   {
     id: 'ai-personas',
