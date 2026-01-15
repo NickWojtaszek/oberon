@@ -4,7 +4,7 @@
  */
 
 import { ProjectSetupWizard, CompleteProjectSetup } from './ProjectSetupWizard';
-import { useProject } from '../../contexts/ProjectContext';
+import { useProject } from '../../contexts/ProtocolContext';
 
 interface ProjectSetupWizardContainerProps {
   onComplete?: () => void;

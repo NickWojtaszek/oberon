@@ -7,7 +7,7 @@
  * - Dependencies/Audit tabs: Hidden (full width content)
  */
 
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import {
   Sparkles, Sun, Snowflake, Scale, Blocks, Target, Users, Syringe, GitCompare,
   Lock, Clock, CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronUp, Settings2, Zap, Lightbulb, ArrowRight
@@ -15,7 +15,7 @@ import {
 import { SchemaArchitectSidebar } from '../../ai-personas/personas/SchemaArchitect/SchemaArchitectSidebar';
 import { getPersona } from '../../ai-personas/core/personaRegistry';
 import { usePersonas } from '../../ai-personas/core/personaContext';
-import { ProjectContext } from '../../../contexts/ProjectContext';
+import { useProject } from '../../../contexts/ProtocolContext';
 import { PersonaConfigurationPanel } from '../../ai-personas/ui/PersonaConfigurationPanel';
 import { ProtocolUploadWidget } from './ProtocolUploadWidget';
 import type { PersonaCustomization } from '../../../types/aiGovernance';
@@ -58,10 +58,9 @@ export function ProtocolUnifiedSidebar({
   const [personaCustomizations, setPersonaCustomizations] = useState<Record<string, PersonaCustomization>>({});
   
   const { state } = usePersonas();
-  
-  // Safely access project context (might be null if outside provider)
-  const projectContext = useContext(ProjectContext);
-  const currentProject = projectContext?.currentProject;
+
+  // Access project context via useProject hook
+  const { currentProject } = useProject();
   
   // Get PICO data from project if available
   const picoData = currentProject?.studyMethodology?.hypothesis?.picoFramework;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, FolderPlus, ChevronRight } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 import type { Project } from '../types/shared';
 import type { StudyDesignType, StudyDesignConfiguration } from '../types/studyDesigns';
 import { StudyDesignSelector } from './project/StudyDesignSelector';

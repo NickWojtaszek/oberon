@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, Plus, FolderOpen, Search } from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
+import { useProject } from '../contexts/ProtocolContext';
 
 interface ProjectSelectorProps {
   onCreateProject: () => void;

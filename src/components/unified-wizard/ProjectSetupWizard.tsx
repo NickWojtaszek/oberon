@@ -10,7 +10,7 @@ import { TeamConfiguration as TeamConfigStep } from './steps/TeamConfiguration';
 import { HypothesisFormation } from './steps/HypothesisFormation';
 import { StudyType } from '../../config/studyMethodology';
 import { TeamConfiguration } from '../methodology/TeamDNAConfigurator';
-import { useProject } from '../../contexts/ProjectContext';
+import { useProject } from '../../contexts/ProtocolContext';
 
 interface ProjectSetupWizardProps {
   onComplete?: (project: CompleteProjectSetup) => void;
