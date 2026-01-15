@@ -46,19 +46,13 @@ export function useProtocolLibrary(): UseProtocolLibraryReturn {
   const [showDeleteDraftModal, setShowDeleteDraftModal] = useState(false);
   const [draftToDelete, setDraftToDelete] = useState<{ protocolId: string; versionId: string; versionNumber: string } | null>(null);
 
-  // 🔄 NEW: Load protocols from project-scoped storage
+  // Load protocols from global storage (no longer project-scoped)
   const loadProtocols = useCallback(() => {
-    if (!currentProject) {
-      console.log('ℹ️  [useProtocolLibrary] No current project, clearing protocols');
-      setSavedProtocols([]);
-      return;
-    }
+    console.log('📂 [useProtocolLibrary] Loading protocols from global storage');
 
-    console.log('📂 [useProtocolLibrary] Loading protocols for project:', currentProject.name);
-    
     try {
-      const protocols = storage.protocols.getAll(currentProject.id);
-      
+      const protocols = storage.protocols.getAll();
+
       // Convert date strings back to Date objects if needed
       const parsedProtocols = protocols.map(p => ({
         ...p,
@@ -70,14 +64,14 @@ export function useProtocolLibrary(): UseProtocolLibraryReturn {
           modifiedAt: v.modifiedAt instanceof Date ? v.modifiedAt : new Date(v.modifiedAt)
         }))
       }));
-      
+
       setSavedProtocols(parsedProtocols);
       console.log(`✅ [useProtocolLibrary] Loaded ${parsedProtocols.length} protocols`);
     } catch (error) {
       console.error('❌ [useProtocolLibrary] Failed to load protocols:', error);
       setSavedProtocols([]);
     }
-  }, [currentProject]);
+  }, []);
 
   // Load protocols on mount and when project changes
   useEffect(() => {
@@ -89,17 +83,12 @@ export function useProtocolLibrary(): UseProtocolLibraryReturn {
     return () => clearInterval(interval);
   }, [loadProtocols]);
 
-  // 🔄 NEW: Save protocols to project-scoped storage
+  // Save protocols to global storage (no longer project-scoped)
   const saveProtocols = useCallback((protocols: SavedProtocol[]) => {
-    if (!currentProject) {
-      console.error('❌ [useProtocolLibrary] Cannot save protocols: No current project');
-      return;
-    }
-
-    console.log('💾 [useProtocolLibrary] Saving protocols to project storage:', currentProject.id);
-    storage.protocols.save(protocols, currentProject.id);
+    console.log('💾 [useProtocolLibrary] Saving protocols to global storage');
+    storage.protocols.save(protocols);
     setSavedProtocols(protocols);
-  }, [currentProject]);
+  }, []);
 
   const handlePublishVersion = (protocolId: string, versionId: string) => {
     setSelectedVersionForPublish({ protocolId, versionId });

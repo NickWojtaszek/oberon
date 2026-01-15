@@ -141,7 +141,7 @@ export function ResearchWizard({
   const [showComparisonModal, setShowComparisonModal] = useState(false);
 
   // PROJECT CONTEXT - for storing hypothesis properly
-  const { currentProject, updateProject } = useProject();
+  const { currentProject, updateProject, createProject } = useProject();
 
   // Get Dr. Ariadne persona
   const ariadnePersona = getPersona('hypothesis-architect');
@@ -584,10 +584,8 @@ export function ResearchWizard({
     setCurrentStep('validation');
   };
 
-  // FIXED: Save hypothesis to project context properly
+  // Save hypothesis to protocol context - creates protocol if none exists
   const saveHypothesisToProject = () => {
-    if (!currentProject) return;
-
     const hypothesis = {
       picoFramework: {
         population: picoFields.population.value,
@@ -597,27 +595,27 @@ export function ResearchWizard({
       },
       researchQuestion: rawObservation,
       variables: [
-        { 
-          name: 'population', 
-          type: 'inclusion_criteria', 
+        {
+          name: 'population',
+          type: 'inclusion_criteria',
           grounded: picoFields.population.grounded === 'found',
           boundTo: picoFields.population.linkedVariable,
         },
-        { 
-          name: 'intervention', 
-          type: 'treatment_arm', 
+        {
+          name: 'intervention',
+          type: 'treatment_arm',
           grounded: picoFields.intervention.grounded === 'found',
           boundTo: picoFields.intervention.linkedVariable,
         },
-        { 
-          name: 'comparison', 
-          type: 'control_arm', 
+        {
+          name: 'comparison',
+          type: 'control_arm',
           grounded: picoFields.comparison.grounded === 'found',
           boundTo: picoFields.comparison.linkedVariable,
         },
-        { 
-          name: 'outcome', 
-          type: 'primary_endpoint', 
+        {
+          name: 'outcome',
+          type: 'primary_endpoint',
           grounded: picoFields.outcome.grounded === 'found',
           boundTo: picoFields.outcome.linkedVariable,
         },
@@ -625,7 +623,33 @@ export function ResearchWizard({
       validatedAt: new Date().toISOString(),
     };
 
-    // Update project with hypothesis in studyMethodology
+    // If no current protocol, create one first
+    if (!currentProject) {
+      console.log('📝 [ResearchWizard] No current protocol, creating new one for PICO');
+      const studyNumber = `STUDY-${Date.now()}`;
+      const newProject = createProject({
+        name: rawObservation.substring(0, 50) || 'New Research Study',
+        studyNumber,
+        description: rawObservation,
+      });
+
+      // Now update the newly created protocol with hypothesis
+      if (newProject) {
+        updateProject(newProject.id, {
+          studyMethodology: {
+            studyType: 'rct',
+            configuredAt: new Date().toISOString(),
+            configuredBy: 'current-user',
+            hypothesis,
+            foundationalPapers: getFoundationalPapersForSave(),
+          },
+        });
+        console.log('✅ [ResearchWizard] Created new protocol with PICO:', newProject.id);
+      }
+      return hypothesis;
+    }
+
+    // Update existing project with hypothesis in studyMethodology
     updateProject(currentProject.id, {
       studyMethodology: {
         ...currentProject.studyMethodology,
@@ -637,6 +661,7 @@ export function ResearchWizard({
       },
     });
 
+    console.log('✅ [ResearchWizard] Updated protocol with PICO:', currentProject.id);
     return hypothesis;
   };
 
