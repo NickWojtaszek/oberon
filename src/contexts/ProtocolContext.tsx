@@ -675,6 +675,7 @@ export function useProject() {
     studyMethodology: protocolContext.currentProtocol.studyMethodology,
     studyDesign: protocolContext.currentProtocol.studyMethodology, // Alias for compatibility
     governance: protocolContext.currentProtocol.governance,
+    status: (protocolContext.currentProtocol.status as 'active' | 'paused' | 'completed' | 'archived') || 'active',
     createdAt: protocolContext.currentProtocol.createdAt?.toString?.() || new Date().toISOString(),
     modifiedAt: protocolContext.currentProtocol.modifiedAt?.toString?.() || new Date().toISOString(),
   } : null;
@@ -689,6 +690,7 @@ export function useProject() {
     studyMethodology: p.studyMethodology,
     studyDesign: p.studyMethodology, // Alias for compatibility
     governance: p.governance,
+    status: (p.status as 'active' | 'paused' | 'completed' | 'archived') || 'active', // Default to active
     createdAt: p.createdAt?.toString?.() || new Date().toISOString(),
     modifiedAt: p.modifiedAt?.toString?.() || new Date().toISOString(),
   }));
