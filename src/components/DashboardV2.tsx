@@ -135,7 +135,7 @@ export function DashboardV2({ onNavigate }: DashboardV2Props) {
             <div className="flex items-center justify-center min-h-[calc(100vh-250px)]">
               <EmptyState
                 preset="noProjectSelected"
-                onAction={() => onNavigate('project-library')}
+                onAction={() => onNavigate('protocol-library')}
                 size="md"
               />
             </div>

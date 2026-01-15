@@ -25,12 +25,12 @@ export default {
   // === NAVIGATION PANEL ===
   navigation: {
     researchFactory: "Research Factory",
-    currentProject: "Current Project:",
-    noProject: "No project selected",
-    
+    currentProject: "Current Protocol:",
+    noProject: "No protocol selected",
+
     // Navigation items
     dashboard: "Dashboard",
-    projectLibrary: "Project Library",
+    projectLibrary: "Protocol Library",
     protocolLibrary: "Protocol Library",
     aiPersonas: "AI Personas",
     personaEditor: "Persona Editor",

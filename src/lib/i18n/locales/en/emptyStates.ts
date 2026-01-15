@@ -6,11 +6,11 @@
 export default {
   // === COMMON PRESETS ===
   
-  // No Project Selected
+  // No Protocol Selected (renamed from Project)
   noProjectSelected: {
-    title: "No Project Selected",
-    description: "Select a project from the library to view its details and manage your research data.",
-    action: "Go to Project Library"
+    title: "No Protocol Selected",
+    description: "Select a protocol from the library to view its details and manage your research data.",
+    action: "Go to Protocol Library"
   },
   
   // No Protocols
@@ -20,11 +20,11 @@ export default {
     action: "Create New Protocol"
   },
   
-  // No Projects
+  // No Projects (legacy - redirects to protocols)
   noProjects: {
-    title: "No Projects Yet",
-    description: "Create your first project to start organizing your clinical research and trial data.",
-    action: "Create New Project"
+    title: "No Protocols Yet",
+    description: "Create your first protocol to start organizing your clinical research and trial data.",
+    action: "Create New Protocol"
   },
   
   // No Data
