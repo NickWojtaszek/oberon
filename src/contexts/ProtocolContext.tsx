@@ -416,14 +416,50 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
 
   /**
    * Update protocol metadata (not version content)
+   * Uses DEEP MERGE for studyMethodology to prevent data loss
    */
   const updateProtocol = useCallback((protocolId: string, updates: Partial<ProtocolWithMethodology>) => {
     const updatedProtocols = allProtocols.map(protocol => {
       if (protocol.id !== protocolId) return protocol;
 
+      // Deep merge studyMethodology to preserve nested fields like PICO
+      const mergedStudyMethodology = updates.studyMethodology ? {
+        ...protocol.studyMethodology,
+        ...updates.studyMethodology,
+        // Deep merge hypothesis to preserve picoFramework
+        ...(updates.studyMethodology.hypothesis && {
+          hypothesis: {
+            ...protocol.studyMethodology?.hypothesis,
+            ...updates.studyMethodology.hypothesis,
+            // Deep merge picoFramework
+            ...(updates.studyMethodology.hypothesis.picoFramework && {
+              picoFramework: {
+                ...protocol.studyMethodology?.hypothesis?.picoFramework,
+                ...updates.studyMethodology.hypothesis.picoFramework,
+              }
+            }),
+          }
+        }),
+        // Deep merge teamConfiguration
+        ...(updates.studyMethodology.teamConfiguration && {
+          teamConfiguration: {
+            ...protocol.studyMethodology?.teamConfiguration,
+            ...updates.studyMethodology.teamConfiguration,
+          }
+        }),
+        // Deep merge blindingState
+        ...(updates.studyMethodology.blindingState && {
+          blindingState: {
+            ...protocol.studyMethodology?.blindingState,
+            ...updates.studyMethodology.blindingState,
+          }
+        }),
+      } : protocol.studyMethodology;
+
       const updated = {
         ...protocol,
         ...updates,
+        studyMethodology: mergedStudyMethodology,
         modifiedAt: new Date(),
       };
 
