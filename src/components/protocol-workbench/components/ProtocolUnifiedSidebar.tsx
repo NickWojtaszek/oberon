@@ -61,9 +61,14 @@ export function ProtocolUnifiedSidebar({
 
   // Access project context via useProject hook
   const { currentProject } = useProject();
-  
+
   // Get PICO data from project if available
   const picoData = currentProject?.studyMethodology?.hypothesis?.picoFramework;
+
+  // Debug logging for PICO data
+  console.log('[ProtocolUnifiedSidebar] currentProject:', currentProject?.id);
+  console.log('[ProtocolUnifiedSidebar] studyMethodology:', currentProject?.studyMethodology);
+  console.log('[ProtocolUnifiedSidebar] picoData:', picoData);
 
   // Get personas for protocol tab
   const ethicsPersona = getPersona('ethics-compliance');    // Dr. Themis

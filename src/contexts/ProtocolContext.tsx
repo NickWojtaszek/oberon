@@ -419,6 +419,8 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
    * Uses DEEP MERGE for studyMethodology to prevent data loss
    */
   const updateProtocol = useCallback((protocolId: string, updates: Partial<ProtocolWithMethodology>) => {
+    console.log('[ProtocolContext] updateProtocol called:', { protocolId, updates });
+
     const updatedProtocols = allProtocols.map(protocol => {
       if (protocol.id !== protocolId) return protocol;
 
@@ -463,7 +465,11 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
         modifiedAt: new Date(),
       };
 
+      console.log('[ProtocolContext] Merged studyMethodology:', mergedStudyMethodology);
+      console.log('[ProtocolContext] PICO after merge:', mergedStudyMethodology?.hypothesis?.picoFramework);
+
       if (currentProtocol?.id === protocolId) {
+        console.log('[ProtocolContext] Setting currentProtocol with PICO:', updated.studyMethodology?.hypothesis?.picoFramework);
         setCurrentProtocol(updated);
       }
 
@@ -754,13 +760,16 @@ export function useProject() {
       };
     },
     updateProject: (projectId: string, updates: any) => {
-      protocolContext.updateProtocol(projectId, {
-        protocolTitle: updates.name,
-        protocolNumber: updates.studyNumber,
-        description: updates.description,
-        studyMethodology: updates.studyMethodology,
-        governance: updates.governance,
-      });
+      // Only pass defined values to avoid overwriting with undefined
+      const protocolUpdates: any = {};
+      if (updates.name !== undefined) protocolUpdates.protocolTitle = updates.name;
+      if (updates.studyNumber !== undefined) protocolUpdates.protocolNumber = updates.studyNumber;
+      if (updates.description !== undefined) protocolUpdates.description = updates.description;
+      if (updates.studyMethodology !== undefined) protocolUpdates.studyMethodology = updates.studyMethodology;
+      if (updates.governance !== undefined) protocolUpdates.governance = updates.governance;
+
+      console.log('[useProject] updateProject called:', { projectId, updates, protocolUpdates });
+      protocolContext.updateProtocol(projectId, protocolUpdates);
     },
     deleteProject: protocolContext.deleteProtocol,
     refreshProjects: protocolContext.refreshProtocols,
