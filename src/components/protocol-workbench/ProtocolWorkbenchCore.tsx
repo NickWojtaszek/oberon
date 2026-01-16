@@ -773,6 +773,7 @@ export function ProtocolWorkbench({
         onClose={() => setShowSaveDraftModal(false)}
         onConfirm={handleConfirmSaveDraft}
         protocolMetadata={protocolState.protocolMetadata}
+        protocolContent={protocolState.protocolContent}
         schemaBlocksCount={schemaState.schemaBlocks.length}
         dependenciesCount={schemaState.schemaBlocks.filter(b => b.conditionalDependencies && b.conditionalDependencies.length > 0).length}
       />

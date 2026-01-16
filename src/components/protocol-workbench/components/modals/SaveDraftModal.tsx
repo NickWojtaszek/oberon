@@ -1,11 +1,20 @@
 import { Save, CheckCircle2, Circle, FileText, Blocks, GitBranch, FileCheck, AlertCircle } from 'lucide-react';
 import type { ProtocolMetadata } from '../../types';
 
+interface ProtocolContent {
+  primaryObjective?: string;
+  secondaryObjectives?: string;
+  inclusionCriteria?: string;
+  exclusionCriteria?: string;
+  statisticalPlan?: string;
+}
+
 interface SaveDraftModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   protocolMetadata: ProtocolMetadata;
+  protocolContent?: ProtocolContent;
   schemaBlocksCount: number;
   dependenciesCount: number;
 }
@@ -15,6 +24,7 @@ export function SaveDraftModal({
   onClose,
   onConfirm,
   protocolMetadata,
+  protocolContent,
   schemaBlocksCount,
   dependenciesCount
 }: SaveDraftModalProps) {
@@ -28,11 +38,12 @@ export function SaveDraftModal({
     { key: 'sponsor', label: 'Sponsor', value: protocolMetadata.sponsor },
   ];
 
+  // Read from protocolContent (the actual data source) instead of protocolMetadata
   const protocolContentFields = [
-    { key: 'primaryObjectives', label: 'Primary Objectives', value: protocolMetadata.objectives?.primary },
-    { key: 'inclusionCriteria', label: 'Inclusion Criteria', value: protocolMetadata.inclusionCriteria },
-    { key: 'exclusionCriteria', label: 'Exclusion Criteria', value: protocolMetadata.exclusionCriteria },
-    { key: 'statisticalPlan', label: 'Statistical Plan', value: protocolMetadata.statisticalPlan },
+    { key: 'primaryObjectives', label: 'Primary Objectives', value: protocolContent?.primaryObjective },
+    { key: 'inclusionCriteria', label: 'Inclusion Criteria', value: protocolContent?.inclusionCriteria },
+    { key: 'exclusionCriteria', label: 'Exclusion Criteria', value: protocolContent?.exclusionCriteria },
+    { key: 'statisticalPlan', label: 'Statistical Plan', value: protocolContent?.statisticalPlan },
   ];
 
   const completedRequiredFields = requiredFields.filter(f => f.value && f.value.trim().length > 0).length;
