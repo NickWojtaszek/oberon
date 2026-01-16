@@ -7,7 +7,7 @@
  * Hierarchy: Protocol → Versions → Data/Manuscripts
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import type { SavedProtocol, ProtocolVersion, SchemaBlock } from '../components/protocol-workbench/types';
 
@@ -133,6 +133,14 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
   const [currentVersion, setCurrentVersion] = useState<ProtocolVersion | null>(null);
   const [allProtocols, setAllProtocols] = useState<ProtocolWithMethodology[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Ref to always have access to latest protocols (fixes stale closure issues)
+  const allProtocolsRef = useRef<ProtocolWithMethodology[]>([]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    allProtocolsRef.current = allProtocols;
+  }, [allProtocols]);
 
   // Load protocols on mount
   useEffect(() => {
@@ -330,6 +338,10 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
     };
 
     const updatedProtocols = [...allProtocols, newProtocol];
+
+    // CRITICAL: Update ref IMMEDIATELY so subsequent updateProtocol calls see the new protocol
+    allProtocolsRef.current = updatedProtocols;
+
     setAllProtocols(updatedProtocols);
     saveProtocolsToStorage(updatedProtocols);
 
@@ -339,6 +351,7 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
     localStorage.setItem(STORAGE_KEYS.CURRENT_PROJECT, protocolId);
 
     console.log('[ProtocolContext] Created new protocol:', protocolId);
+    console.log('[ProtocolContext] Ref now has', allProtocolsRef.current.length, 'protocols');
     return newProtocol;
   }, [allProtocols, saveProtocolsToStorage]);
 
@@ -417,11 +430,16 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
   /**
    * Update protocol metadata (not version content)
    * Uses DEEP MERGE for studyMethodology to prevent data loss
+   * Uses allProtocolsRef to avoid stale closure issues when called right after createProtocol
    */
   const updateProtocol = useCallback((protocolId: string, updates: Partial<ProtocolWithMethodology>) => {
     console.log('[ProtocolContext] updateProtocol called:', { protocolId, updates });
 
-    const updatedProtocols = allProtocols.map(protocol => {
+    // Use ref to get latest protocols (fixes stale closure when called right after createProtocol)
+    const currentProtocols = allProtocolsRef.current;
+    console.log('[ProtocolContext] Current protocols from ref:', currentProtocols.length, currentProtocols.map(p => p.id));
+
+    const updatedProtocols = currentProtocols.map(protocol => {
       if (protocol.id !== protocolId) return protocol;
 
       // Deep merge studyMethodology to preserve nested fields like PICO
@@ -476,9 +494,11 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
       return updated;
     });
 
+    // Also update the ref immediately for any subsequent calls
+    allProtocolsRef.current = updatedProtocols;
     setAllProtocols(updatedProtocols);
     saveProtocolsToStorage(updatedProtocols);
-  }, [allProtocols, currentProtocol, saveProtocolsToStorage]);
+  }, [currentProtocol, saveProtocolsToStorage]);
 
   /**
    * Delete a protocol
