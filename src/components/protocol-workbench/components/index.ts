@@ -23,3 +23,5 @@ export { DependencyModalAdvanced } from './modals/DependencyModalAdvanced';
 export { VersionTagModal } from './modals/VersionTagModal';
 export { SchemaGeneratorModal } from './modals/SchemaGeneratorModal';
 export { PrePublishValidationModal } from './modals/PrePublishValidationModal';
+export { DeployToDatabaseModal } from './modals/DeployToDatabaseModal';
+export { PostPublishModal } from './modals/PostPublishModal';

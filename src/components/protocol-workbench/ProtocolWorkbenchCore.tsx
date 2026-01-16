@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield, Target } from 'lucide-react';
+import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield, Target, Database } from 'lucide-react';
 import { Switch } from '../ui/switch';
 import { VariableLibrary, SchemaEditor, ProtocolDocument, DependencyGraph, ProtocolAudit, SettingsModal, DependencyModalAdvanced, VersionTagModal, SchemaGeneratorModal, SchemaTemplateLibrary, PrePublishValidationModal } from './components';
 import { ProtocolSelectionModal } from './components/modals/ProtocolSelectionModal';
 import { SaveDraftModal } from './components/modals/SaveDraftModal';
+import { DeployToDatabaseModal } from './components/modals/DeployToDatabaseModal';
+import { PostPublishModal } from './components/modals/PostPublishModal';
 import { ProtocolUnifiedSidebar } from './components/ProtocolUnifiedSidebar';
 import { PICOHistoryTab } from './components/PICOHistoryTab';
 import { useSchemaState, useProtocolState, useVersionControl } from './hooks';
@@ -23,12 +25,14 @@ interface ProtocolWorkbenchProps {
   initialProtocolId?: string;
   initialVersionId?: string;
   onNavigateToLibrary?: () => void;
+  onNavigateToDatabase?: (protocolId: string, versionId: string) => void;
 }
 
 export function ProtocolWorkbench({
   initialProtocolId,
   initialVersionId,
   onNavigateToLibrary,
+  onNavigateToDatabase,
 }: ProtocolWorkbenchProps = {}) {
   const { t } = useTranslation('ui');
   const { currentProject } = useProject();
@@ -66,6 +70,12 @@ export function ProtocolWorkbench({
 
   // 🆕 Save Draft Modal
   const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
+
+  // 🆕 Deploy to Database Modal
+  const [showDeployModal, setShowDeployModal] = useState(false);
+
+  // 🆕 Post-Publish Modal
+  const [showPostPublishModal, setShowPostPublishModal] = useState(false);
 
   // ✨ AI Suggestions State
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState(true);
@@ -322,11 +332,64 @@ export function ProtocolWorkbench({
       status,
       protocolIdToUse // Pass the protocol ID if we're editing
     );
+
+    // Show post-publish modal after successful publish
+    if (status === 'published') {
+      setTimeout(() => setShowPostPublishModal(true), 500);
+    }
   };
 
   const handleConfirmSaveDraft = () => {
     performSave('draft');
     setShowSaveDraftModal(false);
+  };
+
+  // Handle Deploy to Database
+  const handleDeployToDatabase = () => {
+    // Save first if needed
+    const { protocolTitle, protocolNumber } = protocolState.protocolMetadata;
+    const protocolIdToUse = versionControl.currentProtocolId || initialProtocolId;
+
+    if (protocolTitle && protocolNumber) {
+      // Save as draft before deploying
+      versionControl.saveProtocol(
+        protocolTitle,
+        protocolNumber,
+        schemaState.schemaBlocks,
+        protocolState.protocolMetadata,
+        protocolState.protocolContent,
+        'draft',
+        protocolIdToUse
+      );
+    }
+
+    setShowDeployModal(false);
+
+    // Navigate to Database module with protocol pre-selected
+    if (onNavigateToDatabase && protocolIdToUse && versionControl.currentVersionId) {
+      onNavigateToDatabase(protocolIdToUse, versionControl.currentVersionId);
+    }
+  };
+
+  // Validation errors for deployment
+  const getDeployValidationErrors = (): string[] => {
+    const errors: string[] = [];
+    const allBlocks = getAllBlocks(schemaState.schemaBlocks);
+
+    // Check for duplicate variable names
+    const variableNames = allBlocks.map(b => b.variable.name.toLowerCase());
+    const duplicates = variableNames.filter((name, index) => variableNames.indexOf(name) !== index);
+    if (duplicates.length > 0) {
+      errors.push(`Duplicate variable names: ${[...new Set(duplicates)].join(', ')}`);
+    }
+
+    // Check for empty variable names
+    const emptyNames = allBlocks.filter(b => !b.variable.name.trim());
+    if (emptyNames.length > 0) {
+      errors.push(`${emptyNames.length} field(s) have empty names`);
+    }
+
+    return errors;
   };
 
   // === AUTO-SAVE: Save draft on metadata/content change (debounced) ===
@@ -554,6 +617,18 @@ export function ProtocolWorkbench({
           <Target className="w-4 h-4" />
           PICO
         </button>
+
+        {/* Spacer to push Deploy button to the right */}
+        <div className="flex-1" />
+
+        {/* Deploy to Database Button */}
+        <button
+          onClick={() => setShowDeployModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+        >
+          <Database className="w-4 h-4" />
+          Deploy to Database
+        </button>
       </div>
 
       {/* AI Assistant Toggle (only shown on schema tab) */}
@@ -776,6 +851,25 @@ export function ProtocolWorkbench({
         protocolContent={protocolState.protocolContent}
         schemaBlocksCount={schemaState.schemaBlocks.length}
         dependenciesCount={schemaState.schemaBlocks.filter(b => b.conditionalDependencies && b.conditionalDependencies.length > 0).length}
+      />
+
+      {/* Deploy to Database Modal */}
+      <DeployToDatabaseModal
+        isOpen={showDeployModal}
+        onClose={() => setShowDeployModal(false)}
+        onConfirm={handleDeployToDatabase}
+        protocolMetadata={protocolState.protocolMetadata}
+        schemaBlocksCount={getAllBlocks(schemaState.schemaBlocks).length}
+        hasPublishedVersion={currentVersion?.status === 'published'}
+        validationErrors={getDeployValidationErrors()}
+      />
+
+      {/* Post-Publish Modal */}
+      <PostPublishModal
+        isOpen={showPostPublishModal}
+        onClose={() => setShowPostPublishModal(false)}
+        onDeployToDatabase={() => setShowDeployModal(true)}
+        protocolTitle={protocolState.protocolMetadata.protocolTitle || 'Untitled Protocol'}
       />
     </div>
   );

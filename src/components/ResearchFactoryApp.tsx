@@ -312,6 +312,11 @@ export function ResearchFactoryApp() {
                   setLoadVersionId(undefined);
                   setActiveTab('protocol-library');
                 }}
+                onNavigateToDatabase={(protocolId, versionId) => {
+                  console.log('📊 Navigate to Database with protocol:', protocolId, versionId);
+                  // The Database module will auto-select this protocol
+                  setActiveTab('database');
+                }}
               />
             </div>
           </div>

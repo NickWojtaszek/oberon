@@ -130,6 +130,8 @@ export function ResearchWizard({
   const [piApprovalStatus, setPiApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [editMode, setEditMode] = useState(false);
   const [personaExpanded, setPersonaExpanded] = useState(false);
+  const [hasProgressBeenSaved, setHasProgressBeenSaved] = useState(false);
+  const [hypothesisCommitted, setHypothesisCommitted] = useState(false);
 
   // Foundational Papers State
   const [foundationalPapers, setFoundationalPapers] = useState<FoundationalPaperExtraction[]>([]);
@@ -760,11 +762,13 @@ export function ResearchWizard({
 
   const handleSaveProgress = () => {
     saveHypothesisToProject();
+    setHasProgressBeenSaved(true);  // Mark as saved
     setShowSaveProgressModal(false);
   };
 
   const handleCommitHypothesis = (redirectToWorkbench: boolean) => {
     const savedHypothesis = saveHypothesisToProject();
+    setHypothesisCommitted(true);  // Mark as committed
     setShowCommitModal(false);
 
     if (redirectToWorkbench && onNavigate) {
@@ -1164,46 +1168,137 @@ export function ResearchWizard({
                     </div>
                   )}
 
-                  {/* PI Approval (for Student role) */}
-                  {userRole === 'student' && !hasConflicts && (
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6">
+                  {/* Workflow: Save → Approve → Commit → Create Protocol */}
+                  {!hasConflicts && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Shield className="w-5 h-5 text-indigo-600" />
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Shield className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-indigo-900 mb-2">
-                            Principal Investigator Approval Required
+                          <h3 className="font-medium text-blue-900 mb-2">
+                            Workflow: Save → Approve → Commit → Create Protocol
                           </h3>
-                          <p className="text-sm text-indigo-800 mb-4">
-                            As a Student user, your hypothesis must be reviewed and digitally signed by the PI
-                            before the Writing Tab is unlocked.
+                          <p className="text-sm text-blue-800 mb-4">
+                            Follow these steps to ensure your hypothesis is properly stored and validated
                           </p>
-                          
-                          {piApprovalStatus === 'pending' && (
-                            <div className="flex gap-3">
+
+                          {/* Step 1: Save Progress */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasProgressBeenSaved ? 'bg-green-600 text-white' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
+                                {hasProgressBeenSaved ? '✓' : '1'}
+                              </div>
                               <button
-                                onClick={() => handlePIApproval(true)}
-                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
+                                onClick={() => setShowSaveProgressModal(true)}
+                                disabled={hasProgressBeenSaved}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                <CheckCircle className="w-4 h-4" />
-                                Approve (PI)
-                              </button>
-                              <button
-                                onClick={() => handlePIApproval(false)}
-                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors text-sm"
-                              >
-                                Request Revision
+                                <Save className="w-4 h-4" />
+                                {hasProgressBeenSaved ? 'Progress Saved ✓' : 'Save Progress (Required)'}
                               </button>
                             </div>
-                          )}
-                          
-                          {piApprovalStatus === 'approved' && (
-                            <div className="flex items-center gap-2 text-emerald-700">
-                              <CheckCircle className="w-5 h-5" />
-                              <span className="text-sm font-medium">Approved by PI</span>
+
+                            {/* Step 2: PI Approval */}
+                            {userRole === 'student' && (
+                              <div className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${piApprovalStatus === 'approved' ? 'bg-green-600 text-white' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
+                                  {piApprovalStatus === 'approved' ? '✓' : '2'}
+                                </div>
+                                {piApprovalStatus === 'pending' && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handlePIApproval(true)}
+                                      disabled={!hasProgressBeenSaved}
+                                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title={!hasProgressBeenSaved ? 'Save progress first' : ''}
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                      Approve as PI
+                                    </button>
+                                    <button
+                                      onClick={() => handlePIApproval(false)}
+                                      disabled={!hasProgressBeenSaved}
+                                      className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title={!hasProgressBeenSaved ? 'Save progress first' : ''}
+                                    >
+                                      Request Revision
+                                    </button>
+                                  </div>
+                                )}
+                                {piApprovalStatus === 'approved' && (
+                                  <div className="flex items-center gap-2 text-emerald-700">
+                                    <CheckCircle className="w-5 h-5" />
+                                    <span className="text-sm font-medium">Approved by PI</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Step 2/3: Approve as PI (for PI users, skip student approval) */}
+                            {userRole === 'pi' && piApprovalStatus === 'pending' && (
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-white text-blue-600 border-2 border-blue-600 flex items-center justify-center text-xs font-bold">
+                                  2
+                                </div>
+                                <button
+                                  onClick={() => handlePIApproval(true)}
+                                  disabled={!hasProgressBeenSaved}
+                                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={!hasProgressBeenSaved ? 'Save progress first' : ''}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  Approve as PI
+                                </button>
+                              </div>
+                            )}
+                            {userRole === 'pi' && piApprovalStatus === 'approved' && (
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">
+                                  ✓
+                                </div>
+                                <div className="flex items-center gap-2 text-emerald-700">
+                                  <CheckCircle className="w-5 h-5" />
+                                  <span className="text-sm font-medium">Approved by PI</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Step 3/4: Commit Hypothesis */}
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hypothesisCommitted ? 'bg-green-600 text-white' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
+                                {hypothesisCommitted ? '✓' : (userRole === 'student' ? '3' : '3')}
+                              </div>
+                              <button
+                                onClick={() => setShowCommitModal(true)}
+                                disabled={!hasProgressBeenSaved || (userRole === 'student' && piApprovalStatus !== 'approved') || hypothesisCommitted}
+                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!hasProgressBeenSaved ? 'Save progress first' : (userRole === 'student' && piApprovalStatus !== 'approved') ? 'PI approval required' : ''}
+                              >
+                                <Lock className="w-4 h-4" />
+                                {hypothesisCommitted ? 'Hypothesis Committed ✓' : 'Commit Hypothesis'}
+                              </button>
                             </div>
-                          )}
+
+                            {/* Step 4/5: Create Protocol */}
+                            <div className="flex items-center gap-3">
+                              <div className="w-6 h-6 rounded-full bg-white text-blue-600 border-2 border-blue-600 flex items-center justify-center text-xs font-bold">
+                                {userRole === 'student' ? '4' : '4'}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  saveHypothesisToProject();
+                                  onNavigate?.('protocol-workbench');
+                                }}
+                                disabled={!hypothesisCommitted}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!hypothesisCommitted ? 'Commit hypothesis first' : 'Create a new protocol from this validated hypothesis'}
+                              >
+                                <FileText className="w-4 h-4" />
+                                Create Protocol from Hypothesis
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
