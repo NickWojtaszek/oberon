@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield } from 'lucide-react';
+import { ArrowLeft, Save, FileJson, FileText, Sparkles, GitBranch, Library, Download, Shield, Target } from 'lucide-react';
 import { Switch } from '../ui/switch';
 import { VariableLibrary, SchemaEditor, ProtocolDocument, DependencyGraph, ProtocolAudit, SettingsModal, DependencyModalAdvanced, VersionTagModal, SchemaGeneratorModal, SchemaTemplateLibrary, PrePublishValidationModal } from './components';
 import { ProtocolSelectionModal } from './components/modals/ProtocolSelectionModal';
 import { SaveDraftModal } from './components/modals/SaveDraftModal';
 import { ProtocolUnifiedSidebar } from './components/ProtocolUnifiedSidebar';
+import { PICOHistoryTab } from './components/PICOHistoryTab';
 import { useSchemaState, useProtocolState, useVersionControl } from './hooks';
 import type { SchemaBlock, ConditionalDependency, SchemaTemplate } from './types';
 import type { ProtocolAuditResult, AuditIssue } from './auditTypes';
@@ -38,7 +39,7 @@ export function ProtocolWorkbench({
   const versionControl = useVersionControl();
 
   // Local UI state
-  const [activeTab, setActiveTab] = useState<'schema' | 'dependencies' | 'protocol' | 'audit'>('protocol');
+  const [activeTab, setActiveTab] = useState<'schema' | 'dependencies' | 'protocol' | 'audit' | 'pico'>('protocol');
   const [selectedBlockForSettings, setSelectedBlockForSettings] = useState<SchemaBlock | null>(null);
   const [selectedBlockForDependency, setSelectedBlockForDependency] = useState<SchemaBlock | null>(null);
   const [selectedBlockForVersionTag, setSelectedBlockForVersionTag] = useState<SchemaBlock | null>(null);
@@ -542,6 +543,17 @@ export function ProtocolWorkbench({
           <Shield className="w-4 h-4" />
           {t('protocolWorkbench.tabs.audit')}
         </button>
+        <button
+          onClick={() => setActiveTab('pico')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'pico'
+              ? 'bg-purple-50 text-purple-700 border border-purple-200'
+              : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+          }`}
+        >
+          <Target className="w-4 h-4" />
+          PICO
+        </button>
       </div>
 
       {/* AI Assistant Toggle (only shown on schema tab) */}
@@ -631,6 +643,8 @@ export function ProtocolWorkbench({
               // Could add logic here to scroll to/highlight the specific field
             }}
           />
+        ) : activeTab === 'pico' ? (
+          <PICOHistoryTab />
         ) : (
           <>
             <ProtocolDocument
