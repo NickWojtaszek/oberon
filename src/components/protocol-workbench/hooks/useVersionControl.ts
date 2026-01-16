@@ -1,15 +1,21 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { storage } from '../../../utils/storageService';
 import type { SavedProtocol, ProtocolVersion, SchemaBlock } from '../types';
 
 // SIMPLIFIED: No project scoping - protocols are globally accessible
+// NOTE: This hook syncs with localStorage but avoids overwriting data from ProtocolContext.
 
 export function useVersionControl() {
+  // Track if save was triggered by this hook (vs external changes)
+  const pendingExplicitSave = useRef(false);
+
   const [savedProtocols, setSavedProtocols] = useState<SavedProtocol[]>(() => {
-    // Load from global storage
+    // Load from global storage on initial render
     if (typeof window !== 'undefined') {
-      console.log('[useVersionControl] Loading protocols from global storage');
-      return storage.protocols.getAll();
+      console.log('[useVersionControl] Initial load from global storage');
+      const protocols = storage.protocols.getAll();
+      console.log(`[useVersionControl] Found ${protocols.length} protocols in storage`);
+      return protocols;
     }
     return [];
   });
@@ -19,21 +25,59 @@ export function useVersionControl() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // Persist to global storage whenever savedProtocols changes
+  // Persist to global storage ONLY when we explicitly trigger a save
+  // This prevents overwriting data that ProtocolContext wrote
   useEffect(() => {
-    if (typeof window !== 'undefined' && savedProtocols.length >= 0) {
-      console.log('[useVersionControl] Saving', savedProtocols.length, 'protocols to storage');
+    if (pendingExplicitSave.current && typeof window !== 'undefined') {
+      console.log('[useVersionControl] Explicit save triggered:', savedProtocols.length, 'protocols');
       storage.protocols.save(savedProtocols);
+      pendingExplicitSave.current = false;
     }
   }, [savedProtocols]);
 
-  // Load protocols on mount
+  // Sync with storage on mount and when storage changes externally (e.g., from ProtocolContext)
   useEffect(() => {
-    console.log('[useVersionControl] Loading protocols');
-    const protocols = storage.protocols.getAll();
-    setSavedProtocols(protocols);
-    console.log(`[useVersionControl] Loaded ${protocols.length} protocols`);
-  }, []);
+    const syncFromStorage = () => {
+      const protocols = storage.protocols.getAll();
+      // Update local state if storage has different data
+      const currentIds = new Set(savedProtocols.map(p => p.id));
+      const storageIds = new Set(protocols.map(p => p.id));
+
+      // Check if there are new protocols in storage that we don't have
+      const hasNewProtocols = protocols.some(p => !currentIds.has(p.id));
+      // Check if storage has protocols we're missing (e.g., ProtocolContext created one)
+      const needsSync = hasNewProtocols || protocols.length !== savedProtocols.length;
+
+      if (needsSync) {
+        console.log(`[useVersionControl] Syncing from storage: ${protocols.length} protocols (had ${savedProtocols.length})`);
+        setSavedProtocols(protocols);
+      }
+    };
+
+    // Sync on mount
+    syncFromStorage();
+
+    // Listen for storage events (cross-tab changes)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'clinical_protocols') {
+        console.log('[useVersionControl] Storage changed externally, syncing...');
+        syncFromStorage();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also sync when window regains focus
+    window.addEventListener('focus', syncFromStorage);
+
+    // Periodic sync to catch ProtocolContext updates within same tab
+    const interval = setInterval(syncFromStorage, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', syncFromStorage);
+      clearInterval(interval);
+    };
+  }, [savedProtocols]);
 
   const saveProtocol = useCallback((
     protocolTitle: string,
@@ -68,6 +112,9 @@ export function useVersionControl() {
         hasCollectedData: false,
         dataRecordCount: 0,
       };
+
+      // Mark that we're doing an explicit save so the effect will persist to storage
+      pendingExplicitSave.current = true;
 
       setSavedProtocols(prev => {
         const existingIndex = prev.findIndex(p => p.id === protocolId);
@@ -174,6 +221,7 @@ export function useVersionControl() {
 
   const deleteProtocol = useCallback((protocolId: string) => {
     console.log('[useVersionControl] Deleting protocol:', protocolId);
+    pendingExplicitSave.current = true;
     setSavedProtocols(prev => prev.filter(p => p.id !== protocolId));
 
     if (currentProtocolId === protocolId) {
