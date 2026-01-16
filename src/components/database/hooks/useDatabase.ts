@@ -30,23 +30,18 @@ export function useDatabase() {
   });
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
-  // 🔄 Load protocols from project-scoped storage (memoized to prevent infinite loops)
+  // 🔄 Load protocols from global storage (no longer project-scoped)
   const loadProtocols = useCallback(() => {
-    if (!currentProject) {
-      console.log('ℹ️  [useDatabase] No current project, clearing protocols');
-      setSavedProtocols([]);
-      setHasAutoSelected(false);
-      return;
-    }
-
     try {
-      const protocols = storage.protocols.getAll(currentProject.id);
+      // Protocols are now the top-level entity, not scoped to projects
+      const protocols = storage.protocols.getAll();
+      console.log('📂 [useDatabase] Loaded', protocols.length, 'protocols from storage');
       setSavedProtocols(protocols);
     } catch (error) {
       console.error('❌ [useDatabase] Error loading protocols:', error);
       setSavedProtocols([]);
     }
-  }, [currentProject]);
+  }, []);
 
   // Auto-refresh protocols every 2 seconds
   useEffect(() => {
