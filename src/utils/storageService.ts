@@ -1,9 +1,13 @@
 /**
- * Type-safe storage hooks for React components
- * Use these instead of direct localStorage access
+ * Clinical Intelligence Engine - Storage Service
  *
- * SIMPLIFIED: Project layer removed. All data is now globally scoped
- * or scoped to protocol (not project).
+ * ARCHITECTURE: Protocol-Centric Storage
+ * - Protocols are the top-level entity (no Project wrapper)
+ * - Global protocol storage: clinical_protocols
+ * - Protocol-scoped data: manuscripts, manifests
+ * - Current protocol: clinical_current_project (legacy key name)
+ *
+ * Use these type-safe hooks instead of direct localStorage access.
  */
 
 import { STORAGE_KEYS } from './storageKeys';

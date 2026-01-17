@@ -39,7 +39,7 @@ export function AnalyticsStats() {
       return;
     }
 
-    const loadedProtocols = storage.protocols.getAll(currentProject.id);
+    const loadedProtocols = storage.protocols.getAll();
     setProtocols(loadedProtocols);
 
     // Auto-select first published protocol

@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef } from 'react';
-import { useProject, useProtocol } from '../contexts/ProtocolContext';
+import { useProtocol } from '../contexts/ProtocolContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { storage } from '../utils/storageService';
@@ -41,8 +41,7 @@ import type { NavigationTab } from './unified-workspace/NavigationPanel';
 import type { MismatchCard, AutonomyMode, PaperType, JournalProfile } from '../types/accountability';
 
 export function ResearchFactoryApp() {
-  const { currentProject } = useProject(); // Compatibility shim from ProtocolContext
-  const { currentProtocol } = useProtocol(); // Direct protocol access
+  const { currentProtocol } = useProtocol();
   const { user } = useAuth();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
@@ -80,7 +79,7 @@ export function ResearchFactoryApp() {
   const handleRunLogicCheck = () => {
     // Generate demo mismatches for testing
     // In production, this would call detectMismatches() with real manuscript content
-    const demoMismatches = generateDemoMismatches(currentProject?.id || 'demo');
+    const demoMismatches = generateDemoMismatches(currentProtocol?.id || 'demo');
     setMismatches(demoMismatches);
     setLogicAuditOpen(true);
   };
@@ -122,16 +121,16 @@ export function ResearchFactoryApp() {
   const handleExportPackage = async () => {
     try {
       // Get current manuscript from storage
-      if (!currentProject) {
+      if (!currentProtocol) {
         alert('No project selected');
         return;
       }
 
       // Check IRB compliance FIRST - block export if not approved
-      const complianceCheck = checkExportCompliance(currentProject.id);
+      const complianceCheck = checkExportCompliance(currentProtocol.id);
       if (!complianceCheck.canExport) {
         // Log blocked export attempt
-        const logger = getAuditLogger(currentProject.id);
+        const logger = getAuditLogger(currentProtocol.id);
         logger.log(
           'EXPORT_BLOCKED',
           user?.id || 'unknown',
@@ -151,7 +150,7 @@ export function ResearchFactoryApp() {
         return;
       }
       
-      const manuscripts = storage.manuscripts.getAll(currentProject.id);
+      const manuscripts = storage.manuscripts.getAll(currentProtocol.id);
       if (!manuscripts || !Array.isArray(manuscripts) || manuscripts.length === 0) {
         alert('No manuscript found. Please create a manuscript first.');
         return;
@@ -168,7 +167,7 @@ export function ResearchFactoryApp() {
         dataLineage,
         mismatches,
         selectedJournal,
-        currentProject.id,
+        currentProtocol.id,
         user?.name || 'Dr. Principal Investigator'
       );
       
@@ -176,7 +175,7 @@ export function ResearchFactoryApp() {
       await downloadExportPackage(exportPackage, manuscript.title);
       
       // Log successful export
-      const logger = getAuditLogger(currentProject.id);
+      const logger = getAuditLogger(currentProtocol.id);
       logger.log(
         'EXPORT_ALLOWED',
         user?.id || 'unknown',
@@ -604,7 +603,7 @@ export function ResearchFactoryApp() {
           <NavigationPanel
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            projectName={currentProtocol?.protocolTitle || currentProject?.name}
+            projectName={currentProtocol?.protocolTitle || currentProtocol?.protocolTitle}
           />
         }
         utilitySidebar={

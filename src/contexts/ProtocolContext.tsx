@@ -67,6 +67,7 @@ export interface ProtocolWithMethodology extends SavedProtocol {
   studyMethodology?: StudyMethodology;
   governance?: Governance;
   description?: string;
+  status?: 'active' | 'paused' | 'completed' | 'archived';
 }
 
 interface ProtocolContextValue {
@@ -724,7 +725,13 @@ export function useProtocol() {
  * - currentProject -> currentProtocol (with name/studyNumber from protocol)
  * - allProjects -> allProtocols (converted to Project-like shape)
  */
+/**
+ * @deprecated useProject() is deprecated. Use useProtocol() instead.
+ * This shim will be removed in a future version.
+ */
 export function useProject() {
+  console.warn('⚠️ DEPRECATED: useProject() is deprecated. Use useProtocol() instead. This shim will be removed in a future version.');
+
   const protocolContext = useProtocol();
 
   // Create a Project-like object from current protocol

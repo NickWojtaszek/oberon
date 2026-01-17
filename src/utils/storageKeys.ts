@@ -16,15 +16,9 @@ export const STORAGE_KEYS = {
   CLINICAL_DATA: 'clinical_data',
   SCHEMA_TEMPLATES: 'clinical_schema_templates',
   
-  // Project management (NEW - Phase 1)
-  PROJECTS: 'clinical_projects',              // List of all projects
-  CURRENT_PROJECT: 'clinical_current_project', // Active project ID
-  
-  // Helper function to get project-specific storage keys
-  // Example: getProjectKey('proj-123', 'protocols') -> 'clinical_project_proj-123_protocols'
-  getProjectKey: (projectId: string, resource: string): string => {
-    return `clinical_project_${projectId}_${resource}`;
-  },
+  // Protocol management
+  PROJECTS: 'clinical_projects',              // DEPRECATED: Legacy key (unused)
+  CURRENT_PROJECT: 'clinical_current_project', // Active protocol ID (legacy key name)
   
   // Migration tracking
   MIGRATION_PROJECTS_V1: 'clinical_migration_projects_v1',

@@ -16,7 +16,6 @@ import { getAllBlocks, validateAndImportSchema, getAllSections, getBlockPosition
 import { PublishProtocolButton } from '../PublishProtocolButton';
 import { VersionConflictModal } from '../VersionConflictModal';
 import { canEditProtocolVersion, updateDataCollectionStats } from '../../utils/schemaLocking';
-import { useProject } from '../../contexts/ProtocolContext';
 import { storage } from '../../utils/storageService';
 import { migrateProjectProtocols } from '../../utils/protocolMigration';
 import { runProtocolAudit } from './auditEngine';
@@ -35,7 +34,6 @@ export function ProtocolWorkbench({
   onNavigateToDatabase,
 }: ProtocolWorkbenchProps = {}) {
   const { t } = useTranslation('ui');
-  const { currentProject } = useProject();
 
   // State management hooks
   const schemaState = useSchemaState();
@@ -124,12 +122,12 @@ export function ProtocolWorkbench({
 
   // 🔄 PROTOCOL SELECTOR: Show modal if no initial IDs provided and protocols exist
   useEffect(() => {
-    if (!initialProtocolId && !initialVersionId && currentProject && !hasAttemptedAutoLoad) {
-      console.log('🔄 Protocol selector check for project:', currentProject.name);
+    if (!initialProtocolId && !initialVersionId && !hasAttemptedAutoLoad) {
+      console.log('🔄 Protocol selector check');
       setHasAttemptedAutoLoad(true);
 
       try {
-        const protocols = storage.protocols.getAll(currentProject.id);
+        const protocols = storage.protocols.getAll();
 
         if (protocols.length > 0) {
           // Show protocol selection modal
@@ -142,7 +140,7 @@ export function ProtocolWorkbench({
         console.error('❌ Error checking protocols:', error);
       }
     }
-  }, [initialProtocolId, initialVersionId, currentProject, hasAttemptedAutoLoad]);
+  }, [initialProtocolId, initialVersionId, hasAttemptedAutoLoad]);
 
   // 🔄 PROTOCOL LOAD FUNCTION (used by modal and initial ID loading)
   const loadProtocol = (protocolId: string, versionId: string) => {
@@ -194,12 +192,12 @@ export function ProtocolWorkbench({
         if (protocol) {
           setCurrentProtocol(protocol);
           setCurrentVersion(version);
-          setIsSchemaLocked(!canEditProtocolVersion(version, protocol.protocolNumber, currentProject?.id).canEdit);
+          setIsSchemaLocked(!canEditProtocolVersion(version, protocol.protocolNumber, protocol.id).canEdit);
 
           // Set auto-load info for UI banner
           setAutoLoadedProtocol({
             protocolNumber: protocol.protocolNumber,
-            studyType: currentProject?.studyDesign?.studyType || 'Unknown'
+            studyType: protocol.studyMethodology?.studyType || 'Unknown'
           });
         }
 
@@ -219,7 +217,7 @@ export function ProtocolWorkbench({
       setHasAttemptedAutoLoad(true);
       loadProtocol(initialProtocolId, initialVersionId);
     }
-  }, [initialProtocolId, initialVersionId, currentProject, hasAttemptedAutoLoad]);
+  }, [initialProtocolId, initialVersionId, hasAttemptedAutoLoad]);
 
   // Handle protocol selection modal actions
   const handleCreateNew = () => {
@@ -691,7 +689,7 @@ export function ProtocolWorkbench({
               schemaBlocks={schemaState.schemaBlocks}
               protocolMetadata={protocolState.protocolMetadata}
               protocolContent={protocolState.protocolContent}
-              studyType={currentProject?.studyDesign?.studyType}
+              studyType={currentProtocol?.studyMethodology?.studyType}
               onProtocolExtracted={(extractedText, fileName) => {
                 setProtocolDocumentText(extractedText);
                 setProtocolFileName(fileName);
@@ -729,14 +727,14 @@ export function ProtocolWorkbench({
               onUpdateContent={(field, value) => protocolState.updateContent(field as keyof typeof protocolState.protocolContent, value)}
               activeField={activeField}
               onActiveFieldChange={setActiveField}
-              pico={currentProject?.studyMethodology?.hypothesis?.picoFramework ? {
-                population: currentProject.studyMethodology.hypothesis.picoFramework.population || '',
-                intervention: currentProject.studyMethodology.hypothesis.picoFramework.intervention || '',
-                comparison: currentProject.studyMethodology.hypothesis.picoFramework.comparison || '',
-                outcome: currentProject.studyMethodology.hypothesis.picoFramework.outcome || '',
+              pico={currentProtocol?.studyMethodology?.hypothesis?.picoFramework ? {
+                population: currentProtocol.studyMethodology.hypothesis.picoFramework.population || '',
+                intervention: currentProtocol.studyMethodology.hypothesis.picoFramework.intervention || '',
+                comparison: currentProtocol.studyMethodology.hypothesis.picoFramework.comparison || '',
+                outcome: currentProtocol.studyMethodology.hypothesis.picoFramework.outcome || '',
               } : undefined}
-              foundationalPapers={Array.isArray(currentProject?.studyMethodology?.foundationalPapers)
-                ? currentProject.studyMethodology.foundationalPapers
+              foundationalPapers={Array.isArray(currentProtocol?.studyMethodology?.foundationalPapers)
+                ? currentProtocol.studyMethodology.foundationalPapers
                     .filter((p: any) => p && typeof p.title === 'string' && typeof p.authors === 'string' && typeof p.year === 'string' && typeof p.journal === 'string' && typeof p.pico === 'object' && typeof p.protocolElements === 'object')
                     .map((p: any) => ({
                         ...p,
@@ -751,7 +749,7 @@ export function ProtocolWorkbench({
               schemaBlocks={schemaState.schemaBlocks}
               protocolMetadata={protocolState.protocolMetadata}
               protocolContent={protocolState.protocolContent}
-              studyType={currentProject?.studyDesign?.studyType}
+              studyType={currentProtocol?.studyMethodology?.studyType}
               activeField={activeField}
               onUpdateMetadata={(field, value) => protocolState.updateMetadata(field as keyof typeof protocolState.protocolMetadata, value)}
               onUpdateContent={(field, value) => protocolState.updateContent(field as keyof typeof protocolState.protocolContent, value)}

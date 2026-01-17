@@ -44,7 +44,7 @@ import {
   Save
 } from 'lucide-react';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
-import { useProject } from '../contexts/ProtocolContext';
+import { useProtocol } from '../contexts/ProtocolContext';
 import { getPersona } from './ai-personas/core/personaRegistry';
 import {
   isGeminiConfigured,
@@ -143,8 +143,8 @@ export function ResearchWizard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
 
-  // PROJECT CONTEXT - for storing hypothesis properly
-  const { currentProject, updateProject, createProject } = useProject();
+  // PROTOCOL CONTEXT - for storing hypothesis properly
+  const { currentProtocol, updateProtocol, createProtocol } = useProtocol();
 
   // Get Dr. Ariadne persona
   const ariadnePersona = getPersona('hypothesis-architect');
@@ -157,12 +157,12 @@ export function ResearchWizard({
   // Load existing hypothesis and foundational papers from project if available
   useEffect(() => {
     // Only load once per project
-    if (loadedProjectIdRef.current === currentProject?.id) {
+    if (loadedProjectIdRef.current === currentProtocol?.id) {
       return;
     }
 
-    if (currentProject?.studyMethodology?.hypothesis) {
-      const existing = currentProject.studyMethodology.hypothesis;
+    if (currentProtocol?.studyMethodology?.hypothesis) {
+      const existing = currentProtocol.studyMethodology.hypothesis;
       if (existing.picoFramework) {
         setPicoFields(prev => ({
           population: {
@@ -193,8 +193,8 @@ export function ResearchWizard({
     }
 
     // ✅ FIX: Load foundational papers from project storage (only once)
-    if (currentProject?.studyMethodology?.foundationalPapers) {
-      const savedPapers = currentProject.studyMethodology.foundationalPapers;
+    if (currentProtocol?.studyMethodology?.foundationalPapers) {
+      const savedPapers = currentProtocol.studyMethodology.foundationalPapers;
       if (Array.isArray(savedPapers) && savedPapers.length > 0) {
         console.log('📂 Loading', savedPapers.length, 'foundational papers from project');
         setFoundationalPapers(savedPapers as FoundationalPaperExtraction[]);
@@ -203,11 +203,11 @@ export function ResearchWizard({
     }
 
     // Mark this project as loaded
-    loadedProjectIdRef.current = currentProject?.id;
-  }, [currentProject?.id]);
+    loadedProjectIdRef.current = currentProtocol?.id;
+  }, [currentProtocol?.id]);
 
   // ✅ DISABLED AUTO-SAVE - Use manual save on exit instead to prevent infinite loop
-  // The auto-save was causing: save → updateProject → load → setState → save → infinite loop
+  // The auto-save was causing: save → updateProtocol → load → setState → save → infinite loop
   // Now we only save when user explicitly exits or commits the hypothesis
 
   // Check if AI is available
@@ -627,18 +627,18 @@ export function ResearchWizard({
     };
 
     // If no current protocol, create one first
-    if (!currentProject) {
+    if (!currentProtocol) {
       console.log('📝 [ResearchWizard] No current protocol, creating new one for PICO');
       const studyNumber = `STUDY-${Date.now()}`;
-      const newProject = createProject({
-        name: rawObservation.substring(0, 50) || 'New Research Study',
-        studyNumber,
+      const newProtocol = createProtocol({
+        protocolTitle: rawObservation.substring(0, 50) || 'New Research Study',
+        protocolNumber: studyNumber,
         description: rawObservation,
       });
 
       // Now update the newly created protocol with hypothesis
-      if (newProject) {
-        updateProject(newProject.id, {
+      if (newProtocol) {
+        updateProtocol(newProtocol.id, {
           studyMethodology: {
             studyType: 'rct',
             configuredAt: new Date().toISOString(),
@@ -647,24 +647,24 @@ export function ResearchWizard({
             foundationalPapers: getFoundationalPapersForSave(),
           },
         });
-        console.log('✅ [ResearchWizard] Created new protocol with PICO:', newProject.id);
+        console.log('✅ [ResearchWizard] Created new protocol with PICO:', newProtocol.id);
       }
       return hypothesis;
     }
 
     // Update existing project with hypothesis in studyMethodology
-    updateProject(currentProject.id, {
+    updateProtocol(currentProtocol.id, {
       studyMethodology: {
-        ...currentProject.studyMethodology,
-        studyType: currentProject.studyMethodology?.studyType || 'rct',
-        configuredAt: currentProject.studyMethodology?.configuredAt || new Date().toISOString(),
-        configuredBy: currentProject.studyMethodology?.configuredBy || 'current-user',
+        ...currentProtocol.studyMethodology,
+        studyType: currentProtocol.studyMethodology?.studyType || 'rct',
+        configuredAt: currentProtocol.studyMethodology?.configuredAt || new Date().toISOString(),
+        configuredBy: currentProtocol.studyMethodology?.configuredBy || 'current-user',
         hypothesis,
         foundationalPapers: getFoundationalPapersForSave(),
       },
     });
 
-    console.log('✅ [ResearchWizard] Updated protocol with PICO:', currentProject.id);
+    console.log('✅ [ResearchWizard] Updated protocol with PICO:', currentProtocol.id);
     return hypothesis;
   };
 
@@ -677,8 +677,8 @@ export function ResearchWizard({
       const savedHypothesis = saveHypothesisToProject();
 
       // Mark the current project as loaded to prevent useEffect from overwriting state
-      if (currentProject) {
-        loadedProjectIdRef.current = currentProject.id;
+      if (currentProtocol) {
+        loadedProjectIdRef.current = currentProtocol.id;
       }
 
       console.log('✅ [ResearchWizard] PI approval granted and saved', savedHypothesis);
@@ -774,8 +774,8 @@ export function ResearchWizard({
     const savedHypothesis = saveHypothesisToProject();
 
     // Mark the current project as loaded to prevent useEffect from overwriting state
-    if (currentProject) {
-      loadedProjectIdRef.current = currentProject.id;
+    if (currentProtocol) {
+      loadedProjectIdRef.current = currentProtocol.id;
     }
 
     setHasProgressBeenSaved(true);  // Mark as saved
@@ -788,8 +788,8 @@ export function ResearchWizard({
     const savedHypothesis = saveHypothesisToProject();
 
     // Mark the current project as loaded to prevent useEffect from overwriting state
-    if (currentProject) {
-      loadedProjectIdRef.current = currentProject.id;
+    if (currentProtocol) {
+      loadedProjectIdRef.current = currentProtocol.id;
     }
 
     setHypothesisCommitted(true);  // Mark as committed
