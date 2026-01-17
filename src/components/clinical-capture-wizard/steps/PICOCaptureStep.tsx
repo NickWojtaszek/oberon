@@ -164,12 +164,15 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
     }
   };
 
-  // Handle PDF upload
+  // Handle multiple PDF upload
   const handlePDFUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    if (file.type !== 'application/pdf') {
+    // Limit to 5 papers max
+    const filesToProcess = Array.from(files).slice(0, 5);
+
+    if (filesToProcess.some(file => file.type !== 'application/pdf')) {
       setUploadError('Only PDF files are supported');
       return;
     }
@@ -182,8 +185,23 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
         throw new Error('Gemini API not configured. Please add API key in settings.');
       }
 
-      const extracted = await extractFromPDF(file);
-      setFoundationalPapers(prev => [...prev, extracted]);
+      // Process papers sequentially (avoid rate limits)
+      const extractedPapers: FoundationalPaperExtraction[] = [];
+      for (const file of filesToProcess) {
+        try {
+          const extracted = await extractFromPDF(file);
+          extractedPapers.push(extracted);
+        } catch (error) {
+          console.error(`Failed to extract ${file.name}:`, error);
+          // Continue with other files
+        }
+      }
+
+      setFoundationalPapers(prev => [...prev, ...extractedPapers]);
+
+      if (extractedPapers.length < filesToProcess.length) {
+        setUploadError(`Successfully uploaded ${extractedPapers.length} of ${filesToProcess.length} papers`);
+      }
     } catch (error: any) {
       setUploadError(error.message || 'Failed to extract paper data');
     } finally {
@@ -373,6 +391,7 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
             ref={fileInputRef}
             type="file"
             accept=".pdf"
+            multiple
             onChange={handlePDFUpload}
             className="hidden"
           />
@@ -385,12 +404,12 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
             {isUploadingPaper ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Processing PDF...
+                Processing PDFs...
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Upload PDF Paper
+                Upload PDF Papers (max 5)
               </>
             )}
           </button>
