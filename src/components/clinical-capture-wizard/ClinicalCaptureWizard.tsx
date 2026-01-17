@@ -22,7 +22,9 @@ import {
 import { PICOCaptureStep } from './steps/PICOCaptureStep';
 import { PICOValidationStep } from './steps/PICOValidationStep';
 import { StudyDesignStep } from './steps/StudyDesignStep';
+import { SchemaBuilderStep } from './steps/SchemaBuilderStep';
 import type { FoundationalPaperExtraction } from '../../services/geminiService';
+import type { SchemaBlock } from '../protocol-workbench/types';
 
 // Workflow steps
 type WizardStep =
@@ -199,6 +201,33 @@ export function ClinicalCaptureWizard() {
     }
   };
 
+  // Handle schema builder completion
+  const handleSchemaBuilderComplete = (data: { schemaBlocks: SchemaBlock[] }) => {
+    if (currentProtocol) {
+      // Save schema to protocol (will create first version if needed)
+      updateProtocol(currentProtocol.id, {
+        schemaBlocks: data.schemaBlocks,
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          workflowState: {
+            ...currentProtocol.studyMethodology?.workflowState,
+            completedSteps: [
+              ...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []),
+              'schema-builder',
+            ],
+          },
+        },
+      });
+
+      // Mark step complete and advance
+      completeStep('schema-builder');
+      const currentIndex = WIZARD_STEPS.findIndex(s => s.id === 'schema-builder');
+      if (currentIndex < WIZARD_STEPS.length - 1) {
+        goToStep(WIZARD_STEPS[currentIndex + 1].id);
+      }
+    }
+  };
+
   // Mark step as completed
   const completeStep = (step: WizardStep) => {
     setWizardState(prev => {
@@ -353,9 +382,20 @@ export function ClinicalCaptureWizard() {
             />
           )}
 
+          {wizardState.currentStep === 'schema-builder' && (
+            <SchemaBuilderStep
+              onComplete={handleSchemaBuilderComplete}
+              initialData={{
+                schemaBlocks: currentProtocol?.schemaBlocks,
+              }}
+              picoContext={currentProtocol?.studyMethodology?.picoFields}
+            />
+          )}
+
           {wizardState.currentStep !== 'pico-capture' &&
            wizardState.currentStep !== 'pico-validation' &&
-           wizardState.currentStep !== 'study-design' && (
+           wizardState.currentStep !== 'study-design' &&
+           wizardState.currentStep !== 'schema-builder' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
               <h2 className="text-xl font-semibold text-slate-900 mb-4">
                 {WIZARD_STEPS.find(s => s.id === wizardState.currentStep)?.label}
