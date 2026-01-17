@@ -17,7 +17,8 @@ import {
   FlaskConical,
   Table,
   Database,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
 import { PICOCaptureStep } from './steps/PICOCaptureStep';
 import { PICOValidationStep } from './steps/PICOValidationStep';
@@ -70,17 +71,50 @@ export function ClinicalCaptureWizard() {
     protocolId: null,
   });
 
+  // Loading state for protocol initialization
+  const [isInitializing, setIsInitializing] = useState(true);
+
   // Initialize wizard with existing protocol or create new
   useEffect(() => {
-    if (currentProtocol) {
-      setWizardState(prev => ({
-        ...prev,
-        protocolId: currentProtocol.id,
-        // Load completed steps from protocol metadata
-        completedSteps: currentProtocol.studyMethodology?.workflowState?.completedSteps || [],
-      }));
-    }
-  }, [currentProtocol?.id]);
+    const initializeWizard = async () => {
+      setIsInitializing(true);
+
+      if (currentProtocol) {
+        // Load existing protocol state
+        console.log('[ClinicalCaptureWizard] Loading existing protocol:', currentProtocol.id);
+        setWizardState(prev => ({
+          ...prev,
+          protocolId: currentProtocol.id,
+          completedSteps: currentProtocol.studyMethodology?.workflowState?.completedSteps || [],
+        }));
+      } else {
+        // No protocol exists - create draft protocol for wizard
+        console.log('[ClinicalCaptureWizard] No protocol found, creating draft...');
+
+        const newProtocol = await createProtocol({
+          protocolTitle: 'Draft Protocol',
+          protocolNumber: `DRAFT-${Date.now()}`,
+          principalInvestigator: 'Unknown',
+          status: 'draft' as const,
+          studyMethodology: {
+            studyType: 'rct',
+            configuredAt: new Date().toISOString(),
+            configuredBy: 'current-user',
+            workflowState: {
+              currentStep: 'pico-capture',
+              completedSteps: [],
+            },
+          },
+        });
+
+        console.log('[ClinicalCaptureWizard] Draft protocol created:', newProtocol.id);
+      }
+
+      setIsInitializing(false);
+    };
+
+    initializeWizard();
+  }, [currentProtocol?.id, createProtocol]);
 
   // Handle PICO capture completion
   const handlePICOComplete = (data: {
@@ -94,6 +128,11 @@ export function ClinicalCaptureWizard() {
     };
     foundationalPapers: FoundationalPaperExtraction[];
   }) => {
+    if (!currentProtocol) {
+      console.error('[ClinicalCaptureWizard] No protocol available - this should not happen');
+      return;
+    }
+
     if (currentProtocol) {
       // Save PICO data to protocol
       updateProtocol(currentProtocol.id, {
@@ -367,8 +406,17 @@ export function ClinicalCaptureWizard() {
       {/* Step content */}
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto">
-          {wizardState.currentStep === 'pico-capture' && (
-            <PICOCaptureStep
+          {isInitializing ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                <p className="text-slate-600">Initializing wizard...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {wizardState.currentStep === 'pico-capture' && (
+                <PICOCaptureStep
               onComplete={handlePICOComplete}
               initialData={{
                 rawObservation: currentProtocol?.studyMethodology?.hypothesis || '',
@@ -464,6 +512,8 @@ export function ClinicalCaptureWizard() {
                 </span>
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
