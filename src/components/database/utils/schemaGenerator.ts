@@ -33,6 +33,25 @@ export interface DatabaseTable {
 }
 
 /**
+ * Database Structure Notes:
+ *
+ * LONGITUDINAL DATA SUPPORT:
+ * Each table includes base fields for tracking repeated measurements:
+ * - subject_id: Unique patient identifier
+ * - visit_name: Visit/timepoint (Baseline, Week 4, etc.)
+ * - visit_date: When the visit occurred
+ * - enrollment_date: When patient entered study
+ *
+ * The combination of (subject_id + visit_name) forms a composite key
+ * allowing multiple records per patient across different timepoints.
+ *
+ * Example: Patient "001" can have records for:
+ * - 001, Baseline, 2024-01-15
+ * - 001, Week 4, 2024-02-12
+ * - 001, Week 8, 2024-03-11
+ */
+
+/**
  * Convert Protocol SchemaBlocks to Database Fields
  */
 export function generateDatabaseFields(
@@ -234,7 +253,7 @@ export function generateDatabaseTables(
   const clinicalFields = allFields.filter(f => f.category === 'Clinical');
   const treatmentFields = allFields.filter(f => f.category === 'Treatments');
 
-  // Always add subject ID and enrollment date to all tables
+  // Always add subject ID, enrollment date, and visit tracking to all tables
   const baseFields: DatabaseField[] = [
     {
       id: 'subject_id',
@@ -246,6 +265,29 @@ export function generateDatabaseTables(
       category: 'Structural',
       status: 'normal',
       schemaBlockId: 'base_subject_id'
+    },
+    {
+      id: 'visit_name',
+      fieldName: 'visit_name',
+      displayName: 'Visit/Timepoint',
+      dataType: 'Categorical',
+      sqlType: 'VARCHAR(100)',
+      isRequired: true,
+      options: ['Screening', 'Baseline', 'Week 2', 'Week 4', 'Week 8', 'Week 12', 'Month 6', 'Month 12', 'Final Visit', 'Early Termination', 'Unscheduled'],
+      category: 'Structural',
+      status: 'normal',
+      schemaBlockId: 'base_visit_name'
+    },
+    {
+      id: 'visit_date',
+      fieldName: 'visit_date',
+      displayName: 'Visit Date',
+      dataType: 'Date',
+      sqlType: 'DATE',
+      isRequired: true,
+      category: 'Structural',
+      status: 'normal',
+      schemaBlockId: 'base_visit_date'
     },
     {
       id: 'enrollment_date',
@@ -268,7 +310,7 @@ export function generateDatabaseTables(
       create: () => ({
         tableName: `subjects_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         displayName: 'Subject Demographics',
-        description: 'Core demographic and baseline characteristics',
+        description: 'Demographic and baseline characteristics tracked across study visits. Each row represents one subject at one timepoint.',
         fields: [...baseFields, ...demographicFields],
         recordCount: 0,
         protocolNumber: protocolVersion.metadata.protocolNumber,
@@ -281,7 +323,7 @@ export function generateDatabaseTables(
       create: () => ({
         tableName: `endpoints_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         displayName: 'Study Endpoints',
-        description: 'Primary, secondary, and exploratory endpoints',
+        description: 'Primary, secondary, and exploratory endpoints measured longitudinally. Records multiple assessments per subject over time.',
         fields: [
           ...baseFields,
           {
@@ -308,7 +350,7 @@ export function generateDatabaseTables(
       create: () => ({
         tableName: `clinical_data_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         displayName: 'Clinical Data',
-        description: 'Treatments, adverse events, and clinical observations',
+        description: 'Treatments, adverse events, and clinical observations captured at each study visit. Supports longitudinal tracking of interventions and safety data.',
         fields: [
           ...baseFields,
           {
@@ -336,7 +378,7 @@ export function generateDatabaseTables(
       create: () => ({
         tableName: `laboratory_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         displayName: 'Laboratory Results',
-        description: 'Lab tests and biomarkers',
+        description: 'Lab tests and biomarkers measured across study visits. Tracks repeated laboratory assessments for each subject over time.',
         fields: [
           ...baseFields,
           {
