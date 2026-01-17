@@ -66,19 +66,57 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
   const [isProcessing, setIsProcessing] = useState(false);
   const [personaExpanded, setPersonaExpanded] = useState(false);
 
+  // Transform initialData.picoFields if it exists (from protocol storage)
+  // Protocol stores as {population: "string", intervention: "string"}
+  // Component needs {population: {value: "string", ...}, intervention: {value: "string", ...}}
+  const initialPicoFields = initialData?.picoFields
+    ? {
+        population: {
+          label: 'Population',
+          value: typeof initialData.picoFields.population === 'string'
+            ? initialData.picoFields.population
+            : (initialData.picoFields.population as any)?.value || '',
+          icon: Users,
+          grounded: 'found' as const,
+        },
+        intervention: {
+          label: 'Intervention',
+          value: typeof initialData.picoFields.intervention === 'string'
+            ? initialData.picoFields.intervention
+            : (initialData.picoFields.intervention as any)?.value || '',
+          icon: Syringe,
+          grounded: 'found' as const,
+        },
+        comparison: {
+          label: 'Comparison',
+          value: typeof initialData.picoFields.comparison === 'string'
+            ? initialData.picoFields.comparison
+            : (initialData.picoFields.comparison as any)?.value || '',
+          icon: GitCompare,
+          grounded: 'found' as const,
+        },
+        outcome: {
+          label: 'Outcome',
+          value: typeof initialData.picoFields.outcome === 'string'
+            ? initialData.picoFields.outcome
+            : (initialData.picoFields.outcome as any)?.value || '',
+          icon: Target,
+          grounded: 'found' as const,
+        },
+      }
+    : {
+        population: { label: 'Population', value: '', icon: Users, grounded: 'pending' },
+        intervention: { label: 'Intervention', value: '', icon: Syringe, grounded: 'pending' },
+        comparison: { label: 'Comparison', value: '', icon: GitCompare, grounded: 'pending' },
+        outcome: { label: 'Outcome', value: '', icon: Target, grounded: 'pending' },
+      };
+
   const [picoFields, setPicoFields] = useState<{
     population: PICOField;
     intervention: PICOField;
     comparison: PICOField;
     outcome: PICOField;
-  }>(
-    initialData?.picoFields || {
-      population: { label: 'Population', value: '', icon: Users, grounded: 'pending' },
-      intervention: { label: 'Intervention', value: '', icon: Syringe, grounded: 'pending' },
-      comparison: { label: 'Comparison', value: '', icon: GitCompare, grounded: 'pending' },
-      outcome: { label: 'Outcome', value: '', icon: Target, grounded: 'pending' },
-    }
-  );
+  }>(initialPicoFields);
 
   // Foundational Papers
   const [foundationalPapers, setFoundationalPapers] = useState<FoundationalPaperExtraction[]>(
