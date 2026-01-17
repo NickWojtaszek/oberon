@@ -28,6 +28,7 @@ import { PersonaLibrary, type PersonaLibraryRef } from './PersonaLibrary';
 import { FairyCourtPersonas } from './FairyCourtPersonas';
 import { ProtocolWorkbench } from './ProtocolWorkbench';
 import { ResearchWizard } from './ResearchWizard';
+import { ClinicalCaptureWizard } from './clinical-capture-wizard';
 import { AcademicWriting } from './AcademicWriting';
 import { GovernanceDashboard } from './governance/GovernanceDashboard';
 import { EthicsBoard } from './EthicsBoard';
@@ -532,7 +533,7 @@ export function ResearchFactoryApp() {
       case 'research-wizard':
         return (
           <div className="h-full">
-            <ResearchWizard 
+            <ResearchWizard
               onComplete={(hypothesis) => {
                 console.log('Hypothesis completed:', hypothesis);
                 // Navigate to Protocol Workbench where AI can help pre-fill objectives, criteria, and stats plan
@@ -542,6 +543,13 @@ export function ResearchFactoryApp() {
                 setActiveTab('dashboard');
               }}
             />
+          </div>
+        );
+
+      case 'clinical-capture':
+        return (
+          <div className="h-full">
+            <ClinicalCaptureWizard />
           </div>
         );
 

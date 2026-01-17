@@ -23,6 +23,7 @@ import {
   GraduationCap,
   Building,
   Sparkles,
+  Workflow,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FEATURE_FLAGS } from '../../config/featureFlags';
@@ -35,6 +36,7 @@ export type NavigationTab =
   | 'persona-editor'
   | 'protocol-workbench'
   | 'research-wizard'
+  | 'clinical-capture'
   | 'project-setup'
   | 'methodology-engine'
   | 'database'
@@ -74,6 +76,12 @@ const NAV_ITEMS: Array<{
     label: 'Research Wizard',
     icon: Lightbulb,
     description: 'Guided research setup',
+  },
+  {
+    id: 'clinical-capture',
+    label: 'Clinical Capture',
+    icon: Workflow,
+    description: 'Unified protocol workflow',
   },
   {
     id: 'protocol-workbench',
