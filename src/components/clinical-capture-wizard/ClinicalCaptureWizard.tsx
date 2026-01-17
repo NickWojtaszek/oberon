@@ -20,6 +20,7 @@ import {
   Shield
 } from 'lucide-react';
 import { PICOCaptureStep } from './steps/PICOCaptureStep';
+import { PICOValidationStep } from './steps/PICOValidationStep';
 import type { FoundationalPaperExtraction } from '../../services/geminiService';
 
 // Workflow steps
@@ -111,6 +112,59 @@ export function ClinicalCaptureWizard() {
         goToStep(WIZARD_STEPS[currentIndex + 1].id);
       }
     }
+  };
+
+  // Handle PICO validation approval
+  const handlePICOApproval = () => {
+    if (currentProtocol) {
+      // Mark validation step as complete
+      completeStep('pico-validation');
+
+      // Save approval status to protocol
+      updateProtocol(currentProtocol.id, {
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          piApprovalStatus: 'approved',
+          piApprovalDate: new Date().toISOString(),
+          workflowState: {
+            ...currentProtocol.studyMethodology?.workflowState,
+            completedSteps: [
+              ...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []),
+              'pico-validation',
+            ],
+          },
+        },
+      });
+
+      // Advance to study design
+      const currentIndex = WIZARD_STEPS.findIndex(s => s.id === 'pico-validation');
+      if (currentIndex < WIZARD_STEPS.length - 1) {
+        goToStep(WIZARD_STEPS[currentIndex + 1].id);
+      }
+    }
+  };
+
+  // Handle PICO validation rejection
+  const handlePICORejection = (reason: string) => {
+    if (currentProtocol) {
+      // Save rejection status
+      updateProtocol(currentProtocol.id, {
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          piApprovalStatus: 'rejected',
+          piRejectionReason: reason,
+          piRejectionDate: new Date().toISOString(),
+        },
+      });
+
+      // Go back to PICO capture for editing
+      goToStep('pico-capture');
+    }
+  };
+
+  // Handle back to PICO edit
+  const handleBackToPICOEdit = () => {
+    goToStep('pico-capture');
   };
 
   // Mark step as completed
@@ -238,7 +292,26 @@ export function ClinicalCaptureWizard() {
             />
           )}
 
-          {wizardState.currentStep !== 'pico-capture' && (
+          {wizardState.currentStep === 'pico-validation' && currentProtocol?.studyMethodology && (
+            <PICOValidationStep
+              picoData={{
+                rawObservation: currentProtocol.studyMethodology.hypothesis || '',
+                picoFields: currentProtocol.studyMethodology.picoFields || {
+                  population: '',
+                  intervention: '',
+                  comparison: '',
+                  outcome: '',
+                },
+                foundationalPapers: currentProtocol.studyMethodology.foundationalPapers || [],
+              }}
+              onApprove={handlePICOApproval}
+              onReject={handlePICORejection}
+              onBackToEdit={handleBackToPICOEdit}
+              userRole="pi"
+            />
+          )}
+
+          {wizardState.currentStep !== 'pico-capture' && wizardState.currentStep !== 'pico-validation' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
               <h2 className="text-xl font-semibold text-slate-900 mb-4">
                 {WIZARD_STEPS.find(s => s.id === wizardState.currentStep)?.label}
