@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { PICOCaptureStep } from './steps/PICOCaptureStep';
 import { PICOValidationStep } from './steps/PICOValidationStep';
+import { StudyDesignStep } from './steps/StudyDesignStep';
 import type { FoundationalPaperExtraction } from '../../services/geminiService';
 
 // Workflow steps
@@ -167,6 +168,37 @@ export function ClinicalCaptureWizard() {
     goToStep('pico-capture');
   };
 
+  // Handle study design completion
+  const handleStudyDesignComplete = (data: {
+    studyType: string;
+    rctConfig?: any;
+  }) => {
+    if (currentProtocol) {
+      // Save study design to protocol
+      updateProtocol(currentProtocol.id, {
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          studyType: data.studyType as any,
+          rctConfig: data.rctConfig,
+          workflowState: {
+            ...currentProtocol.studyMethodology?.workflowState,
+            completedSteps: [
+              ...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []),
+              'study-design',
+            ],
+          },
+        },
+      });
+
+      // Mark step complete and advance
+      completeStep('study-design');
+      const currentIndex = WIZARD_STEPS.findIndex(s => s.id === 'study-design');
+      if (currentIndex < WIZARD_STEPS.length - 1) {
+        goToStep(WIZARD_STEPS[currentIndex + 1].id);
+      }
+    }
+  };
+
   // Mark step as completed
   const completeStep = (step: WizardStep) => {
     setWizardState(prev => {
@@ -311,7 +343,19 @@ export function ClinicalCaptureWizard() {
             />
           )}
 
-          {wizardState.currentStep !== 'pico-capture' && wizardState.currentStep !== 'pico-validation' && (
+          {wizardState.currentStep === 'study-design' && (
+            <StudyDesignStep
+              onComplete={handleStudyDesignComplete}
+              initialData={{
+                studyType: currentProtocol?.studyMethodology?.studyType as any,
+                rctConfig: currentProtocol?.studyMethodology?.rctConfig,
+              }}
+            />
+          )}
+
+          {wizardState.currentStep !== 'pico-capture' &&
+           wizardState.currentStep !== 'pico-validation' &&
+           wizardState.currentStep !== 'study-design' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
               <h2 className="text-xl font-semibold text-slate-900 mb-4">
                 {WIZARD_STEPS.find(s => s.id === wizardState.currentStep)?.label}
