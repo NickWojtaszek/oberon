@@ -10,12 +10,12 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { 
-  Mic, 
-  MicOff, 
-  ArrowRight, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  Mic,
+  MicOff,
+  ArrowRight,
+  CheckCircle,
+  AlertTriangle,
   X,
   Users,
   Syringe,
@@ -40,7 +40,8 @@ import {
   ExternalLink,
   Shield,
   Brain,
-  FileCheck
+  FileCheck,
+  Save
 } from 'lucide-react';
 import { GlobalHeader } from './unified-workspace/GlobalHeader';
 import { useProject } from '../contexts/ProtocolContext';
