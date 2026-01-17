@@ -23,6 +23,7 @@ import { PICOCaptureStep } from './steps/PICOCaptureStep';
 import { PICOValidationStep } from './steps/PICOValidationStep';
 import { StudyDesignStep } from './steps/StudyDesignStep';
 import { SchemaBuilderStep } from './steps/SchemaBuilderStep';
+import { DeployStep } from './steps/DeployStep';
 import type { FoundationalPaperExtraction } from '../../services/geminiService';
 import type { SchemaBlock } from '../protocol-workbench/types';
 
@@ -228,6 +229,30 @@ export function ClinicalCaptureWizard() {
     }
   };
 
+  // Handle deploy completion
+  const handleDeployComplete = () => {
+    if (currentProtocol) {
+      // Mark protocol as deployed
+      updateProtocol(currentProtocol.id, {
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          deploymentStatus: 'deployed',
+          deploymentDate: new Date().toISOString(),
+          workflowState: {
+            ...currentProtocol.studyMethodology?.workflowState,
+            completedSteps: [
+              ...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []),
+              'deploy',
+            ],
+          },
+        },
+      });
+
+      // Mark as complete
+      completeStep('deploy');
+    }
+  };
+
   // Mark step as completed
   const completeStep = (step: WizardStep) => {
     setWizardState(prev => {
@@ -392,10 +417,25 @@ export function ClinicalCaptureWizard() {
             />
           )}
 
+          {wizardState.currentStep === 'deploy' && currentProtocol && (
+            <DeployStep
+              onComplete={handleDeployComplete}
+              protocolSummary={{
+                protocolTitle: currentProtocol.protocolTitle || 'Untitled Protocol',
+                protocolNumber: currentProtocol.protocolNumber || 'N/A',
+                studyType: currentProtocol.studyMethodology?.studyType || 'Not specified',
+                fieldCount: currentProtocol.schemaBlocks?.length || 0,
+                picoComplete: !!currentProtocol.studyMethodology?.picoFields?.population,
+                schemaComplete: (currentProtocol.schemaBlocks?.length || 0) > 0,
+              }}
+            />
+          )}
+
           {wizardState.currentStep !== 'pico-capture' &&
            wizardState.currentStep !== 'pico-validation' &&
            wizardState.currentStep !== 'study-design' &&
-           wizardState.currentStep !== 'schema-builder' && (
+           wizardState.currentStep !== 'schema-builder' &&
+           wizardState.currentStep !== 'deploy' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
               <h2 className="text-xl font-semibold text-slate-900 mb-4">
                 {WIZARD_STEPS.find(s => s.id === wizardState.currentStep)?.label}
