@@ -215,8 +215,25 @@ function extractJSONFromResponse(responseText: string): any {
 /**
  * Extract PICO framework from clinical text using Gemini
  */
-export async function extractPICOWithGemini(clinicalText: string): Promise<PICOExtraction> {
-  const prompt = `You are Dr. Ariadne, a clinical research hypothesis architect. Your task is to extract the PICO framework from the following clinical observation or research description.
+export async function extractPICOWithGemini(
+  clinicalText: string,
+  foundationalPapers?: FoundationalPaperExtraction[]
+): Promise<PICOExtraction> {
+  // Build papers context if provided
+  const papersContext = foundationalPapers && foundationalPapers.length > 0
+    ? `\n\nFOUNDATIONAL PAPERS FOR CONTEXT:\n${foundationalPapers.map((p, i) => `
+Paper ${i + 1}: "${p.title}" (${p.year})
+Authors: ${p.authors}
+- Population: ${p.pico.population}
+- Intervention: ${p.pico.intervention}
+- Comparison: ${p.pico.comparison}
+- Outcome: ${p.pico.outcome}
+- Primary Endpoint: ${p.protocolElements.primaryEndpoint}
+- Study Design: ${p.studyDesign?.type || 'Not specified'}
+`).join('\n')}`
+    : '';
+
+  const prompt = `You are Dr. Ariadne, a clinical research hypothesis architect. Your task is to extract the PICO framework from the following clinical observation or research description${papersContext ? ', informed by the foundational papers listed below' : ''}.
 
 PICO Framework:
 - P (Population): Who are the patients/subjects being studied? Include demographics, conditions, sample size if mentioned.
@@ -227,7 +244,9 @@ PICO Framework:
 Clinical Text:
 """
 ${clinicalText}
-"""
+"""${papersContext}
+
+${foundationalPapers && foundationalPapers.length > 0 ? 'Use the foundational papers to enhance and validate the PICO extraction. Look for common patterns, endpoint definitions, and methodological approaches across the papers.' : ''}
 
 Respond in valid JSON format only, with no additional text:
 {

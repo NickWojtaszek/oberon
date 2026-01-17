@@ -100,7 +100,8 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
     setIsProcessing(true);
     try {
       if (isGeminiConfigured()) {
-        const extracted = await extractPICOWithGemini(rawObservation);
+        // Pass foundational papers to extraction to enrich PICO with paper context
+        const extracted = await extractPICOWithGemini(rawObservation, foundationalPapers);
         setPicoFields({
           population: {
             label: 'Population',
