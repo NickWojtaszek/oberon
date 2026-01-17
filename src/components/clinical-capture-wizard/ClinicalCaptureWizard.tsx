@@ -19,6 +19,8 @@ import {
   Database,
   Shield
 } from 'lucide-react';
+import { PICOCaptureStep } from './steps/PICOCaptureStep';
+import type { FoundationalPaperExtraction } from '../../services/geminiService';
 
 // Workflow steps
 type WizardStep =
@@ -74,6 +76,42 @@ export function ClinicalCaptureWizard() {
       }));
     }
   }, [currentProtocol?.id]);
+
+  // Handle PICO capture completion
+  const handlePICOComplete = (data: {
+    rawObservation: string;
+    picoFields: {
+      population: string;
+      intervention: string;
+      comparison: string;
+      outcome: string;
+      timeframe?: string;
+    };
+    foundationalPapers: FoundationalPaperExtraction[];
+  }) => {
+    if (currentProtocol) {
+      // Save PICO data to protocol
+      updateProtocol(currentProtocol.id, {
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          hypothesis: data.rawObservation,
+          picoFields: data.picoFields,
+          foundationalPapers: data.foundationalPapers,
+          workflowState: {
+            currentStep: 'pico-capture',
+            completedSteps: [...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []), 'pico-capture'],
+          },
+        },
+      });
+
+      // Advance to next step
+      completeStep('pico-capture');
+      const currentIndex = WIZARD_STEPS.findIndex(s => s.id === 'pico-capture');
+      if (currentIndex < WIZARD_STEPS.length - 1) {
+        goToStep(WIZARD_STEPS[currentIndex + 1].id);
+      }
+    }
+  };
 
   // Mark step as completed
   const completeStep = (step: WizardStep) => {
@@ -189,35 +227,47 @@ export function ClinicalCaptureWizard() {
       {/* Step content */}
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto">
-          {/* Placeholder for step content - will be replaced with actual components */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">
-              {WIZARD_STEPS.find(s => s.id === wizardState.currentStep)?.label}
-            </h2>
-            <p className="text-slate-600">
-              Step content will be rendered here based on current step: <strong>{wizardState.currentStep}</strong>
-            </p>
+          {wizardState.currentStep === 'pico-capture' && (
+            <PICOCaptureStep
+              onComplete={handlePICOComplete}
+              initialData={{
+                rawObservation: currentProtocol?.studyMethodology?.hypothesis || '',
+                picoFields: currentProtocol?.studyMethodology?.picoFields,
+                foundationalPapers: currentProtocol?.studyMethodology?.foundationalPapers,
+              }}
+            />
+          )}
 
-            {/* Demo: Complete step button */}
-            <div className="mt-8 flex items-center gap-4">
-              <button
-                onClick={() => {
-                  completeStep(wizardState.currentStep);
-                  // Auto-advance to next step
-                  const currentIndex = WIZARD_STEPS.findIndex(s => s.id === wizardState.currentStep);
-                  if (currentIndex < WIZARD_STEPS.length - 1) {
-                    goToStep(WIZARD_STEPS[currentIndex + 1].id);
-                  }
-                }}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Complete & Continue
-              </button>
-              <span className="text-sm text-slate-600">
-                {wizardState.completedSteps.length} of {WIZARD_STEPS.filter(s => s.required).length} required steps completed
-              </span>
+          {wizardState.currentStep !== 'pico-capture' && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">
+                {WIZARD_STEPS.find(s => s.id === wizardState.currentStep)?.label}
+              </h2>
+              <p className="text-slate-600">
+                Step content will be rendered here based on current step: <strong>{wizardState.currentStep}</strong>
+              </p>
+
+              {/* Demo: Complete step button */}
+              <div className="mt-8 flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    completeStep(wizardState.currentStep);
+                    // Auto-advance to next step
+                    const currentIndex = WIZARD_STEPS.findIndex(s => s.id === wizardState.currentStep);
+                    if (currentIndex < WIZARD_STEPS.length - 1) {
+                      goToStep(WIZARD_STEPS[currentIndex + 1].id);
+                    }
+                  }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Complete & Continue
+                </button>
+                <span className="text-sm text-slate-600">
+                  {wizardState.completedSteps.length} of {WIZARD_STEPS.filter(s => s.required).length} required steps completed
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
