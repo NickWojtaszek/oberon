@@ -671,16 +671,24 @@ export function ResearchWizard({
   // Handle PI approval
   const handlePIApproval = (approved: boolean) => {
     setPiApprovalStatus(approved ? 'approved' : 'rejected');
-    
+
     if (approved) {
       // Save to project context FIRST
       const savedHypothesis = saveHypothesisToProject();
-      
-      if (onComplete && savedHypothesis) {
-        setTimeout(() => {
-          onComplete(savedHypothesis);
-        }, 1000);
+
+      // Mark the current project as loaded to prevent useEffect from overwriting state
+      if (currentProject) {
+        loadedProjectIdRef.current = currentProject.id;
       }
+
+      console.log('✅ [ResearchWizard] PI approval granted and saved', savedHypothesis);
+
+      // Don't auto-complete - let user proceed through workflow
+      // if (onComplete && savedHypothesis) {
+      //   setTimeout(() => {
+      //     onComplete(savedHypothesis);
+      //   }, 1000);
+      // }
     }
   };
 
@@ -762,15 +770,32 @@ export function ResearchWizard({
   const [showCommitModal, setShowCommitModal] = useState(false);
 
   const handleSaveProgress = () => {
-    saveHypothesisToProject();
+    // Save current state to project
+    const savedHypothesis = saveHypothesisToProject();
+
+    // Mark the current project as loaded to prevent useEffect from overwriting state
+    if (currentProject) {
+      loadedProjectIdRef.current = currentProject.id;
+    }
+
     setHasProgressBeenSaved(true);  // Mark as saved
     setShowSaveProgressModal(false);
+
+    console.log('✅ [ResearchWizard] Progress saved successfully', savedHypothesis);
   };
 
   const handleCommitHypothesis = (redirectToWorkbench: boolean) => {
     const savedHypothesis = saveHypothesisToProject();
+
+    // Mark the current project as loaded to prevent useEffect from overwriting state
+    if (currentProject) {
+      loadedProjectIdRef.current = currentProject.id;
+    }
+
     setHypothesisCommitted(true);  // Mark as committed
     setShowCommitModal(false);
+
+    console.log('✅ [ResearchWizard] Hypothesis committed successfully', savedHypothesis);
 
     if (redirectToWorkbench && onNavigate) {
       onNavigate('protocol-workbench');
@@ -1187,13 +1212,13 @@ export function ResearchWizard({
                           {/* Step 1: Save Progress */}
                           <div className="space-y-3">
                             <div className="flex items-center gap-3">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasProgressBeenSaved ? 'bg-green-600 text-white' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasProgressBeenSaved ? 'bg-green-600 text-white' : 'bg-white text-blue-600 border-2 border-blue-600 animate-pulse'}`}>
                                 {hasProgressBeenSaved ? '✓' : '1'}
                               </div>
                               <button
                                 onClick={() => setShowSaveProgressModal(true)}
                                 disabled={hasProgressBeenSaved}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${!hasProgressBeenSaved ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
                               >
                                 <Save className="w-4 h-4" />
                                 {hasProgressBeenSaved ? 'Progress Saved ✓' : 'Save Progress (Required)'}
@@ -1203,7 +1228,7 @@ export function ResearchWizard({
                             {/* Step 2: PI Approval */}
                             {userRole === 'student' && (
                               <div className="flex items-center gap-3">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${piApprovalStatus === 'approved' ? 'bg-green-600 text-white' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${piApprovalStatus === 'approved' ? 'bg-green-600 text-white' : hasProgressBeenSaved ? 'bg-white text-blue-600 border-2 border-blue-600 animate-pulse' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
                                   {piApprovalStatus === 'approved' ? '✓' : '2'}
                                 </div>
                                 {piApprovalStatus === 'pending' && (
@@ -1211,7 +1236,7 @@ export function ResearchWizard({
                                     <button
                                       onClick={() => handlePIApproval(true)}
                                       disabled={!hasProgressBeenSaved}
-                                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${hasProgressBeenSaved && piApprovalStatus === 'pending' ? 'ring-2 ring-emerald-300 ring-offset-2 animate-pulse' : ''}`}
                                       title={!hasProgressBeenSaved ? 'Save progress first' : ''}
                                     >
                                       <CheckCircle className="w-4 h-4" />
@@ -1239,13 +1264,13 @@ export function ResearchWizard({
                             {/* Step 2/3: Approve as PI (for PI users, skip student approval) */}
                             {userRole === 'pi' && piApprovalStatus === 'pending' && (
                               <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 rounded-full bg-white text-blue-600 border-2 border-blue-600 flex items-center justify-center text-xs font-bold">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasProgressBeenSaved ? 'bg-white text-blue-600 border-2 border-blue-600 animate-pulse' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
                                   2
                                 </div>
                                 <button
                                   onClick={() => handlePIApproval(true)}
                                   disabled={!hasProgressBeenSaved}
-                                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${hasProgressBeenSaved && piApprovalStatus === 'pending' ? 'ring-2 ring-emerald-300 ring-offset-2 animate-pulse' : ''}`}
                                   title={!hasProgressBeenSaved ? 'Save progress first' : ''}
                                 >
                                   <CheckCircle className="w-4 h-4" />
@@ -1267,13 +1292,13 @@ export function ResearchWizard({
 
                             {/* Step 3/4: Commit Hypothesis */}
                             <div className="flex items-center gap-3">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hypothesisCommitted ? 'bg-green-600 text-white' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hypothesisCommitted ? 'bg-green-600 text-white' : (hasProgressBeenSaved && (userRole !== 'student' || piApprovalStatus === 'approved')) ? 'bg-white text-blue-600 border-2 border-blue-600 animate-pulse' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
                                 {hypothesisCommitted ? '✓' : (userRole === 'student' ? '3' : '3')}
                               </div>
                               <button
                                 onClick={() => setShowCommitModal(true)}
                                 disabled={!hasProgressBeenSaved || (userRole === 'student' && piApprovalStatus !== 'approved') || hypothesisCommitted}
-                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className={`px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${hasProgressBeenSaved && (userRole !== 'student' || piApprovalStatus === 'approved') && !hypothesisCommitted ? 'ring-2 ring-purple-300 ring-offset-2 animate-pulse' : ''}`}
                                 title={!hasProgressBeenSaved ? 'Save progress first' : (userRole === 'student' && piApprovalStatus !== 'approved') ? 'PI approval required' : ''}
                               >
                                 <Lock className="w-4 h-4" />
@@ -1283,7 +1308,7 @@ export function ResearchWizard({
 
                             {/* Step 4/5: Create Protocol */}
                             <div className="flex items-center gap-3">
-                              <div className="w-6 h-6 rounded-full bg-white text-blue-600 border-2 border-blue-600 flex items-center justify-center text-xs font-bold">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hypothesisCommitted ? 'bg-white text-blue-600 border-2 border-blue-600 animate-pulse' : 'bg-white text-blue-600 border-2 border-blue-600'}`}>
                                 {userRole === 'student' ? '4' : '4'}
                               </div>
                               <button
@@ -1292,7 +1317,7 @@ export function ResearchWizard({
                                   onNavigate?.('protocol-workbench');
                                 }}
                                 disabled={!hypothesisCommitted}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${hypothesisCommitted ? 'ring-2 ring-blue-300 ring-offset-2 animate-pulse' : ''}`}
                                 title={!hypothesisCommitted ? 'Commit hypothesis first' : 'Create a new protocol from this validated hypothesis'}
                               >
                                 <FileText className="w-4 h-4" />
