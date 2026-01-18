@@ -7,7 +7,7 @@
  * - Real-time validation
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   Users,
   Syringe,
@@ -116,7 +116,16 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
     intervention: PICOField;
     comparison: PICOField;
     outcome: PICOField;
-  }>(initialPicoFields);
+  }>(() => {
+    // Ensure all values are strings
+    const fields = initialPicoFields;
+    return {
+      population: { ...fields.population, value: String(fields.population.value || '') },
+      intervention: { ...fields.intervention, value: String(fields.intervention.value || '') },
+      comparison: { ...fields.comparison, value: String(fields.comparison.value || '') },
+      outcome: { ...fields.outcome, value: String(fields.outcome.value || '') },
+    };
+  });
 
   // Foundational Papers
   const [foundationalPapers, setFoundationalPapers] = useState<FoundationalPaperExtraction[]>(
@@ -315,11 +324,20 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
     });
   };
 
-  const isComplete =
-    rawObservation.trim().length >= 50 &&
-    (picoFields.population.value || '').toString().trim().length > 0 &&
-    (picoFields.intervention.value || '').toString().trim().length > 0 &&
-    (picoFields.outcome.value || '').toString().trim().length > 0;
+  // Defensive validation with type safety
+  const isComplete = useMemo(() => {
+    try {
+      const questionValid = typeof rawObservation === 'string' && rawObservation.trim().length >= 50;
+      const populationValid = typeof picoFields?.population?.value === 'string' && picoFields.population.value.trim().length > 0;
+      const interventionValid = typeof picoFields?.intervention?.value === 'string' && picoFields.intervention.value.trim().length > 0;
+      const outcomeValid = typeof picoFields?.outcome?.value === 'string' && picoFields.outcome.value.trim().length > 0;
+
+      return questionValid && populationValid && interventionValid && outcomeValid;
+    } catch (error) {
+      console.error('[PICOCaptureStep] Validation error:', error);
+      return false;
+    }
+  }, [rawObservation, picoFields]);
 
   return (
     <div className="space-y-6">
