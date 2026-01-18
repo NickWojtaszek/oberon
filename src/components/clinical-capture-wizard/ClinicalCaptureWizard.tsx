@@ -74,17 +74,26 @@ export function ClinicalCaptureWizard() {
   // Loading state for protocol initialization
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Track if we've initialized for this protocol to prevent re-initialization
-  const initializedProtocolIdRef = useRef<string | null>(null);
   // Track if we're currently creating a protocol to prevent double-creation
   const isCreatingProtocolRef = useRef(false);
 
-  // Initialize wizard with existing protocol or create new - ONLY ONCE
+  // Initialize wizard with existing protocol or create new - ONLY ONCE per protocol ID
+  // Use wizardState.protocolId as the source of truth for "already initialized"
   useEffect(() => {
-    // Skip if we've already initialized for this protocol
-    if (currentProtocol && initializedProtocolIdRef.current === currentProtocol.id) {
+    // Log current state for debugging
+    console.log('[ClinicalCaptureWizard] useEffect check:', {
+      currentProtocolId: currentProtocol?.id,
+      wizardProtocolId: wizardState.protocolId,
+      isCreating: isCreatingProtocolRef.current,
+      isInitializing,
+    });
+
+    // Skip if we've already initialized for this protocol (use wizardState as source of truth)
+    if (currentProtocol && wizardState.protocolId === currentProtocol.id) {
       console.log('[ClinicalCaptureWizard] Already initialized for protocol:', currentProtocol.id, '- skipping');
-      setIsInitializing(false);
+      if (isInitializing) {
+        setIsInitializing(false);
+      }
       return;
     }
 
@@ -95,15 +104,12 @@ export function ClinicalCaptureWizard() {
     }
 
     const initializeWizard = async () => {
-      setIsInitializing(true);
-
       if (currentProtocol) {
         // Load existing protocol state - only on FIRST load for this protocol
         console.log('[ClinicalCaptureWizard] First load for protocol:', currentProtocol.id);
-        initializedProtocolIdRef.current = currentProtocol.id;
 
-        // Only set completedSteps from protocol, don't override currentStep
-        // This allows local navigation to work without being reset
+        // Update wizard state with protocol ID and completed steps
+        // This marks this protocol as "initialized" for future checks
         setWizardState(prev => ({
           ...prev,
           protocolId: currentProtocol.id,
@@ -114,6 +120,7 @@ export function ClinicalCaptureWizard() {
         // No protocol exists - create draft protocol for wizard
         console.log('[ClinicalCaptureWizard] No protocol found, creating draft...');
         isCreatingProtocolRef.current = true;
+        setIsInitializing(true);
 
         try {
           const newProtocol = await createProtocol({
@@ -133,16 +140,17 @@ export function ClinicalCaptureWizard() {
           });
 
           console.log('[ClinicalCaptureWizard] Draft protocol created:', newProtocol.id);
-          initializedProtocolIdRef.current = newProtocol.id;
+          // Don't set protocolId here - it will be set when useEffect runs again
+          // after currentProtocol updates from createProtocol
         } finally {
           isCreatingProtocolRef.current = false;
-          setIsInitializing(false);
+          // Don't set isInitializing false here - wait for the protocol to be set
         }
       }
     };
 
     initializeWizard();
-  }, [currentProtocol?.id, createProtocol]);
+  }, [currentProtocol?.id, wizardState.protocolId]); // Include wizardState.protocolId in deps
 
   // Handle PICO capture completion
   const handlePICOComplete = (data: {
