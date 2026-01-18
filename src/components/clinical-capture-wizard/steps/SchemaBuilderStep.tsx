@@ -408,12 +408,6 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
             onShowVersionTag={() => {}}
             onShowSchemaGenerator={() => setShowAIGenerator(true)}
             onShowTemplateLibrary={() => setShowTemplateLibrary(true)}
-            aiSuggestionsEnabled={true}
-            protocolContext={{
-              primaryObjective: picoContext?.outcome || '',
-              studyPhase: 'Phase 3',
-              therapeuticArea: picoContext?.intervention || '',
-            }}
           />
         </div>
       </div>
@@ -493,6 +487,27 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
             onChangeParent={schemaState.changeBlockParent}
             canMoveUp={canMoveUp}
             canMoveDown={canMoveDown}
+            aiSuggestionsEnabled={true}
+            protocolContext={{
+              primaryObjective: picoContext?.outcome || '',
+              studyPhase: 'Phase 3',
+              therapeuticArea: picoContext?.intervention || '',
+              existingFields: schemaState.schemaBlocks.flatMap(block => {
+                const fields: Array<{ name: string; role: string; endpointTier: string | null }> = [];
+                const collectFields = (b: typeof block) => {
+                  if (b.dataType !== 'Section') {
+                    fields.push({
+                      name: b.variable.name,
+                      role: b.role,
+                      endpointTier: b.endpointTier || null,
+                    });
+                  }
+                  b.children?.forEach(collectFields);
+                };
+                collectFields(block);
+                return fields;
+              }),
+            }}
           />
         );
       })()}

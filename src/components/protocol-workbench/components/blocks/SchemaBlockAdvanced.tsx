@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { GripVertical, ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BlockBadges } from './BlockBadges';
 import { BlockToolbar } from './BlockToolbar';
-import { ConfigurationHUD } from './ConfigurationHUD';
 import type { SchemaBlock } from '../../types';
 
 type DropPosition = 'before' | 'after' | 'inside' | null;
@@ -13,7 +12,7 @@ interface SchemaBlockAdvancedProps {
   block: SchemaBlock;
   depth: number;
   isHovered: boolean;
-  hoveredBlockId?: string | null;  // Add this to properly track which specific block is hovered
+  hoveredBlockId?: string | null;
   onHover: (blockId: string | null) => void;
   onUpdate: (blockId: string, updates: Partial<SchemaBlock>) => void;
   onRemove: (blockId: string) => void;
@@ -23,20 +22,6 @@ interface SchemaBlockAdvancedProps {
   onShowDependencies: (block: SchemaBlock) => void;
   onShowVersionTag: (block: SchemaBlock) => void;
   onDuplicate?: (block: SchemaBlock) => void;
-  aiSuggestionsEnabled?: boolean;
-  protocolContext?: {
-    primaryObjective?: string;
-    secondaryObjectives?: string;
-    statisticalPlan?: string;
-    studyPhase?: string;
-    therapeuticArea?: string;
-    fullProtocolText?: string;
-    existingFields?: Array<{
-      name: string;
-      role: string;
-      endpointTier: string | null;
-    }>;
-  };
 }
 
 const ITEM_TYPE = 'schema-block';
@@ -55,16 +40,12 @@ export function SchemaBlockAdvanced({
   onShowDependencies,
   onShowVersionTag,
   onDuplicate,
-  aiSuggestionsEnabled = true,
-  protocolContext,
 }: SchemaBlockAdvancedProps) {
   const { t } = useTranslation('protocol');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(block.variable.name);
-  const [showConfigHUD, setShowConfigHUD] = useState(false);
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
   const blockRef = useRef<HTMLDivElement>(null);
-  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isSection = block.dataType === 'Section';
   const Icon = block.variable.icon;
@@ -158,41 +139,16 @@ export function SchemaBlockAdvanced({
     (blockRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
   };
 
-  // Clear timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleMouseEnter = () => {
-    // Clear any pending hide timeout
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-    onHover(block.id);
-    setShowConfigHUD(true);
-  };
-
-  const handleMouseLeave = () => {
-    // Use timeout to allow mouse to move to HUD without flickering
-    hideTimeoutRef.current = setTimeout(() => {
-      onHover(null);
-      setShowConfigHUD(false);
-      handleDragLeave();
-    }, 150); // 150ms delay before hiding
-  };
-
   return (
     <div
       ref={combinedRef}
       className={`group relative ${isDragging ? 'opacity-50' : ''}`}
-      style={{ marginLeft: `${depth * 32}px`, paddingBottom: showConfigHUD && !isSection ? '4px' : '0' }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      style={{ marginLeft: `${depth * 32}px` }}
+      onMouseEnter={() => onHover(block.id)}
+      onMouseLeave={() => {
+        onHover(null);
+        handleDragLeave();
+      }}
     >
       {/* Drop zone indicator - BEFORE */}
       {isOver && dropPosition === 'before' && (
@@ -398,15 +354,6 @@ export function SchemaBlockAdvanced({
           </div>
         )}
 
-        {/* Configuration HUD (appears on hover) */}
-        {showConfigHUD && isHovered && !isEditingName && !isSection && (
-          <ConfigurationHUD
-            block={block}
-            onUpdate={onUpdate}
-            aiSuggestionsEnabled={aiSuggestionsEnabled}
-            protocolContext={protocolContext}
-          />
-        )}
       </div>
 
       {/* Drop zone indicator - AFTER */}
@@ -433,8 +380,6 @@ export function SchemaBlockAdvanced({
               onShowDependencies={onShowDependencies}
               onShowVersionTag={onShowVersionTag}
               onDuplicate={onDuplicate}
-              aiSuggestionsEnabled={aiSuggestionsEnabled}
-              protocolContext={protocolContext}
             />
           ))}
         </div>
