@@ -27,7 +27,8 @@
       "Bash(npm run dev:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix: Protocol workbench save/export and schema import functionality\n\nResolves multiple protocol workbench issues:\n\n1. Fixed save draft/export buttons not working on Protocol Document tab\n   - Moved event listeners from SchemaEditor to ProtocolWorkbenchCore top level\n   - Now works on all tabs \\(Protocol, Schema, Dependencies, Audit\\)\n\n2. Fixed schema import \"require is not defined\" error\n   - Replaced require\\(\\) calls with proper ES module imports\n   - Import validateAndImportSchema and generateNestedJSON from utils\n\n3. Fixed protocol loading from library\n   - Added state management for protocol/version IDs in ResearchFactoryApp\n   - Pass IDs to ProtocolWorkbench component on navigation\n   - Protocol library now properly loads selected protocol in workbench\n\n4. Schema blocks removal/settings/dependencies working correctly\n   - BlockToolbar buttons are visible on hover \\(intentional UX design\\)\n   - All handlers properly wired through component hierarchy\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit:*)",
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Read(//c/Users/mikol_5j7kx3s/Desktop/Malgosia Doktorar/**)"
     ]
   }
 }

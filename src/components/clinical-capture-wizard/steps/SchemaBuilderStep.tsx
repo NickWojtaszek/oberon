@@ -1,20 +1,31 @@
 /**
  * Schema Builder Step
- * Integrated protocol schema design within wizard workflow
- * Wraps the sophisticated SchemaEditor from Protocol Workbench
+ * Full-featured protocol schema design within wizard workflow
+ * Includes: Variable Library, Import/Export, Templates, AI Generation
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Plus,
-  FileJson,
   AlertCircle,
   CheckCircle,
   Info,
+  Upload,
+  Download,
+  Sparkles,
+  BookTemplate,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
-import type { SchemaBlock } from '../../protocol-workbench/types';
+import type { SchemaBlock, Variable } from '../../protocol-workbench/types';
 import { SchemaEditor } from '../../protocol-workbench/components/SchemaEditor';
+import { VariableLibrary } from '../../protocol-workbench/components/VariableLibrary';
+import { SchemaTemplateLibrary } from '../../protocol-workbench/components/SchemaTemplateLibrary';
+import { SchemaGeneratorModal } from '../../protocol-workbench/components/modals/SchemaGeneratorModal';
+import { useSchemaState } from '../../protocol-workbench/hooks/useSchemaState';
+import { validateAndImportSchema } from '../../protocol-workbench/utils';
+import type { SchemaTemplate } from '../../protocol-workbench/components/SchemaTemplateLibrary';
 
 interface SchemaBuilderStepProps {
   onComplete: (data: { schemaBlocks: SchemaBlock[] }) => void;
@@ -30,8 +41,26 @@ interface SchemaBuilderStepProps {
 }
 
 export function SchemaBuilderStep({ onComplete, initialData, picoContext }: SchemaBuilderStepProps) {
-  const [schemaBlocks, setSchemaBlocks] = useState<SchemaBlock[]>(initialData?.schemaBlocks || []);
-  const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
+  // Use the full schema state hook from Protocol Workbench
+  const schemaState = useSchemaState();
+
+  // Initialize with initial data if provided (only once)
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (!initializedRef.current && initialData?.schemaBlocks && initialData.schemaBlocks.length > 0) {
+      schemaState.loadSchema(initialData.schemaBlocks);
+      initializedRef.current = true;
+    }
+  }, [initialData?.schemaBlocks, schemaState]);
+
+  // UI state
+  const [showVariableLibrary, setShowVariableLibrary] = useState(true);
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+
+  // File input ref for import
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Quick start templates based on PICO
   const handleQuickStart = () => {
@@ -40,7 +69,7 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
     const quickStartBlocks: SchemaBlock[] = [
       {
         id: `demo-section-${Date.now()}`,
-        variable: { name: 'Demographics', type: 'section', description: 'Patient demographic data' },
+        variable: { id: 'section', name: 'Demographics', category: 'Structural', defaultType: 'Section' },
         dataType: 'Section',
         role: 'Demographic',
         endpointTier: null,
@@ -49,8 +78,8 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
         isExpanded: true,
         children: [
           {
-            id: `subject-id-${Date.now()}`,
-            variable: { name: 'subject_id', type: 'text', description: 'Unique subject identifier' },
+            id: `subject-id-${Date.now()}-1`,
+            variable: { id: 'custom', name: 'subject_id', category: 'Structural', defaultType: 'Text' },
             dataType: 'Text',
             role: 'Identifier',
             endpointTier: null,
@@ -59,8 +88,8 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
             children: [],
           },
           {
-            id: `age-${Date.now()}`,
-            variable: { name: 'age', type: 'numeric', description: 'Patient age in years' },
+            id: `age-${Date.now()}-2`,
+            variable: { id: 'custom', name: 'age', category: 'Demographics', defaultType: 'Numeric' },
             dataType: 'Numeric',
             role: 'Covariate',
             endpointTier: null,
@@ -72,8 +101,8 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
         ],
       },
       {
-        id: `baseline-section-${Date.now()}`,
-        variable: { name: 'Baseline', type: 'section', description: 'Baseline measurements' },
+        id: `baseline-section-${Date.now()}-3`,
+        variable: { id: 'section', name: 'Baseline', category: 'Structural', defaultType: 'Section' },
         dataType: 'Section',
         role: 'Baseline',
         endpointTier: null,
@@ -83,8 +112,8 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
         children: [],
       },
       {
-        id: `outcome-section-${Date.now()}`,
-        variable: { name: 'Outcomes', type: 'section', description: picoContext.outcome },
+        id: `outcome-section-${Date.now()}-4`,
+        variable: { id: 'section', name: 'Outcomes', category: 'Structural', defaultType: 'Section' },
         dataType: 'Section',
         role: 'Outcome',
         endpointTier: 'Primary',
@@ -95,73 +124,137 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
       },
     ];
 
-    setSchemaBlocks(quickStartBlocks);
+    schemaState.setSchemaBlocks(quickStartBlocks);
   };
 
-  const handleUpdateBlock = (blockId: string, updates: Partial<SchemaBlock>) => {
-    const updateBlockRecursive = (blocks: SchemaBlock[]): SchemaBlock[] => {
-      return blocks.map(block => {
-        if (block.id === blockId) {
-          return { ...block, ...updates };
-        }
-        if (block.children) {
-          return { ...block, children: updateBlockRecursive(block.children) };
-        }
-        return block;
-      });
+  // Import JSON schema
+  const handleImportJSON = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const jsonData = JSON.parse(text);
+
+      const result = validateAndImportSchema(jsonData);
+
+      if (!result.valid || !result.blocks) {
+        alert(`Failed to import schema:\n${result.errors.join('\n')}`);
+        return;
+      }
+
+      // If we have existing blocks, ask for confirmation
+      if (schemaState.schemaBlocks.length > 0) {
+        const overwrite = confirm(
+          `You already have ${schemaState.schemaBlocks.length} schema blocks. ` +
+          `Do you want to replace them with ${result.blocks.length} blocks from the imported file?\n\n` +
+          `Click OK to overwrite or Cancel to keep current blocks.`
+        );
+
+        if (!overwrite) return;
+      }
+
+      schemaState.setSchemaBlocks(result.blocks);
+      alert(`Successfully imported ${result.blocks.length} schema blocks!`);
+    } catch (error) {
+      alert(`Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Export JSON schema
+  const handleExportJSON = () => {
+    if (schemaState.schemaBlocks.length === 0) {
+      alert('No schema blocks to export');
+      return;
+    }
+
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      protocolTitle: 'Clinical Capture Schema',
+      schemaBlocks: schemaState.schemaBlocks,
     };
-    setSchemaBlocks(updateBlockRecursive(schemaBlocks));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `protocol-schema-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  const handleRemoveBlock = (blockId: string) => {
-    const removeBlockRecursive = (blocks: SchemaBlock[]): SchemaBlock[] => {
-      return blocks
-        .filter(block => block.id !== blockId)
-        .map(block => ({
-          ...block,
-          children: block.children ? removeBlockRecursive(block.children) : [],
-        }));
-    };
-    setSchemaBlocks(removeBlockRecursive(schemaBlocks));
+  // Handle template loading
+  const handleTemplateLoaded = (template: SchemaTemplate) => {
+    const regenerateIds = (block: SchemaBlock): SchemaBlock => ({
+      ...block,
+      id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      children: block.children?.map(regenerateIds),
+    });
+
+    template.blocks.forEach(block => {
+      const newBlock = regenerateIds(block);
+      schemaState.addBlockDirectly(newBlock);
+    });
+
+    setShowTemplateLibrary(false);
   };
 
-  const handleToggleExpanded = (blockId: string) => {
-    const toggleRecursive = (blocks: SchemaBlock[]): SchemaBlock[] => {
-      return blocks.map(block => {
-        if (block.id === blockId) {
-          return { ...block, isExpanded: !block.isExpanded };
-        }
-        if (block.children) {
-          return { ...block, children: toggleRecursive(block.children) };
-        }
-        return block;
-      });
-    };
-    setSchemaBlocks(toggleRecursive(schemaBlocks));
+  // Handle AI-generated schema
+  const handleSchemaGenerated = (blocks: SchemaBlock[]) => {
+    blocks.forEach(block => schemaState.addBlockDirectly(block));
+    setShowAIGenerator(false);
   };
 
-  const handleReorderBlocks = (draggedId: string, targetId: string, position: 'before' | 'after' | 'inside') => {
-    // Simplified reorder implementation for wizard
-    // Full implementation available in Protocol Workbench
-    console.log('Reorder:', { draggedId, targetId, position });
+  // Handle adding variable from library
+  const handleAddVariable = (variable: Variable, parentId?: string) => {
+    schemaState.addBlock(variable, parentId);
   };
 
   const handleComplete = () => {
-    onComplete({ schemaBlocks });
+    onComplete({ schemaBlocks: schemaState.schemaBlocks });
   };
 
-  const hasMinimumSchema = schemaBlocks.length >= 1;
-  const hasOutcomeField = schemaBlocks.some(block =>
+  const hasMinimumSchema = schemaState.schemaBlocks.length >= 1;
+  const hasOutcomeField = schemaState.schemaBlocks.some(block =>
     block.role === 'Outcome' ||
     block.endpointTier === 'Primary' ||
     block.children?.some(child => child.role === 'Outcome' || child.endpointTier === 'Primary')
   );
 
+  // Count total fields including nested
+  const countAllFields = (blocks: SchemaBlock[]): number => {
+    return blocks.reduce((count, block) => {
+      return count + 1 + (block.children ? countAllFields(block.children) : 0);
+    }, 0);
+  };
+  const totalFields = countAllFields(schemaState.schemaBlocks);
+
   return (
     <div className="h-full flex flex-col space-y-4">
-      {/* Header */}
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleFileSelected}
+        className="hidden"
+      />
+
+      {/* Header with Actions */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-        <div className="flex items-center gap-4 mb-2">
+        <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
             <Table className="w-6 h-6 text-white" />
           </div>
@@ -171,6 +264,54 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
               Define the data structure for your clinical protocol
             </p>
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowVariableLibrary(!showVariableLibrary)}
+            className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+              showVariableLibrary
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-blue-700 border border-blue-300 hover:bg-blue-50'
+            }`}
+          >
+            {showVariableLibrary ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeft className="w-4 h-4" />}
+            Variable Library
+          </button>
+
+          <button
+            onClick={handleImportJSON}
+            className="px-3 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-medium flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Import JSON
+          </button>
+
+          <button
+            onClick={handleExportJSON}
+            disabled={schemaState.schemaBlocks.length === 0}
+            className="px-3 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export JSON
+          </button>
+
+          <button
+            onClick={() => setShowTemplateLibrary(true)}
+            className="px-3 py-2 bg-white text-purple-700 border border-purple-300 rounded-lg hover:bg-purple-50 text-sm font-medium flex items-center gap-2"
+          >
+            <BookTemplate className="w-4 h-4" />
+            Templates
+          </button>
+
+          <button
+            onClick={() => setShowAIGenerator(true)}
+            className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            AI Generate
+          </button>
         </div>
 
         {/* Status Indicators */}
@@ -184,7 +325,7 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
               <AlertCircle className="w-4 h-4" />
             )}
             <span className="text-sm font-medium">
-              {schemaBlocks.length} field{schemaBlocks.length !== 1 ? 's' : ''} defined
+              {totalFields} field{totalFields !== 1 ? 's' : ''} defined
             </span>
           </div>
 
@@ -203,47 +344,71 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
         </div>
       </div>
 
-      {/* Quick Start */}
-      {schemaBlocks.length === 0 && picoContext && (
+      {/* Quick Start - only show when empty */}
+      {schemaState.schemaBlocks.length === 0 && picoContext && (
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <div className="flex items-start gap-3 mb-4">
             <Info className="w-5 h-5 text-blue-600 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold text-slate-900 mb-2">Quick Start Available</h3>
               <p className="text-sm text-slate-600 mb-4">
-                Generate a starter schema based on your PICO framework to save time.
+                Generate a starter schema based on your PICO framework, or import an existing schema from a JSON file.
               </p>
-              <button
-                onClick={handleQuickStart}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Generate PICO-Based Schema
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleQuickStart}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Generate PICO-Based Schema
+                </button>
+                <button
+                  onClick={handleImportJSON}
+                  className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import Existing Schema
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Schema Editor */}
-      <div className="flex-1 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col">
-        <SchemaEditor
-          schemaBlocks={schemaBlocks}
-          hoveredBlockId={hoveredBlockId}
-          onHoverBlock={setHoveredBlockId}
-          onUpdateBlock={handleUpdateBlock}
-          onRemoveBlock={handleRemoveBlock}
-          onToggleExpanded={handleToggleExpanded}
-          onReorderBlocks={handleReorderBlocks}
-          onShowSettings={() => {}}
-          onShowDependencies={() => {}}
-          onShowVersionTag={() => {}}
-          aiSuggestionsEnabled={false}
-        />
+      {/* Main Content Area */}
+      <div className="flex-1 flex gap-4 min-h-0">
+        {/* Variable Library Sidebar */}
+        {showVariableLibrary && (
+          <div className="flex-shrink-0 bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <VariableLibrary
+              onAddVariable={handleAddVariable}
+              selectedParentId={selectedParentId}
+            />
+          </div>
+        )}
+
+        {/* Schema Editor */}
+        <div className="flex-1 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col min-w-0">
+          <SchemaEditor
+            schemaBlocks={schemaState.schemaBlocks}
+            hoveredBlockId={schemaState.hoveredBlockId}
+            onHoverBlock={schemaState.setHoveredBlockId}
+            onUpdateBlock={schemaState.updateBlock}
+            onRemoveBlock={schemaState.removeBlock}
+            onToggleExpanded={schemaState.toggleExpanded}
+            onReorderBlocks={schemaState.reorderBlocks}
+            onShowSettings={() => {}}
+            onShowDependencies={() => {}}
+            onShowVersionTag={() => {}}
+            onShowSchemaGenerator={() => setShowAIGenerator(true)}
+            onShowTemplateLibrary={() => setShowTemplateLibrary(true)}
+            aiSuggestionsEnabled={false}
+          />
+        </div>
       </div>
 
       {/* Validation Warning */}
-      {!hasOutcomeField && schemaBlocks.length > 0 && (
+      {!hasOutcomeField && schemaState.schemaBlocks.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
           <div>
@@ -261,7 +426,7 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
           <div className="font-medium text-slate-900">Protocol schema {hasMinimumSchema ? 'defined' : 'empty'}</div>
           <div className="text-sm text-slate-600">
             {hasMinimumSchema
-              ? `${schemaBlocks.length} field${schemaBlocks.length !== 1 ? 's' : ''} configured`
+              ? `${totalFields} field${totalFields !== 1 ? 's' : ''} configured`
               : 'Add at least one schema field to continue'}
           </div>
         </div>
@@ -273,6 +438,32 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
           Complete & Continue
         </button>
       </div>
+
+      {/* Template Library Modal */}
+      {showTemplateLibrary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <SchemaTemplateLibrary
+              onSelectTemplate={handleTemplateLoaded}
+              onClose={() => setShowTemplateLibrary(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* AI Generator Modal */}
+      {showAIGenerator && (
+        <SchemaGeneratorModal
+          isOpen={showAIGenerator}
+          onClose={() => setShowAIGenerator(false)}
+          onGenerate={handleSchemaGenerated}
+          protocolContext={{
+            primaryObjective: picoContext?.outcome || '',
+            studyPhase: 'Phase 3',
+            therapeuticArea: picoContext?.intervention || '',
+          }}
+        />
+      )}
     </div>
   );
 }
