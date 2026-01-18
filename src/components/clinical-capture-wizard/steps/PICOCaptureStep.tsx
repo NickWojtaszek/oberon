@@ -306,10 +306,10 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
     onComplete({
       rawObservation,
       picoFields: {
-        population: picoFields.population.value,
-        intervention: picoFields.intervention.value,
-        comparison: picoFields.comparison.value,
-        outcome: picoFields.outcome.value,
+        population: (picoFields.population.value || '').toString(),
+        intervention: (picoFields.intervention.value || '').toString(),
+        comparison: (picoFields.comparison.value || '').toString(),
+        outcome: (picoFields.outcome.value || '').toString(),
       },
       foundationalPapers,
     });
@@ -317,9 +317,9 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
 
   const isComplete =
     rawObservation.trim().length >= 50 &&
-    picoFields.population.value &&
-    picoFields.intervention.value &&
-    picoFields.outcome.value;
+    (picoFields.population.value || '').toString().trim().length > 0 &&
+    (picoFields.intervention.value || '').toString().trim().length > 0 &&
+    (picoFields.outcome.value || '').toString().trim().length > 0;
 
   return (
     <div className="space-y-6">
