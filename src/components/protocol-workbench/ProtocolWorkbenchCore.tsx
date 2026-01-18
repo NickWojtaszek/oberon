@@ -788,6 +788,8 @@ export function ProtocolWorkbench({
             onChangeParent={schemaState.changeBlockParent}
             canMoveUp={canMoveUp}
             canMoveDown={canMoveDown}
+            aiSuggestionsEnabled={aiSuggestionsEnabled}
+            protocolContext={protocolContext}
           />
         );
       })()}

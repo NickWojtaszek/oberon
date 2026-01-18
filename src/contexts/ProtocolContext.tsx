@@ -7,7 +7,7 @@
  * Hierarchy: Protocol → Versions → Data/Manuscripts
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, ReactNode } from 'react';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import type { SavedProtocol, ProtocolVersion, SchemaBlock } from '../components/protocol-workbench/types';
 
@@ -812,45 +812,61 @@ export function useProtocol() {
  * @deprecated useProject() is deprecated. Use useProtocol() instead.
  * This shim will be removed in a future version.
  */
+
+// Track if deprecation warning has been shown to avoid console spam
+let hasShownDeprecationWarning = false;
+
 export function useProject() {
-  console.warn('⚠️ DEPRECATED: useProject() is deprecated. Use useProtocol() instead. This shim will be removed in a future version.');
+  // Only show deprecation warning once per session
+  if (!hasShownDeprecationWarning) {
+    console.warn('⚠️ DEPRECATED: useProject() is deprecated. Use useProtocol() instead. This shim will be removed in a future version.');
+    hasShownDeprecationWarning = true;
+  }
 
   const protocolContext = useProtocol();
 
-  // Create a Project-like object from current protocol
-  const currentProject = protocolContext.currentProtocol ? {
-    id: protocolContext.currentProtocol.id,
-    name: protocolContext.currentProtocol.protocolTitle,
-    studyNumber: protocolContext.currentProtocol.protocolNumber,
-    studyName: protocolContext.currentProtocol.protocolTitle, // Alias for compatibility
-    description: protocolContext.currentProtocol.description || '',
-    studyMethodology: protocolContext.currentProtocol.studyMethodology,
-    studyDesign: protocolContext.currentProtocol.studyMethodology, // Alias for compatibility
-    governance: protocolContext.currentProtocol.governance,
-    status: (protocolContext.currentProtocol.status as 'active' | 'paused' | 'completed' | 'archived') || 'active',
-    createdAt: protocolContext.currentProtocol.createdAt?.toString?.() || new Date().toISOString(),
-    modifiedAt: protocolContext.currentProtocol.modifiedAt?.toString?.() || new Date().toISOString(),
-  } : null;
+  // Memoize currentProject to prevent unnecessary re-renders
+  const currentProject = useMemo(() => {
+    if (!protocolContext.currentProtocol) return null;
 
-  // Convert protocols to Project-like objects
-  const allProjects = protocolContext.allProtocols.map(p => ({
-    id: p.id,
-    name: p.protocolTitle,
-    studyNumber: p.protocolNumber,
-    studyName: p.protocolTitle, // Alias for compatibility
-    description: p.description || '',
-    studyMethodology: p.studyMethodology,
-    studyDesign: p.studyMethodology, // Alias for compatibility
-    governance: p.governance,
-    status: (p.status as 'active' | 'paused' | 'completed' | 'archived') || 'active', // Default to active
-    createdAt: p.createdAt?.toString?.() || new Date().toISOString(),
-    modifiedAt: p.modifiedAt?.toString?.() || new Date().toISOString(),
-  }));
+    return {
+      id: protocolContext.currentProtocol.id,
+      name: protocolContext.currentProtocol.protocolTitle,
+      studyNumber: protocolContext.currentProtocol.protocolNumber,
+      studyName: protocolContext.currentProtocol.protocolTitle, // Alias for compatibility
+      description: protocolContext.currentProtocol.description || '',
+      studyMethodology: protocolContext.currentProtocol.studyMethodology,
+      studyDesign: protocolContext.currentProtocol.studyMethodology, // Alias for compatibility
+      governance: protocolContext.currentProtocol.governance,
+      status: (protocolContext.currentProtocol.status as 'active' | 'paused' | 'completed' | 'archived') || 'active',
+      createdAt: protocolContext.currentProtocol.createdAt?.toString?.() || new Date().toISOString(),
+      modifiedAt: protocolContext.currentProtocol.modifiedAt?.toString?.() || new Date().toISOString(),
+    };
+  }, [protocolContext.currentProtocol]);
 
-  return {
+  // Memoize allProjects to prevent unnecessary re-renders
+  const allProjects = useMemo(() => {
+    return protocolContext.allProtocols.map(p => ({
+      id: p.id,
+      name: p.protocolTitle,
+      studyNumber: p.protocolNumber,
+      studyName: p.protocolTitle, // Alias for compatibility
+      description: p.description || '',
+      studyMethodology: p.studyMethodology,
+      studyDesign: p.studyMethodology, // Alias for compatibility
+      governance: p.governance,
+      status: (p.status as 'active' | 'paused' | 'completed' | 'archived') || 'active', // Default to active
+      createdAt: p.createdAt?.toString?.() || new Date().toISOString(),
+      modifiedAt: p.modifiedAt?.toString?.() || new Date().toISOString(),
+    }));
+  }, [protocolContext.allProtocols]);
+
+  // Memoize the entire return object for stable references
+  return useMemo(() => ({
     currentProject,
     allProjects,
     isLoading: protocolContext.isLoading,
+    status: 'active', // Default status for compatibility
 
     // Map Project operations to Protocol operations
     switchProject: (projectId: string) => protocolContext.loadProtocol(projectId),
@@ -889,5 +905,18 @@ export function useProject() {
     updateBlindingState: protocolContext.updateBlindingState,
     performUnblinding: protocolContext.performUnblinding,
     getBlindingStatus: protocolContext.getBlindingStatus,
-  };
+  }), [
+    currentProject,
+    allProjects,
+    protocolContext.isLoading,
+    protocolContext.loadProtocol,
+    protocolContext.createProtocol,
+    protocolContext.updateProtocol,
+    protocolContext.deleteProtocol,
+    protocolContext.refreshProtocols,
+    protocolContext.configureMethodology,
+    protocolContext.updateBlindingState,
+    protocolContext.performUnblinding,
+    protocolContext.getBlindingStatus,
+  ]);
 }

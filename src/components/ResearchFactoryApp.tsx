@@ -60,6 +60,10 @@ export function ResearchFactoryApp() {
   const [loadProtocolId, setLoadProtocolId] = useState<string | undefined>();
   const [loadVersionId, setLoadVersionId] = useState<string | undefined>();
 
+  // Protocol IDs for loading specific protocol in database (from wizard navigation)
+  const [databaseInitialProtocolId, setDatabaseInitialProtocolId] = useState<string | undefined>();
+  const [databaseInitialVersionId, setDatabaseInitialVersionId] = useState<string | undefined>();
+
   // Phase 4: Journal Constraints
   const [selectedJournal, setSelectedJournal] = useState<JournalProfile>(JOURNAL_LIBRARY[0]);
   const [paperType, setPaperType] = useState<PaperType>('original-research');
@@ -527,7 +531,10 @@ export function ResearchFactoryApp() {
               ]}
             />
             <div className="flex-1 overflow-y-auto">
-              <Database />
+              <Database
+                initialProtocolId={databaseInitialProtocolId}
+                initialVersionId={databaseInitialVersionId}
+              />
             </div>
           </div>
         );
@@ -552,8 +559,13 @@ export function ResearchFactoryApp() {
         return (
           <div className="h-full">
             <ClinicalCaptureWizard
-              onNavigateToDatabase={() => {
-                console.log('📊 Navigating to Database from Clinical Capture Wizard');
+              onNavigateToDatabase={(protocolId?: string, versionId?: string) => {
+                console.log('📊 Navigating to Database from Clinical Capture Wizard', { protocolId, versionId });
+                // Set initial protocol/version for Database component
+                if (protocolId) {
+                  setDatabaseInitialProtocolId(protocolId);
+                  setDatabaseInitialVersionId(versionId);
+                }
                 setActiveTab('database');
               }}
             />

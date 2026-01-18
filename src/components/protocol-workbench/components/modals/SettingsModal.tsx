@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SchemaBlock, DataType, RoleTag } from '../../types';
 import { commonUnits, enumerationTemplates } from '../../constants';
-import { suggestFieldConfiguration, type SchemaFieldSuggestion } from '../../../../services/geminiService';
+import { suggestFieldConfiguration, isGeminiConfigured, type SchemaFieldSuggestion } from '../../../../services/geminiService';
 
 interface SettingsModalProps {
   block: SchemaBlock;
@@ -83,9 +83,16 @@ export function SettingsModal({
     if (aiSuggestionsEnabled && protocolContext && block.dataType !== 'Section') {
       loadAISuggestions();
     }
-  }, [block.variable.name, aiSuggestionsEnabled]);
+  }, [block.variable.name, aiSuggestionsEnabled, protocolContext, block.dataType]);
 
   const loadAISuggestions = async () => {
+    // Early exit if Gemini not configured
+    if (!isGeminiConfigured()) {
+      console.log('[SettingsModal] Gemini API not configured - skipping AI suggestions');
+      setSuggestionError('AI suggestions require Gemini API configuration in Settings');
+      return;
+    }
+
     setLoadingSuggestion(true);
     setSuggestionError(null);
 

@@ -5,10 +5,15 @@ import { ContentContainer } from './ui/ContentContainer';
 import { ModulePersonaPanel } from './ai-personas/ui/ModulePersonaPanel';
 import { useProject } from '../contexts/ProtocolContext';
 import { getRecordsByProtocol } from '../utils/dataStorage';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export function Database() {
+interface DatabaseProps {
+  initialProtocolId?: string;
+  initialVersionId?: string;
+}
+
+export function Database({ initialProtocolId, initialVersionId }: DatabaseProps = {}) {
   const { t } = useTranslation('common');
 
   const {
@@ -24,8 +29,14 @@ export function Database() {
     setActiveTab,
     showFieldFilter,
     setShowFieldFilter,
-    loadProtocols
-  } = useDatabase();
+    loadProtocols,
+    refreshProtocols
+  } = useDatabase({ initialProtocolId, initialVersionId });
+
+  // Refresh protocols when component mounts (in case we just came from wizard)
+  useEffect(() => {
+    refreshProtocols();
+  }, []);
 
   const getStatusBadge = (status: 'published' | 'draft' | 'archived') => {
     switch (status) {

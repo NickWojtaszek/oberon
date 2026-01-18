@@ -29,7 +29,7 @@ import type { FoundationalPaperExtraction } from '../../services/geminiService';
 import type { SchemaBlock } from '../protocol-workbench/types';
 
 interface ClinicalCaptureWizardProps {
-  onNavigateToDatabase?: () => void;
+  onNavigateToDatabase?: (protocolId?: string, versionId?: string) => void;
 }
 
 // Workflow steps
@@ -507,7 +507,8 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
               onComplete={handleDeployComplete}
               onNavigateToDatabase={() => {
                 if (onNavigateToDatabase) {
-                  onNavigateToDatabase();
+                  // Pass protocol and version IDs so Database can auto-select them
+                  onNavigateToDatabase(currentProtocol?.id, currentVersion?.id);
                 }
               }}
               protocolSummary={{

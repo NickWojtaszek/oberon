@@ -39,6 +39,7 @@ interface SchemaBuilderStepProps {
     intervention: string;
     comparison: string;
     outcome: string;
+    studyPhase?: string;
   };
 }
 
@@ -464,7 +465,7 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
           onGenerate={handleSchemaGenerated}
           protocolContext={{
             primaryObjective: picoContext?.outcome || '',
-            studyPhase: 'Phase 3',
+            studyPhase: picoContext?.studyPhase || 'Not specified',
             therapeuticArea: picoContext?.intervention || '',
           }}
         />
@@ -490,7 +491,7 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
             aiSuggestionsEnabled={true}
             protocolContext={{
               primaryObjective: picoContext?.outcome || '',
-              studyPhase: 'Phase 3',
+              studyPhase: picoContext?.studyPhase || 'Not specified',
               therapeuticArea: picoContext?.intervention || '',
               existingFields: schemaState.schemaBlocks.flatMap(block => {
                 const fields: Array<{ name: string; role: string; endpointTier: string | null }> = [];
