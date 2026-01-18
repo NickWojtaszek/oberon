@@ -23,8 +23,10 @@ import { SchemaEditor } from '../../protocol-workbench/components/SchemaEditor';
 import { VariableLibrary } from '../../protocol-workbench/components/VariableLibrary';
 import { SchemaTemplateLibrary } from '../../protocol-workbench/components/SchemaTemplateLibrary';
 import { SchemaGeneratorModal } from '../../protocol-workbench/components/modals/SchemaGeneratorModal';
+import { SettingsModal } from '../../protocol-workbench/components/modals/SettingsModal';
+import { DependencyModal } from '../../protocol-workbench/components/modals/DependencyModal';
 import { useSchemaState } from '../../protocol-workbench/hooks/useSchemaState';
-import { validateAndImportSchema } from '../../protocol-workbench/utils';
+import { validateAndImportSchema, getAllSections, getBlockPosition } from '../../protocol-workbench/utils';
 import type { SchemaTemplate } from '../../protocol-workbench/components/SchemaTemplateLibrary';
 
 interface SchemaBuilderStepProps {
@@ -58,6 +60,10 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+
+  // Modal state for settings and dependencies
+  const [selectedBlockForSettings, setSelectedBlockForSettings] = useState<SchemaBlock | null>(null);
+  const [selectedBlockForDependency, setSelectedBlockForDependency] = useState<SchemaBlock | null>(null);
 
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -397,12 +403,17 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
             onRemoveBlock={schemaState.removeBlock}
             onToggleExpanded={schemaState.toggleExpanded}
             onReorderBlocks={schemaState.reorderBlocks}
-            onShowSettings={() => {}}
-            onShowDependencies={() => {}}
+            onShowSettings={setSelectedBlockForSettings}
+            onShowDependencies={setSelectedBlockForDependency}
             onShowVersionTag={() => {}}
             onShowSchemaGenerator={() => setShowAIGenerator(true)}
             onShowTemplateLibrary={() => setShowTemplateLibrary(true)}
-            aiSuggestionsEnabled={false}
+            aiSuggestionsEnabled={true}
+            protocolContext={{
+              primaryObjective: picoContext?.outcome || '',
+              studyPhase: 'Phase 3',
+              therapeuticArea: picoContext?.intervention || '',
+            }}
           />
         </div>
       </div>
@@ -462,6 +473,37 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
             studyPhase: 'Phase 3',
             therapeuticArea: picoContext?.intervention || '',
           }}
+        />
+      )}
+
+      {/* Settings Modal */}
+      {selectedBlockForSettings && (() => {
+        const position = getBlockPosition(schemaState.schemaBlocks, selectedBlockForSettings.id);
+        const canMoveUp = position ? position.index > 0 : false;
+        const canMoveDown = position ? position.index < position.total - 1 : false;
+
+        return (
+          <SettingsModal
+            block={selectedBlockForSettings}
+            onClose={() => setSelectedBlockForSettings(null)}
+            onSave={schemaState.updateBlock}
+            availableSections={getAllSections(schemaState.schemaBlocks)}
+            onMoveUp={schemaState.moveBlockUp}
+            onMoveDown={schemaState.moveBlockDown}
+            onChangeParent={schemaState.changeBlockParent}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
+          />
+        );
+      })()}
+
+      {/* Dependency Modal */}
+      {selectedBlockForDependency && (
+        <DependencyModal
+          block={selectedBlockForDependency}
+          allBlocks={schemaState.schemaBlocks}
+          onClose={() => setSelectedBlockForDependency(null)}
+          onSave={schemaState.updateBlock}
         />
       )}
     </div>

@@ -66,7 +66,7 @@ const WIZARD_STEPS: Array<{
 ];
 
 export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureWizardProps = {}) {
-  const { currentProtocol, updateProtocol, createProtocol, saveSchemaBlocks } = useProtocol();
+  const { currentProtocol, currentVersion, updateProtocol, createProtocol, saveSchemaBlocks } = useProtocol();
 
   // ============================================
   // STATE MANAGEMENT - Separated by concern
@@ -496,7 +496,7 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
             <SchemaBuilderStep
               onComplete={handleSchemaBuilderComplete}
               initialData={{
-                schemaBlocks: currentProtocol?.schemaBlocks,
+                schemaBlocks: currentVersion?.schemaBlocks,
               }}
               picoContext={currentProtocol?.studyMethodology?.picoFields}
             />
@@ -514,9 +514,9 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
                 protocolTitle: currentProtocol.protocolTitle || 'Untitled Protocol',
                 protocolNumber: currentProtocol.protocolNumber || 'N/A',
                 studyType: currentProtocol.studyMethodology?.studyType || 'Not specified',
-                fieldCount: currentProtocol.schemaBlocks?.length || 0,
+                fieldCount: currentVersion?.schemaBlocks?.length || 0,
                 picoComplete: !!currentProtocol.studyMethodology?.picoFields?.population,
-                schemaComplete: (currentProtocol.schemaBlocks?.length || 0) > 0,
+                schemaComplete: (currentVersion?.schemaBlocks?.length || 0) > 0,
               }}
             />
           )}
