@@ -66,7 +66,7 @@ const WIZARD_STEPS: Array<{
 ];
 
 export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureWizardProps = {}) {
-  const { currentProtocol, updateProtocol, createProtocol } = useProtocol();
+  const { currentProtocol, updateProtocol, createProtocol, saveSchemaBlocks } = useProtocol();
 
   // ============================================
   // STATE MANAGEMENT - Separated by concern
@@ -310,9 +310,12 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
   // Handle schema builder completion
   const handleSchemaBuilderComplete = (data: { schemaBlocks: SchemaBlock[] }) => {
     if (currentProtocol) {
-      // Save schema to protocol (will create first version if needed)
+      // Save schema blocks to the CURRENT VERSION (not protocol level!)
+      // This is required for Database module to generate tables correctly
+      saveSchemaBlocks(currentProtocol.id, data.schemaBlocks);
+
+      // Update workflow state separately
       updateProtocol(currentProtocol.id, {
-        schemaBlocks: data.schemaBlocks,
         studyMethodology: {
           ...currentProtocol.studyMethodology,
           workflowState: {

@@ -91,6 +91,7 @@ interface ProtocolContextValue {
     protocolContent: ProtocolVersion['protocolContent'],
     status?: 'draft' | 'published'
   ) => void;
+  saveSchemaBlocks: (protocolId: string, schemaBlocks: SchemaBlock[]) => void;
   updateProtocol: (protocolId: string, updates: Partial<ProtocolWithMethodology>) => void;
   deleteProtocol: (protocolId: string) => void;
   refreshProtocols: () => void;
@@ -527,6 +528,62 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
   }, [currentProtocol, saveProtocolsToStorage]);
 
   /**
+   * Save schema blocks to the current version of a protocol
+   * This ensures schema blocks are stored at the version level, not protocol level
+   * Required for Database module to generate tables correctly
+   */
+  const saveSchemaBlocks = useCallback((protocolId: string, schemaBlocks: SchemaBlock[]) => {
+    console.log('[ProtocolContext] saveSchemaBlocks called:', protocolId, schemaBlocks.length, 'blocks');
+
+    const currentProtocols = allProtocolsRef.current;
+
+    const updatedProtocols = currentProtocols.map(protocol => {
+      if (protocol.id !== protocolId) return protocol;
+
+      // Get the current version (latest draft or most recent)
+      const versions = protocol.versions || [];
+      if (versions.length === 0) {
+        console.error('[ProtocolContext] No versions found for protocol');
+        return protocol;
+      }
+
+      // Find the draft version to update, or the latest version
+      const draftIndex = versions.findIndex(v => v.status === 'draft');
+      const targetIndex = draftIndex >= 0 ? draftIndex : versions.length - 1;
+
+      const now = new Date();
+      const updatedVersion: ProtocolVersion = {
+        ...versions[targetIndex],
+        schemaBlocks,
+        modifiedAt: now,
+        modifiedBy: 'Current User',
+      };
+
+      const updatedVersions = [...versions];
+      updatedVersions[targetIndex] = updatedVersion;
+
+      const updated: ProtocolWithMethodology = {
+        ...protocol,
+        versions: updatedVersions,
+        modifiedAt: now,
+      };
+
+      // Update current version state if this is the current protocol
+      if (currentProtocol?.id === protocolId) {
+        setCurrentProtocol(updated);
+        setCurrentVersion(updatedVersion);
+      }
+
+      console.log('[ProtocolContext] Schema blocks saved to version:', updatedVersion.id, 'with', schemaBlocks.length, 'blocks');
+      return updated;
+    });
+
+    allProtocolsRef.current = updatedProtocols;
+    setAllProtocols(updatedProtocols);
+    saveProtocolsToStorage(updatedProtocols);
+  }, [currentProtocol, saveProtocolsToStorage]);
+
+  /**
    * Delete a protocol
    */
   const deleteProtocol = useCallback((protocolId: string) => {
@@ -711,6 +768,7 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
     loadProtocol,
     createProtocol,
     saveProtocol,
+    saveSchemaBlocks,
     updateProtocol,
     deleteProtocol,
     refreshProtocols,
