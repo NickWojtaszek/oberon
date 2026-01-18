@@ -64,66 +64,60 @@ const WIZARD_STEPS: Array<{
 export function ClinicalCaptureWizard() {
   const { currentProtocol, updateProtocol, createProtocol } = useProtocol();
 
-  // Wizard workflow state
-  const [wizardState, setWizardState] = useState<WizardState>({
-    currentStep: 'pico-capture',
-    completedSteps: [],
-    protocolId: null,
-  });
+  // ============================================
+  // STATE MANAGEMENT - Separated by concern
+  // ============================================
 
-  // Loading state for protocol initialization
+  // 1. Navigation state - changes when user navigates
+  const [currentStep, setCurrentStep] = useState<WizardStep>('pico-capture');
+  const [completedSteps, setCompletedSteps] = useState<WizardStep[]>([]);
+
+  // 2. Initialization tracking - stable after first load
   const [isInitializing, setIsInitializing] = useState(true);
+  const hasInitializedRef = useRef(false);
+  const initializedForProtocolRef = useRef<string | null>(null);
 
-  // Track if we're currently creating a protocol to prevent double-creation
-  const isCreatingProtocolRef = useRef(false);
+  // Legacy wizardState for compatibility (will be removed)
+  const wizardState: WizardState = {
+    currentStep,
+    completedSteps,
+    protocolId: currentProtocol?.id || null,
+  };
 
-  // Initialize wizard with existing protocol or create new - ONLY ONCE per protocol ID
-  // Use wizardState.protocolId as the source of truth for "already initialized"
+  // ============================================
+  // INITIALIZATION - Runs ONCE per protocol
+  // ============================================
   useEffect(() => {
-    // Log current state for debugging
-    console.log('[ClinicalCaptureWizard] useEffect check:', {
-      currentProtocolId: currentProtocol?.id,
-      wizardProtocolId: wizardState.protocolId,
-      isCreating: isCreatingProtocolRef.current,
-      isInitializing,
-    });
-
-    // Skip if we've already initialized for this protocol (use wizardState as source of truth)
-    if (currentProtocol && wizardState.protocolId === currentProtocol.id) {
-      console.log('[ClinicalCaptureWizard] Already initialized for protocol:', currentProtocol.id, '- skipping');
-      if (isInitializing) {
-        setIsInitializing(false);
-      }
+    // Already initialized for this exact protocol - do nothing
+    if (currentProtocol && initializedForProtocolRef.current === currentProtocol.id) {
+      if (isInitializing) setIsInitializing(false);
       return;
     }
 
-    // Skip if we're currently creating a protocol
-    if (isCreatingProtocolRef.current) {
-      console.log('[ClinicalCaptureWizard] Protocol creation in progress - skipping');
+    // Currently creating a protocol - wait
+    if (hasInitializedRef.current && !currentProtocol) {
       return;
     }
 
-    const initializeWizard = async () => {
+    const initialize = async () => {
       if (currentProtocol) {
-        // Load existing protocol state - only on FIRST load for this protocol
-        console.log('[ClinicalCaptureWizard] First load for protocol:', currentProtocol.id);
+        // Protocol exists - load its state ONCE
+        console.log('[ClinicalCaptureWizard] Initializing for protocol:', currentProtocol.id);
+        initializedForProtocolRef.current = currentProtocol.id;
+        hasInitializedRef.current = true;
 
-        // Update wizard state with protocol ID and completed steps
-        // This marks this protocol as "initialized" for future checks
-        setWizardState(prev => ({
-          ...prev,
-          protocolId: currentProtocol.id,
-          completedSteps: currentProtocol.studyMethodology?.workflowState?.completedSteps || [],
-        }));
+        // Load completed steps from protocol (but NOT currentStep - that's local)
+        const savedSteps = currentProtocol.studyMethodology?.workflowState?.completedSteps || [];
+        setCompletedSteps(savedSteps);
+
         setIsInitializing(false);
-      } else {
-        // No protocol exists - create draft protocol for wizard
-        console.log('[ClinicalCaptureWizard] No protocol found, creating draft...');
-        isCreatingProtocolRef.current = true;
-        setIsInitializing(true);
+      } else if (!hasInitializedRef.current) {
+        // No protocol and haven't tried creating one yet
+        console.log('[ClinicalCaptureWizard] Creating draft protocol...');
+        hasInitializedRef.current = true;
 
         try {
-          const newProtocol = await createProtocol({
+          await createProtocol({
             protocolTitle: 'Draft Protocol',
             protocolNumber: `DRAFT-${Date.now()}`,
             principalInvestigator: 'Unknown',
@@ -138,19 +132,58 @@ export function ClinicalCaptureWizard() {
               },
             },
           });
-
-          console.log('[ClinicalCaptureWizard] Draft protocol created:', newProtocol.id);
-          // Don't set protocolId here - it will be set when useEffect runs again
-          // after currentProtocol updates from createProtocol
-        } finally {
-          isCreatingProtocolRef.current = false;
-          // Don't set isInitializing false here - wait for the protocol to be set
+          // useEffect will run again when currentProtocol updates
+        } catch (error) {
+          console.error('[ClinicalCaptureWizard] Failed to create protocol:', error);
+          setIsInitializing(false);
         }
       }
     };
 
-    initializeWizard();
-  }, [currentProtocol?.id, wizardState.protocolId]); // Include wizardState.protocolId in deps
+    initialize();
+  }, [currentProtocol?.id, createProtocol]);
+
+  // ============================================
+  // NAVIGATION HELPERS
+  // ============================================
+  const goToStep = (step: WizardStep) => {
+    console.log('[ClinicalCaptureWizard] goToStep:', step);
+    setCurrentStep(step);
+  };
+
+  const completeStep = (step: WizardStep) => {
+    console.log('[ClinicalCaptureWizard] completeStep:', step);
+    setCompletedSteps(prev => {
+      if (prev.includes(step)) return prev;
+      const newSteps = [...prev, step];
+
+      // Persist to protocol
+      if (currentProtocol) {
+        updateProtocol(currentProtocol.id, {
+          studyMethodology: {
+            ...currentProtocol.studyMethodology,
+            workflowState: {
+              ...currentProtocol.studyMethodology?.workflowState,
+              completedSteps: newSteps,
+            },
+          },
+        });
+      }
+
+      return newSteps;
+    });
+  };
+
+  // Legacy setWizardState for compatibility
+  const setWizardState = (updater: (prev: WizardState) => WizardState) => {
+    const newState = updater(wizardState);
+    if (newState.currentStep !== currentStep) {
+      setCurrentStep(newState.currentStep);
+    }
+    if (JSON.stringify(newState.completedSteps) !== JSON.stringify(completedSteps)) {
+      setCompletedSteps(newState.completedSteps);
+    }
+  };
 
   // Handle PICO capture completion
   const handlePICOComplete = (data: {
@@ -165,35 +198,25 @@ export function ClinicalCaptureWizard() {
     foundationalPapers: FoundationalPaperExtraction[];
   }) => {
     if (!currentProtocol) {
-      console.error('[ClinicalCaptureWizard] No protocol available - this should not happen');
+      console.error('[ClinicalCaptureWizard] No protocol available');
       return;
     }
 
-    if (currentProtocol) {
-      // Save PICO data to protocol
-      updateProtocol(currentProtocol.id, {
-        studyMethodology: {
-          ...currentProtocol.studyMethodology,
-          hypothesis: data.rawObservation,
-          picoFields: data.picoFields,
-          foundationalPapers: data.foundationalPapers,
-          workflowState: {
-            currentStep: 'pico-capture',
-            completedSteps: [...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []), 'pico-capture'],
-          },
-        },
-      });
+    console.log('[ClinicalCaptureWizard] handlePICOComplete - saving PICO data');
 
-      // Advance to next step
-      console.log('[ClinicalCaptureWizard] handlePICOComplete - advancing to next step');
-      completeStep('pico-capture');
-      const currentIndex = WIZARD_STEPS.findIndex(s => s.id === 'pico-capture');
-      const nextStep = WIZARD_STEPS[currentIndex + 1]?.id;
-      console.log('[ClinicalCaptureWizard] handlePICOComplete - currentIndex:', currentIndex, 'nextStep:', nextStep);
-      if (nextStep) {
-        goToStep(nextStep);
-      }
-    }
+    // Save PICO data to protocol (without workflowState - completeStep handles that)
+    updateProtocol(currentProtocol.id, {
+      studyMethodology: {
+        ...currentProtocol.studyMethodology,
+        hypothesis: data.rawObservation,
+        picoFields: data.picoFields,
+        foundationalPapers: data.foundationalPapers,
+      },
+    });
+
+    // Mark step complete and navigate
+    completeStep('pico-capture');
+    goToStep('pico-validation');
   };
 
   // Handle PICO validation approval
@@ -329,43 +352,6 @@ export function ClinicalCaptureWizard() {
       // Mark as complete
       completeStep('deploy');
     }
-  };
-
-  // Mark step as completed
-  const completeStep = (step: WizardStep) => {
-    setWizardState(prev => {
-      const newCompletedSteps = [...prev.completedSteps];
-      if (!newCompletedSteps.includes(step)) {
-        newCompletedSteps.push(step);
-      }
-
-      // Save to protocol
-      if (currentProtocol) {
-        updateProtocol(currentProtocol.id, {
-          studyMethodology: {
-            ...currentProtocol.studyMethodology,
-            workflowState: {
-              currentStep: step,
-              completedSteps: newCompletedSteps,
-            },
-          },
-        });
-      }
-
-      return {
-        ...prev,
-        completedSteps: newCompletedSteps,
-      };
-    });
-  };
-
-  // Navigate to step
-  const goToStep = (step: WizardStep) => {
-    console.log('[ClinicalCaptureWizard] goToStep called:', step);
-    setWizardState(prev => {
-      console.log('[ClinicalCaptureWizard] goToStep - prev.currentStep:', prev.currentStep, '-> new:', step);
-      return { ...prev, currentStep: step };
-    });
   };
 
   // Get step status
