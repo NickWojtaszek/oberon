@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { GripVertical, ChevronDown, ChevronRight, Edit3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ interface SchemaBlockAdvancedProps {
   block: SchemaBlock;
   depth: number;
   isHovered: boolean;
+  hoveredBlockId?: string | null;  // Add this to properly track which specific block is hovered
   onHover: (blockId: string | null) => void;
   onUpdate: (blockId: string, updates: Partial<SchemaBlock>) => void;
   onRemove: (blockId: string) => void;
@@ -44,6 +45,7 @@ export function SchemaBlockAdvanced({
   block,
   depth,
   isHovered,
+  hoveredBlockId,
   onHover,
   onUpdate,
   onRemove,
@@ -62,6 +64,7 @@ export function SchemaBlockAdvanced({
   const [showConfigHUD, setShowConfigHUD] = useState(false);
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
   const blockRef = useRef<HTMLDivElement>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isSection = block.dataType === 'Section';
   const Icon = block.variable.icon;
@@ -155,20 +158,41 @@ export function SchemaBlockAdvanced({
     (blockRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
   };
 
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    // Clear any pending hide timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    onHover(block.id);
+    setShowConfigHUD(true);
+  };
+
+  const handleMouseLeave = () => {
+    // Use timeout to allow mouse to move to HUD without flickering
+    hideTimeoutRef.current = setTimeout(() => {
+      onHover(null);
+      setShowConfigHUD(false);
+      handleDragLeave();
+    }, 150); // 150ms delay before hiding
+  };
+
   return (
     <div
       ref={combinedRef}
       className={`group relative ${isDragging ? 'opacity-50' : ''}`}
-      style={{ marginLeft: `${depth * 32}px` }}
-      onMouseEnter={() => {
-        onHover(block.id);
-        setShowConfigHUD(true);
-      }}
-      onMouseLeave={() => {
-        onHover(null);
-        setShowConfigHUD(false);
-        handleDragLeave();
-      }}
+      style={{ marginLeft: `${depth * 32}px`, paddingBottom: showConfigHUD && !isSection ? '4px' : '0' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Drop zone indicator - BEFORE */}
       {isOver && dropPosition === 'before' && (
@@ -398,7 +422,8 @@ export function SchemaBlockAdvanced({
               key={child.id}
               block={child}
               depth={depth + 1}
-              isHovered={isHovered}
+              isHovered={hoveredBlockId === child.id}
+              hoveredBlockId={hoveredBlockId}
               onHover={onHover}
               onUpdate={onUpdate}
               onRemove={onRemove}

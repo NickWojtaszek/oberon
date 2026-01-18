@@ -57,23 +57,35 @@ export function useDatabase() {
       setSelectedProtocolId(firstProtocol.id);
       console.log('  📌 Auto-selected protocol:', firstProtocol.id);
 
-      // 🎯 Auto-select most recent PUBLISHED version
+      // 🎯 Auto-select version with schema blocks (prefer published, then draft with data)
       const activeVersions = firstProtocol.versions.filter(v => v.status !== 'archived');
       const publishedVersions = activeVersions.filter(v => v.status === 'published');
-      
+      const versionsWithSchema = activeVersions.filter(v => v.schemaBlocks && v.schemaBlocks.length > 0);
+
       let selectedVersion = null;
-      if (publishedVersions.length > 0) {
+
+      // Priority: Published with schema > Draft with schema > Published without > Draft without
+      const publishedWithSchema = publishedVersions.find(v => v.schemaBlocks && v.schemaBlocks.length > 0);
+      const draftWithSchema = versionsWithSchema.find(v => v.status === 'draft');
+
+      if (publishedWithSchema) {
+        selectedVersion = publishedWithSchema;
+        console.log('  ✅ Auto-selected PUBLISHED version with schema:', selectedVersion.id, `(v${selectedVersion.versionNumber})`, selectedVersion.schemaBlocks?.length, 'blocks');
+      } else if (draftWithSchema) {
+        selectedVersion = draftWithSchema;
+        console.log('  📝 Auto-selected DRAFT version with schema:', selectedVersion.id, `(v${selectedVersion.versionNumber})`, selectedVersion.schemaBlocks?.length, 'blocks');
+      } else if (publishedVersions.length > 0) {
         selectedVersion = publishedVersions[publishedVersions.length - 1];
-        console.log('  ✅ Auto-selected PUBLISHED version:', selectedVersion.id, `(v${selectedVersion.versionNumber})`);
+        console.log('  ⚠️ Auto-selected PUBLISHED version (no schema):', selectedVersion.id, `(v${selectedVersion.versionNumber})`);
       } else if (activeVersions.length > 0) {
         selectedVersion = activeVersions[activeVersions.length - 1];
-        console.log('  ⚠️  Auto-selected DRAFT version:', selectedVersion.id, '(no published versions available)');
+        console.log('  ⚠️ Auto-selected DRAFT version (no schema):', selectedVersion.id);
       }
-      
+
       if (selectedVersion) {
         setSelectedVersionId(selectedVersion.id);
       }
-      
+
       setHasAutoSelected(true);
     }
   }, [savedProtocols.length, selectedProtocolId, hasAutoSelected]);
@@ -84,20 +96,32 @@ export function useDatabase() {
       const protocol = savedProtocols.find(p => p.id === selectedProtocolId);
       if (protocol) {
         const activeVersions = protocol.versions.filter(v => v.status !== 'archived');
-        
+
         // Only auto-correct if current selection is invalid
         if (selectedVersionId && !activeVersions.find(v => v.id === selectedVersionId)) {
           const publishedVersions = activeVersions.filter(v => v.status === 'published');
-          
+          const versionsWithSchema = activeVersions.filter(v => v.schemaBlocks && v.schemaBlocks.length > 0);
+
           let newVersion = null;
-          if (publishedVersions.length > 0) {
+
+          // Priority: Published with schema > Draft with schema > Published without > Draft without
+          const publishedWithSchema = publishedVersions.find(v => v.schemaBlocks && v.schemaBlocks.length > 0);
+          const draftWithSchema = versionsWithSchema.find(v => v.status === 'draft');
+
+          if (publishedWithSchema) {
+            newVersion = publishedWithSchema;
+            console.log('  ✅ Switched to PUBLISHED version with schema:', newVersion.id);
+          } else if (draftWithSchema) {
+            newVersion = draftWithSchema;
+            console.log('  📝 Switched to DRAFT version with schema:', newVersion.id);
+          } else if (publishedVersions.length > 0) {
             newVersion = publishedVersions[publishedVersions.length - 1];
-            console.log('  ✅ Switched to PUBLISHED version:', newVersion.id);
+            console.log('  ⚠️ Switched to PUBLISHED version (no schema):', newVersion.id);
           } else if (activeVersions.length > 0) {
             newVersion = activeVersions[activeVersions.length - 1];
-            console.log('  ⚠️  Switched to DRAFT version:', newVersion.id);
+            console.log('  ⚠️ Switched to DRAFT version:', newVersion.id);
           }
-          
+
           if (newVersion) {
             setSelectedVersionId(newVersion.id);
           }

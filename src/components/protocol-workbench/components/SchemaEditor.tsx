@@ -128,6 +128,7 @@ export function SchemaEditor({
                   block={block}
                   depth={0}
                   isHovered={hoveredBlockId === block.id}
+                  hoveredBlockId={hoveredBlockId}
                   onHover={onHoverBlock}
                   onUpdate={onUpdateBlock}
                   onRemove={onRemoveBlock}
