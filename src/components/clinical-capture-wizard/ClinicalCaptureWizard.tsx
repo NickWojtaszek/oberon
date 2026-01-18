@@ -177,10 +177,13 @@ export function ClinicalCaptureWizard() {
       });
 
       // Advance to next step
+      console.log('[ClinicalCaptureWizard] handlePICOComplete - advancing to next step');
       completeStep('pico-capture');
       const currentIndex = WIZARD_STEPS.findIndex(s => s.id === 'pico-capture');
-      if (currentIndex < WIZARD_STEPS.length - 1) {
-        goToStep(WIZARD_STEPS[currentIndex + 1].id);
+      const nextStep = WIZARD_STEPS[currentIndex + 1]?.id;
+      console.log('[ClinicalCaptureWizard] handlePICOComplete - currentIndex:', currentIndex, 'nextStep:', nextStep);
+      if (nextStep) {
+        goToStep(nextStep);
       }
     }
   };
@@ -350,7 +353,11 @@ export function ClinicalCaptureWizard() {
 
   // Navigate to step
   const goToStep = (step: WizardStep) => {
-    setWizardState(prev => ({ ...prev, currentStep: step }));
+    console.log('[ClinicalCaptureWizard] goToStep called:', step);
+    setWizardState(prev => {
+      console.log('[ClinicalCaptureWizard] goToStep - prev.currentStep:', prev.currentStep, '-> new:', step);
+      return { ...prev, currentStep: step };
+    });
   };
 
   // Get step status
