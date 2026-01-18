@@ -179,23 +179,27 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
 
   // Navigation
   const selectedTableData = tables.find((t) => t.tableName === selectedTable);
-  // Filter out Structural category AND Section dataType (headers/dividers)
+
+  // Filter out:
+  // 1. Section dataType (these are headers/dividers, not data entry fields)
+  // 2. Base structural fields that are handled separately in the form header
+  const baseFieldIds = ['subject_id', 'visit_name', 'visit_date', 'enrollment_date', 'visit_number'];
   const activeFields = selectedTableData?.fields.filter((f) =>
-    f.category !== 'Structural' && f.dataType !== 'Section'
+    f.dataType !== 'Section' && !baseFieldIds.includes(f.id)
   ) || [];
 
   // Debug: Log field filtering
   useEffect(() => {
     if (selectedTableData) {
       const totalFields = selectedTableData.fields.length;
-      const structuralFields = selectedTableData.fields.filter(f => f.category === 'Structural').length;
       const sectionFields = selectedTableData.fields.filter(f => f.dataType === 'Section').length;
+      const baseFields = selectedTableData.fields.filter(f => baseFieldIds.includes(f.id)).length;
       console.log(`📝 [DataEntryForm] Field filtering for "${selectedTable}":`, {
         total: totalFields,
-        structural: structuralFields,
         sections: sectionFields,
+        baseFields: baseFields,
         active: activeFields.length,
-        sampleFields: activeFields.slice(0, 3).map(f => ({ name: f.fieldName, type: f.dataType, cat: f.category }))
+        sampleFields: activeFields.slice(0, 5).map(f => ({ name: f.fieldName, type: f.dataType, cat: f.category }))
       });
     }
   }, [selectedTableData, selectedTable, activeFields]);
