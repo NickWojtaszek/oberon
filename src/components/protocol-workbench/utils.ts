@@ -90,10 +90,89 @@ export const validateAndImportSchema = (jsonData: any): { valid: boolean; blocks
 };
 
 /**
- * Recursively regenerate all IDs to prevent conflicts on import
+ * Infer appropriate category from field name, dataType, and role
+ * This ensures imported schemas get proper categories for database table generation
+ */
+const inferCategoryFromBlock = (block: SchemaBlock): SchemaBlock['variable']['category'] => {
+  const name = (block.customName || block.variable.name).toLowerCase();
+  const dataType = block.dataType;
+  const role = block.role;
+  const existingCategory = block.variable.category;
+
+  // If it's a Section, keep it as Structural
+  if (dataType === 'Section') {
+    return 'Structural';
+  }
+
+  // If the existing category is valid and not 'Structural' or 'Other', keep it
+  const validCategories = ['Demographics', 'Treatments', 'Endpoints', 'Clinical', 'Laboratory', 'Vitals', 'Safety', 'Quality of Life', 'Medical History', 'Biomarkers', 'Imaging', 'Medications', 'Adverse Events', 'Procedures', 'Questionnaires'];
+  if (validCategories.includes(existingCategory)) {
+    return existingCategory;
+  }
+
+  // Infer from role
+  if (role === 'Outcome' || block.endpointTier) {
+    return 'Endpoints';
+  }
+
+  // Infer from field name patterns
+  if (name.includes('age') || name.includes('sex') || name.includes('gender') || name.includes('race') || name.includes('ethnicity') || name.includes('birth') || name.includes('demographic')) {
+    return 'Demographics';
+  }
+  if (name.includes('treatment') || name.includes('intervention') || name.includes('therapy') || name.includes('drug') || name.includes('dose') || name.includes('medication')) {
+    return 'Treatments';
+  }
+  if (name.includes('lab') || name.includes('blood') || name.includes('serum') || name.includes('urine') || name.includes('hemoglobin') || name.includes('creatinine') || name.includes('glucose')) {
+    return 'Laboratory';
+  }
+  if (name.includes('vital') || name.includes('pressure') || name.includes('heart_rate') || name.includes('pulse') || name.includes('temperature') || name.includes('weight') || name.includes('height') || name.includes('bmi')) {
+    return 'Vitals';
+  }
+  if (name.includes('adverse') || name.includes('safety') || name.includes('toxicity') || name.includes('side_effect')) {
+    return 'Safety';
+  }
+  if (name.includes('outcome') || name.includes('endpoint') || name.includes('efficacy') || name.includes('response') || name.includes('survival') || name.includes('mortality')) {
+    return 'Endpoints';
+  }
+  if (name.includes('score') || name.includes('scale') || name.includes('questionnaire') || name.includes('survey') || name.includes('assessment')) {
+    return 'Clinical';
+  }
+  if (name.includes('diagnosis') || name.includes('disease') || name.includes('condition') || name.includes('symptom') || name.includes('clinical')) {
+    return 'Clinical';
+  }
+  if (name.includes('history') || name.includes('medical_history') || name.includes('past')) {
+    return 'Medical History';
+  }
+  if (name.includes('imaging') || name.includes('scan') || name.includes('mri') || name.includes('ct') || name.includes('xray') || name.includes('ultrasound')) {
+    return 'Imaging';
+  }
+  if (name.includes('procedure') || name.includes('surgery') || name.includes('operation')) {
+    return 'Procedures';
+  }
+  if (name.includes('quality') || name.includes('qol') || name.includes('life')) {
+    return 'Quality of Life';
+  }
+
+  // Default: use Clinical for data fields (not Structural)
+  return 'Clinical';
+};
+
+/**
+ * Recursively regenerate all IDs and normalize categories to prevent conflicts on import
  */
 export const regenerateBlockIds = (block: SchemaBlock): SchemaBlock => {
-  const regenerated = { ...block, id: generateUniqueId() };
+  // Infer proper category for this block
+  const inferredCategory = inferCategoryFromBlock(block);
+
+  const regenerated: SchemaBlock = {
+    ...block,
+    id: generateUniqueId(),
+    variable: {
+      ...block.variable,
+      category: inferredCategory,
+    },
+  };
+
   if (block.children) {
     regenerated.children = block.children.map(child => regenerateBlockIds(child));
   }
