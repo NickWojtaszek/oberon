@@ -3,7 +3,7 @@
  * Unified Workspace with Golden Grid Layout
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useProtocol } from '../contexts/ProtocolContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -209,8 +209,10 @@ export function ResearchFactoryApp() {
     ...customJournals
   ];
 
-  // Inner component that has access to all state
-  const ScreenRenderer = () => {
+  // Memoized screen content - prevents remounting when parent re-renders
+  // IMPORTANT: This was previously a function component which caused remounting issues
+  // because each render created a new function reference
+  const screenContent = useMemo(() => {
     switch (activeTab) {
       case 'dashboard':
         return (
@@ -602,7 +604,7 @@ export function ResearchFactoryApp() {
           </div>
         );
     }
-  };
+  }, [activeTab, autonomyMode, loadProtocolId, loadVersionId, selectedJournal, paperType, allJournals]);
 
   return (
     <div className="h-screen overflow-hidden">
@@ -628,7 +630,7 @@ export function ResearchFactoryApp() {
         utilitySidebarOpen={logicAuditOpen}
         fullWidth={isFullWidth}
       >
-        <ScreenRenderer />
+        {screenContent}
       </WorkspaceShell>
       
       {/* Custom Journal Dialog */}
