@@ -76,22 +76,30 @@ export function ClinicalCaptureWizard() {
 
   // Track if we've initialized for this protocol to prevent re-initialization
   const initializedProtocolIdRef = useRef<string | null>(null);
+  // Track if we're currently creating a protocol to prevent double-creation
+  const isCreatingProtocolRef = useRef(false);
 
-  // Initialize wizard with existing protocol or create new
+  // Initialize wizard with existing protocol or create new - ONLY ONCE
   useEffect(() => {
-    const initializeWizard = async () => {
-      // Skip if we've already initialized for this protocol
-      if (currentProtocol && initializedProtocolIdRef.current === currentProtocol.id) {
-        console.log('[ClinicalCaptureWizard] Already initialized for protocol:', currentProtocol.id);
-        setIsInitializing(false);
-        return;
-      }
+    // Skip if we've already initialized for this protocol
+    if (currentProtocol && initializedProtocolIdRef.current === currentProtocol.id) {
+      console.log('[ClinicalCaptureWizard] Already initialized for protocol:', currentProtocol.id, '- skipping');
+      setIsInitializing(false);
+      return;
+    }
 
+    // Skip if we're currently creating a protocol
+    if (isCreatingProtocolRef.current) {
+      console.log('[ClinicalCaptureWizard] Protocol creation in progress - skipping');
+      return;
+    }
+
+    const initializeWizard = async () => {
       setIsInitializing(true);
 
       if (currentProtocol) {
         // Load existing protocol state - only on FIRST load for this protocol
-        console.log('[ClinicalCaptureWizard] Loading existing protocol:', currentProtocol.id);
+        console.log('[ClinicalCaptureWizard] First load for protocol:', currentProtocol.id);
         initializedProtocolIdRef.current = currentProtocol.id;
 
         // Only set completedSteps from protocol, don't override currentStep
@@ -101,31 +109,36 @@ export function ClinicalCaptureWizard() {
           protocolId: currentProtocol.id,
           completedSteps: currentProtocol.studyMethodology?.workflowState?.completedSteps || [],
         }));
+        setIsInitializing(false);
       } else {
         // No protocol exists - create draft protocol for wizard
         console.log('[ClinicalCaptureWizard] No protocol found, creating draft...');
+        isCreatingProtocolRef.current = true;
 
-        const newProtocol = await createProtocol({
-          protocolTitle: 'Draft Protocol',
-          protocolNumber: `DRAFT-${Date.now()}`,
-          principalInvestigator: 'Unknown',
-          status: 'draft' as const,
-          studyMethodology: {
-            studyType: 'rct',
-            configuredAt: new Date().toISOString(),
-            configuredBy: 'current-user',
-            workflowState: {
-              currentStep: 'pico-capture',
-              completedSteps: [],
+        try {
+          const newProtocol = await createProtocol({
+            protocolTitle: 'Draft Protocol',
+            protocolNumber: `DRAFT-${Date.now()}`,
+            principalInvestigator: 'Unknown',
+            status: 'draft' as const,
+            studyMethodology: {
+              studyType: 'rct',
+              configuredAt: new Date().toISOString(),
+              configuredBy: 'current-user',
+              workflowState: {
+                currentStep: 'pico-capture',
+                completedSteps: [],
+              },
             },
-          },
-        });
+          });
 
-        console.log('[ClinicalCaptureWizard] Draft protocol created:', newProtocol.id);
-        initializedProtocolIdRef.current = newProtocol.id;
+          console.log('[ClinicalCaptureWizard] Draft protocol created:', newProtocol.id);
+          initializedProtocolIdRef.current = newProtocol.id;
+        } finally {
+          isCreatingProtocolRef.current = false;
+          setIsInitializing(false);
+        }
       }
-
-      setIsInitializing(false);
     };
 
     initializeWizard();
