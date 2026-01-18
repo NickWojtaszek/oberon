@@ -447,8 +447,8 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
       const mergedStudyMethodology = updates.studyMethodology ? {
         ...protocol.studyMethodology,
         ...updates.studyMethodology,
-        // Deep merge hypothesis to preserve picoFramework
-        ...(updates.studyMethodology.hypothesis && {
+        // Deep merge hypothesis to preserve picoFramework (if hypothesis is an object)
+        ...(updates.studyMethodology.hypothesis && typeof updates.studyMethodology.hypothesis === 'object' && {
           hypothesis: {
             ...protocol.studyMethodology?.hypothesis,
             ...updates.studyMethodology.hypothesis,
@@ -460,6 +460,17 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
               }
             }),
           }
+        }),
+        // Preserve picoFields from Clinical Capture Wizard
+        ...(updates.studyMethodology.picoFields && {
+          picoFields: {
+            ...protocol.studyMethodology?.picoFields,
+            ...updates.studyMethodology.picoFields,
+          }
+        }),
+        // Preserve foundationalPapers
+        ...(updates.studyMethodology.foundationalPapers && {
+          foundationalPapers: updates.studyMethodology.foundationalPapers,
         }),
         // Deep merge teamConfiguration
         ...(updates.studyMethodology.teamConfiguration && {
@@ -475,6 +486,13 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
             ...updates.studyMethodology.blindingState,
           }
         }),
+        // Deep merge workflowState
+        ...(updates.studyMethodology.workflowState && {
+          workflowState: {
+            ...protocol.studyMethodology?.workflowState,
+            ...updates.studyMethodology.workflowState,
+          }
+        }),
       } : protocol.studyMethodology;
 
       const updated = {
@@ -485,10 +503,17 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
       };
 
       console.log('[ProtocolContext] Merged studyMethodology:', mergedStudyMethodology);
-      console.log('[ProtocolContext] PICO after merge:', mergedStudyMethodology?.hypothesis?.picoFramework);
+      console.log('[ProtocolContext] PICO after merge:', {
+        picoFields: mergedStudyMethodology?.picoFields,
+        picoFramework: mergedStudyMethodology?.hypothesis?.picoFramework,
+        hypothesis: typeof mergedStudyMethodology?.hypothesis === 'string' ? mergedStudyMethodology?.hypothesis : 'object',
+      });
 
       if (currentProtocol?.id === protocolId) {
-        console.log('[ProtocolContext] Setting currentProtocol with PICO:', updated.studyMethodology?.hypothesis?.picoFramework);
+        console.log('[ProtocolContext] Setting currentProtocol with PICO:', {
+          picoFields: updated.studyMethodology?.picoFields,
+          picoFramework: updated.studyMethodology?.hypothesis?.picoFramework,
+        });
         setCurrentProtocol(updated);
       }
 

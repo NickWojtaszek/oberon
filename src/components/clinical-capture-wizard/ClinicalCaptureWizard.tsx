@@ -415,8 +415,9 @@ export function ClinicalCaptureWizard() {
             </div>
           ) : (
             <>
-              {wizardState.currentStep === 'pico-capture' && (
+              {wizardState.currentStep === 'pico-capture' && currentProtocol && (
                 <PICOCaptureStep
+              key={currentProtocol.id}
               onComplete={handlePICOComplete}
               initialData={{
                 rawObservation: currentProtocol?.studyMethodology?.hypothesis || '',
