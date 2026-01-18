@@ -18,12 +18,16 @@ import {
   Table,
   Database,
   Shield,
-  Loader2
+  Loader2,
+  ClipboardList,
+  Send
 } from 'lucide-react';
 import { PICOCaptureStep } from './steps/PICOCaptureStep';
 import { PICOValidationStep } from './steps/PICOValidationStep';
 import { StudyDesignStep } from './steps/StudyDesignStep';
 import { SchemaBuilderStep } from './steps/SchemaBuilderStep';
+import { ProtocolDetailsStep, type ProtocolDetailsData } from './steps/ProtocolDetailsStep';
+import { ReviewPublishStep } from './steps/ReviewPublishStep';
 import { DeployStep } from './steps/DeployStep';
 import type { FoundationalPaperExtraction } from '../../services/geminiService';
 import type { SchemaBlock } from '../protocol-workbench/types';
@@ -39,8 +43,8 @@ type WizardStep =
   | 'study-design'
   | 'schema-builder'
   | 'dependencies'
-  | 'audit'
-  | 'final-validation'
+  | 'protocol-details'
+  | 'review-publish'
   | 'deploy';
 
 interface WizardState {
@@ -60,8 +64,8 @@ const WIZARD_STEPS: Array<{
   { id: 'study-design', label: 'Study Design', icon: FlaskConical, required: true },
   { id: 'schema-builder', label: 'Schema Builder', icon: Table, required: true },
   { id: 'dependencies', label: 'Dependencies', icon: Users, required: false },
-  { id: 'audit', label: 'Audit', icon: CheckCircle2, required: true },
-  { id: 'final-validation', label: 'Final Approval', icon: Shield, required: true },
+  { id: 'protocol-details', label: 'Protocol Details', icon: ClipboardList, required: true },
+  { id: 'review-publish', label: 'Review & Publish', icon: Send, required: true },
   { id: 'deploy', label: 'Deploy', icon: Database, required: true },
 ];
 
@@ -337,6 +341,70 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
     }
   };
 
+  // Handle protocol details completion
+  const handleProtocolDetailsComplete = (data: ProtocolDetailsData) => {
+    if (currentProtocol) {
+      // Save protocol details
+      updateProtocol(currentProtocol.id, {
+        protocolTitle: data.protocolTitle,
+        protocolNumber: data.protocolNumber,
+        principalInvestigator: data.principalInvestigator,
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          institution: data.institution,
+          sponsor: data.sponsor,
+          irbNumber: data.irbNumber,
+          irbApprovalDate: data.irbApprovalDate,
+          studyStartDate: data.studyStartDate,
+          estimatedEndDate: data.estimatedEndDate,
+          versionNotes: data.versionNotes,
+          workflowState: {
+            ...currentProtocol.studyMethodology?.workflowState,
+            completedSteps: [
+              ...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []),
+              'protocol-details',
+            ],
+          },
+        },
+      });
+
+      // Mark step complete and advance
+      completeStep('protocol-details');
+      goToStep('review-publish');
+    }
+  };
+
+  // Handle protocol publish
+  const handlePublish = () => {
+    if (currentProtocol) {
+      // Update protocol status to published
+      updateProtocol(currentProtocol.id, {
+        status: 'published' as const,
+        studyMethodology: {
+          ...currentProtocol.studyMethodology,
+          publishedAt: new Date().toISOString(),
+          publishedBy: 'current-user',
+          workflowState: {
+            ...currentProtocol.studyMethodology?.workflowState,
+            completedSteps: [
+              ...(currentProtocol.studyMethodology?.workflowState?.completedSteps || []),
+              'review-publish',
+            ],
+          },
+        },
+      });
+
+      // Mark step complete and advance to deploy
+      completeStep('review-publish');
+      goToStep('deploy');
+    }
+  };
+
+  // Handle back navigation from review step
+  const handleBackFromReview = (targetStep: string) => {
+    goToStep(targetStep as WizardStep);
+  };
+
   // Handle deploy completion
   const handleDeployComplete = () => {
     if (currentProtocol) {
@@ -502,6 +570,59 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
             />
           )}
 
+          {wizardState.currentStep === 'protocol-details' && currentProtocol && (
+            <ProtocolDetailsStep
+              onComplete={handleProtocolDetailsComplete}
+              initialData={{
+                protocolTitle: currentProtocol.protocolTitle,
+                protocolNumber: currentProtocol.protocolNumber,
+                principalInvestigator: currentProtocol.principalInvestigator,
+                institution: currentProtocol.studyMethodology?.institution,
+                sponsor: currentProtocol.studyMethodology?.sponsor,
+                irbNumber: currentProtocol.studyMethodology?.irbNumber,
+                irbApprovalDate: currentProtocol.studyMethodology?.irbApprovalDate,
+                studyStartDate: currentProtocol.studyMethodology?.studyStartDate,
+                estimatedEndDate: currentProtocol.studyMethodology?.estimatedEndDate,
+                versionNotes: currentProtocol.studyMethodology?.versionNotes,
+              }}
+              picoSummary={{
+                population: currentProtocol.studyMethodology?.picoFields?.population || '',
+                intervention: currentProtocol.studyMethodology?.picoFields?.intervention || '',
+                outcome: currentProtocol.studyMethodology?.picoFields?.outcome || '',
+              }}
+            />
+          )}
+
+          {wizardState.currentStep === 'review-publish' && currentProtocol && (
+            <ReviewPublishStep
+              onPublish={handlePublish}
+              onBack={handleBackFromReview}
+              protocolDetails={{
+                protocolTitle: currentProtocol.protocolTitle || '',
+                protocolNumber: currentProtocol.protocolNumber || '',
+                principalInvestigator: currentProtocol.principalInvestigator || '',
+                institution: currentProtocol.studyMethodology?.institution || '',
+                sponsor: currentProtocol.studyMethodology?.sponsor,
+                irbNumber: currentProtocol.studyMethodology?.irbNumber,
+                irbApprovalDate: currentProtocol.studyMethodology?.irbApprovalDate,
+                studyStartDate: currentProtocol.studyMethodology?.studyStartDate,
+                estimatedEndDate: currentProtocol.studyMethodology?.estimatedEndDate,
+                versionNotes: currentProtocol.studyMethodology?.versionNotes,
+              }}
+              summary={{
+                picoComplete: !!currentProtocol.studyMethodology?.picoFields?.population,
+                picoApproved: currentProtocol.studyMethodology?.piApprovalStatus === 'approved',
+                studyDesignComplete: !!currentProtocol.studyMethodology?.studyType,
+                schemaComplete: (currentVersion?.schemaBlocks?.length || 0) > 0,
+                fieldCount: currentVersion?.schemaBlocks?.length || 0,
+                studyType: currentProtocol.studyMethodology?.studyType || 'Not specified',
+                population: currentProtocol.studyMethodology?.picoFields?.population,
+                intervention: currentProtocol.studyMethodology?.picoFields?.intervention,
+                outcome: currentProtocol.studyMethodology?.picoFields?.outcome,
+              }}
+            />
+          )}
+
           {wizardState.currentStep === 'deploy' && currentProtocol && (
             <DeployStep
               onComplete={handleDeployComplete}
@@ -522,10 +643,13 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
             />
           )}
 
+          {/* Fallback for steps without dedicated components (e.g., dependencies) */}
           {wizardState.currentStep !== 'pico-capture' &&
            wizardState.currentStep !== 'pico-validation' &&
            wizardState.currentStep !== 'study-design' &&
            wizardState.currentStep !== 'schema-builder' &&
+           wizardState.currentStep !== 'protocol-details' &&
+           wizardState.currentStep !== 'review-publish' &&
            wizardState.currentStep !== 'deploy' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
               <h2 className="text-xl font-semibold text-slate-900 mb-4">

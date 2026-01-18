@@ -164,6 +164,7 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
                 tables={databaseTables}
                 protocolNumber={selectedVersion?.metadata.protocolNumber}
                 protocolVersion={selectedVersion?.versionNumber}
+                protocolStatus={selectedVersion?.status}
                 onSave={loadProtocols}
               />
             )}
