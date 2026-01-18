@@ -60,6 +60,14 @@ interface PICOCaptureStepProps {
 }
 
 export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProps) {
+  // DEBUG: Log initialData on every render
+  console.log('[PICOCaptureStep] RENDER - initialData:', {
+    rawObservation: initialData?.rawObservation,
+    picoFields: initialData?.picoFields,
+    picoFieldsType: typeof initialData?.picoFields,
+    picoFieldsKeys: initialData?.picoFields ? Object.keys(initialData.picoFields) : [],
+  });
+
   // State
   const [rawObservation, setRawObservation] = useState(initialData?.rawObservation || '');
   const [isListening, setIsListening] = useState(false);
@@ -119,12 +127,21 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
   }>(() => {
     // Ensure all values are strings
     const fields = initialPicoFields;
-    return {
+    const result = {
       population: { ...fields.population, value: String(fields.population.value || '') },
       intervention: { ...fields.intervention, value: String(fields.intervention.value || '') },
       comparison: { ...fields.comparison, value: String(fields.comparison.value || '') },
       outcome: { ...fields.outcome, value: String(fields.outcome.value || '') },
     };
+
+    console.log('[PICOCaptureStep] INITIAL STATE - picoFields:', {
+      population: { value: result.population.value, type: typeof result.population.value },
+      intervention: { value: result.intervention.value, type: typeof result.intervention.value },
+      comparison: { value: result.comparison.value, type: typeof result.comparison.value },
+      outcome: { value: result.outcome.value, type: typeof result.outcome.value },
+    });
+
+    return result;
   });
 
   // Foundational Papers
@@ -326,15 +343,29 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
 
   // Defensive validation with type safety
   const isComplete = useMemo(() => {
+    console.log('[PICOCaptureStep] isComplete CHECK:', {
+      rawObservation: { value: rawObservation, type: typeof rawObservation },
+      picoFields: {
+        population: { value: picoFields?.population?.value, type: typeof picoFields?.population?.value },
+        intervention: { value: picoFields?.intervention?.value, type: typeof picoFields?.intervention?.value },
+        comparison: { value: picoFields?.comparison?.value, type: typeof picoFields?.comparison?.value },
+        outcome: { value: picoFields?.outcome?.value, type: typeof picoFields?.outcome?.value },
+      }
+    });
+
     try {
       const questionValid = typeof rawObservation === 'string' && rawObservation.trim().length >= 50;
       const populationValid = typeof picoFields?.population?.value === 'string' && picoFields.population.value.trim().length > 0;
       const interventionValid = typeof picoFields?.intervention?.value === 'string' && picoFields.intervention.value.trim().length > 0;
       const outcomeValid = typeof picoFields?.outcome?.value === 'string' && picoFields.outcome.value.trim().length > 0;
 
-      return questionValid && populationValid && interventionValid && outcomeValid;
+      const result = questionValid && populationValid && interventionValid && outcomeValid;
+      console.log('[PICOCaptureStep] isComplete RESULT:', result);
+      return result;
     } catch (error) {
-      console.error('[PICOCaptureStep] Validation error:', error);
+      console.error('[PICOCaptureStep] Validation error:', error, {
+        stack: error instanceof Error ? error.stack : 'No stack',
+      });
       return false;
     }
   }, [rawObservation, picoFields]);
