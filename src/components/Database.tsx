@@ -35,8 +35,9 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
 
   // Refresh protocols when component mounts (in case we just came from wizard)
   useEffect(() => {
+    console.log('🗄️ [Database] Component mounted, refreshing protocols...');
     refreshProtocols();
-  }, []);
+  }, [refreshProtocols]);
 
   const getStatusBadge = (status: 'published' | 'draft' | 'archived') => {
     switch (status) {
@@ -61,6 +62,19 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
   const schemaBlocks = useMemo(() => {
     return selectedVersion?.schemaBlocks || [];
   }, [selectedVersion]);
+
+  // Debug: Log database state for troubleshooting
+  useEffect(() => {
+    console.log('🗄️ [Database] State update:', {
+      protocolId: selectedProtocolId,
+      versionId: selectedVersionId,
+      hasProtocol: !!selectedProtocol,
+      hasVersion: !!selectedVersion,
+      tablesCount: databaseTables.length,
+      schemaBlocksCount: schemaBlocks.length,
+      activeTab
+    });
+  }, [selectedProtocolId, selectedVersionId, selectedProtocol, selectedVersion, databaseTables.length, schemaBlocks.length, activeTab]);
 
   return (
     <div className="flex flex-col h-full">

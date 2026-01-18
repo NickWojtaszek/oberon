@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { storage } from '../../../utils/storageService';
 import type { SavedProtocol } from '../../protocol-workbench/types';
 import type { DatabaseTable } from '../utils/schemaGenerator';
@@ -158,9 +158,16 @@ export function useDatabase(options: UseDatabaseOptions = {}) {
     }
   }, [selectedProtocolId, savedProtocols, selectBestVersion]); // selectedVersionId intentionally omitted to avoid loops
 
-  // Computed values
-  const selectedProtocol = savedProtocols.find(p => p.id === selectedProtocolId) || null;
-  const selectedVersion = selectedProtocol?.versions.find(v => v.id === selectedVersionId) || null;
+  // Memoize computed values to prevent unnecessary effect re-runs
+  const selectedProtocol = useMemo(() =>
+    savedProtocols.find(p => p.id === selectedProtocolId) || null,
+    [savedProtocols, selectedProtocolId]
+  );
+
+  const selectedVersion = useMemo(() =>
+    selectedProtocol?.versions.find(v => v.id === selectedVersionId) || null,
+    [selectedProtocol, selectedVersionId]
+  );
 
   // Generate database tables whenever version changes
   useEffect(() => {
@@ -173,23 +180,57 @@ export function useDatabase(options: UseDatabaseOptions = {}) {
           : undefined;
 
         const tables = generateDatabaseTables(selectedVersion, previousVersion);
+        console.log('📊 [useDatabase] Generated', tables.length, 'tables with',
+          tables.reduce((acc, t) => acc + t.fields.length, 0), 'fields');
         setDatabaseTables(tables);
       } catch (error) {
-        console.error('Error generating database tables:', error);
+        console.error('❌ [useDatabase] Error generating database tables:', error);
         setDatabaseTables([]);
       }
     } else {
+      console.log('📊 [useDatabase] No version selected, clearing tables');
       setDatabaseTables([]);
     }
   }, [selectedVersion, selectedProtocol]);
 
-  // Manual refresh function
+  // Manual refresh function - uses same change detection as loadProtocols
   const refreshProtocols = useCallback(() => {
     console.log('🔄 [useDatabase] Manual refresh triggered');
-    // Force reload by clearing and refetching
     const protocols = storage.protocols.getAll();
-    console.log('📂 [useDatabase] Refreshed:', protocols.length, 'protocols');
-    setSavedProtocols(protocols);
+
+    // Use same change detection logic to avoid unnecessary re-renders
+    setSavedProtocols(prev => {
+      const prevIds = prev.map(p => p.id).sort().join(',');
+      const newIds = protocols.map(p => p.id).sort().join(',');
+
+      if (prevIds === newIds) {
+        // Check if version counts changed for existing protocols
+        const hasVersionChanges = protocols.some(p => {
+          const prevProtocol = prev.find(pp => pp.id === p.id);
+          return prevProtocol && prevProtocol.versions.length !== p.versions.length;
+        });
+
+        // Check if schema blocks changed
+        const hasSchemaChanges = protocols.some(p => {
+          const prevProtocol = prev.find(pp => pp.id === p.id);
+          if (!prevProtocol) return false;
+
+          return p.versions.some(v => {
+            const prevVersion = prevProtocol.versions.find(pv => pv.id === v.id);
+            if (!prevVersion) return true;
+            return (v.schemaBlocks?.length || 0) !== (prevVersion.schemaBlocks?.length || 0);
+          });
+        });
+
+        if (!hasVersionChanges && !hasSchemaChanges) {
+          console.log('🔄 [useDatabase] No changes detected, skipping update');
+          return prev;  // No change, skip re-render
+        }
+      }
+
+      console.log('📂 [useDatabase] Refreshed:', protocols.length, 'protocols');
+      return protocols;
+    });
   }, []);
 
   return {

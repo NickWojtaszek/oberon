@@ -215,8 +215,10 @@ export function generateDatabaseTables(
     } else {
       console.log('✅ Schema blocks are already in full format');
     }
+  } else {
+    console.warn('⚠️ No schema blocks found in protocol version');
   }
-  
+
   // Generate fields from current version
   const activeFields = generateDatabaseFields(
     schemaBlocks,
@@ -246,12 +248,18 @@ export function generateDatabaseTables(
   };
   processCategoryOrder(protocolVersion.schemaBlocks);
 
+  // Log field and category info for debugging
+  console.log(`📋 Schema Analysis: ${schemaBlocks.length} blocks, ${allFields.length} fields`);
+  console.log(`   Categories found: [${categoryOrder.join(', ')}]`);
+
   // Group fields by category
   const demographicFields = allFields.filter(f => f.category === 'Demographics');
   const endpointFields = allFields.filter(f => f.endpointTier);
   const laboratoryFields = allFields.filter(f => f.category === 'Laboratory');
   const clinicalFields = allFields.filter(f => f.category === 'Clinical');
   const treatmentFields = allFields.filter(f => f.category === 'Treatments');
+
+  console.log(`   Demographics: ${demographicFields.length}, Endpoints: ${endpointFields.length}, Lab: ${laboratoryFields.length}, Clinical: ${clinicalFields.length}, Treatments: ${treatmentFields.length}`);
 
   // Always add subject ID, enrollment date, and visit tracking to all tables
   const baseFields: DatabaseField[] = [
@@ -414,6 +422,26 @@ export function generateDatabaseTables(
   if (endpointsCreator && endpointsCreator.condition() && !tables.some(t => t.displayName === 'Study Endpoints')) {
     tables.push(endpointsCreator.create());
   }
+
+  // 🛡️ FALLBACK: If no tables were generated but we have fields, create a general data table
+  // This handles cases where schema blocks don't have recognized categories
+  if (tables.length === 0 && allFields.length > 0) {
+    console.log('⚠️ No standard tables generated. Creating fallback table with', allFields.length, 'fields');
+    console.log('   Field categories:', [...new Set(allFields.map(f => f.category || 'undefined'))].join(', '));
+
+    tables.push({
+      tableName: `study_data_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+      displayName: 'Study Data',
+      description: 'All study data fields captured during the protocol. Contains both structured and custom fields.',
+      fields: [...baseFields, ...allFields],
+      recordCount: 0,
+      protocolNumber: protocolVersion.metadata.protocolNumber,
+      protocolVersion: protocolVersion.versionNumber
+    });
+  }
+
+  // Log table generation result
+  console.log(`📊 Generated ${tables.length} tables:`, tables.map(t => `${t.displayName} (${t.fields.length} fields)`).join(', '));
 
   return tables;
 }
