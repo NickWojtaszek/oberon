@@ -17,6 +17,7 @@ import {
 
 interface DeployStepProps {
   onComplete: () => void;
+  onNavigateToDatabase: () => void;
   protocolSummary: {
     protocolTitle: string;
     protocolNumber: string;
@@ -27,7 +28,7 @@ interface DeployStepProps {
   };
 }
 
-export function DeployStep({ onComplete, protocolSummary }: DeployStepProps) {
+export function DeployStep({ onComplete, onNavigateToDatabase, protocolSummary }: DeployStepProps) {
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentStatus, setDeploymentStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
 
@@ -35,15 +36,18 @@ export function DeployStep({ onComplete, protocolSummary }: DeployStepProps) {
     setIsDeploying(true);
     setDeploymentStatus('deploying');
 
-    // Simulate deployment process
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Brief delay for UI feedback, then navigate to Database module
+    // The actual database table generation happens in the Database module
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     setDeploymentStatus('success');
     setIsDeploying(false);
 
-    // Complete after short delay
+    // Mark step complete and navigate to Database after short delay
     setTimeout(() => {
       onComplete();
+      // Navigate to Database module where actual table generation occurs
+      onNavigateToDatabase();
     }, 1500);
   };
 
@@ -190,7 +194,7 @@ export function DeployStep({ onComplete, protocolSummary }: DeployStepProps) {
             </div>
             <h3 className="text-lg font-semibold text-green-900 mb-2">Deployment Successful!</h3>
             <p className="text-sm text-green-700 mb-4">
-              Your protocol is now active and ready for data collection
+              Your protocol is now active. Redirecting to Database module...
             </p>
 
             <div className="grid grid-cols-3 gap-4 mt-6">

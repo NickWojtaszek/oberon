@@ -28,6 +28,10 @@ import { DeployStep } from './steps/DeployStep';
 import type { FoundationalPaperExtraction } from '../../services/geminiService';
 import type { SchemaBlock } from '../protocol-workbench/types';
 
+interface ClinicalCaptureWizardProps {
+  onNavigateToDatabase?: () => void;
+}
+
 // Workflow steps
 type WizardStep =
   | 'pico-capture'
@@ -61,7 +65,7 @@ const WIZARD_STEPS: Array<{
   { id: 'deploy', label: 'Deploy', icon: Database, required: true },
 ];
 
-export function ClinicalCaptureWizard() {
+export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureWizardProps = {}) {
   const { currentProtocol, updateProtocol, createProtocol } = useProtocol();
 
   // ============================================
@@ -498,6 +502,11 @@ export function ClinicalCaptureWizard() {
           {wizardState.currentStep === 'deploy' && currentProtocol && (
             <DeployStep
               onComplete={handleDeployComplete}
+              onNavigateToDatabase={() => {
+                if (onNavigateToDatabase) {
+                  onNavigateToDatabase();
+                }
+              }}
               protocolSummary={{
                 protocolTitle: currentProtocol.protocolTitle || 'Untitled Protocol',
                 protocolNumber: currentProtocol.protocolNumber || 'N/A',

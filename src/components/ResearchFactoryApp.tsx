@@ -551,7 +551,12 @@ export function ResearchFactoryApp() {
       case 'clinical-capture':
         return (
           <div className="h-full">
-            <ClinicalCaptureWizard />
+            <ClinicalCaptureWizard
+              onNavigateToDatabase={() => {
+                console.log('📊 Navigating to Database from Clinical Capture Wizard');
+                setActiveTab('database');
+              }}
+            />
           </div>
         );
 
