@@ -6,7 +6,7 @@
  * Sequential flow with validation at each step
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useProtocol } from '../../contexts/ProtocolContext';
 import {
   CheckCircle2,
@@ -74,14 +74,28 @@ export function ClinicalCaptureWizard() {
   // Loading state for protocol initialization
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // Track if we've initialized for this protocol to prevent re-initialization
+  const initializedProtocolIdRef = useRef<string | null>(null);
+
   // Initialize wizard with existing protocol or create new
   useEffect(() => {
     const initializeWizard = async () => {
+      // Skip if we've already initialized for this protocol
+      if (currentProtocol && initializedProtocolIdRef.current === currentProtocol.id) {
+        console.log('[ClinicalCaptureWizard] Already initialized for protocol:', currentProtocol.id);
+        setIsInitializing(false);
+        return;
+      }
+
       setIsInitializing(true);
 
       if (currentProtocol) {
-        // Load existing protocol state
+        // Load existing protocol state - only on FIRST load for this protocol
         console.log('[ClinicalCaptureWizard] Loading existing protocol:', currentProtocol.id);
+        initializedProtocolIdRef.current = currentProtocol.id;
+
+        // Only set completedSteps from protocol, don't override currentStep
+        // This allows local navigation to work without being reset
         setWizardState(prev => ({
           ...prev,
           protocolId: currentProtocol.id,
@@ -108,6 +122,7 @@ export function ClinicalCaptureWizard() {
         });
 
         console.log('[ClinicalCaptureWizard] Draft protocol created:', newProtocol.id);
+        initializedProtocolIdRef.current = newProtocol.id;
       }
 
       setIsInitializing(false);
