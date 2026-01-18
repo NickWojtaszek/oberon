@@ -179,7 +179,26 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
 
   // Navigation
   const selectedTableData = tables.find((t) => t.tableName === selectedTable);
-  const activeFields = selectedTableData?.fields.filter((f) => f.category !== 'Structural') || [];
+  // Filter out Structural category AND Section dataType (headers/dividers)
+  const activeFields = selectedTableData?.fields.filter((f) =>
+    f.category !== 'Structural' && f.dataType !== 'Section'
+  ) || [];
+
+  // Debug: Log field filtering
+  useEffect(() => {
+    if (selectedTableData) {
+      const totalFields = selectedTableData.fields.length;
+      const structuralFields = selectedTableData.fields.filter(f => f.category === 'Structural').length;
+      const sectionFields = selectedTableData.fields.filter(f => f.dataType === 'Section').length;
+      console.log(`📝 [DataEntryForm] Field filtering for "${selectedTable}":`, {
+        total: totalFields,
+        structural: structuralFields,
+        sections: sectionFields,
+        active: activeFields.length,
+        sampleFields: activeFields.slice(0, 3).map(f => ({ name: f.fieldName, type: f.dataType, cat: f.category }))
+      });
+    }
+  }, [selectedTableData, selectedTable, activeFields]);
 
   const currentTableIndex = tables.findIndex((t) => t.tableName === selectedTable);
   const canGoPrevious = currentTableIndex > 0;
