@@ -70,7 +70,7 @@ const WIZARD_STEPS: Array<{
 ];
 
 export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureWizardProps = {}) {
-  const { currentProtocol, currentVersion, updateProtocol, createProtocol, saveSchemaBlocks } = useProtocol();
+  const { currentProtocol, currentVersion, updateProtocol, createProtocol, saveSchemaBlocks, updateVersionStatus } = useProtocol();
 
   // ============================================
   // STATE MANAGEMENT - Separated by concern
@@ -376,7 +376,7 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
 
   // Handle protocol publish
   const handlePublish = () => {
-    if (currentProtocol) {
+    if (currentProtocol && currentVersion) {
       // Update protocol status to published
       updateProtocol(currentProtocol.id, {
         status: 'published' as const,
@@ -393,6 +393,10 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
           },
         },
       });
+
+      // CRITICAL: Also update the VERSION status to published
+      // This is what DataEntryView checks to allow data entry
+      updateVersionStatus(currentProtocol.id, currentVersion.id, 'published');
 
       // Mark step complete and advance to deploy
       completeStep('review-publish');

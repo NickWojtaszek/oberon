@@ -99,6 +99,7 @@ interface ProtocolContextValue {
   // Version operations
   setCurrentVersion: (versionId: string) => void;
   createNewVersion: (protocolId: string, baseVersionId?: string) => ProtocolVersion;
+  updateVersionStatus: (protocolId: string, versionId: string, status: 'draft' | 'published' | 'archived') => void;
 
   // Methodology configuration (moved from Project)
   configureMethodology: (protocolId: string, config: {
@@ -683,6 +684,57 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
     return newVersion;
   }, [allProtocols, saveProtocolsToStorage]);
 
+  /**
+   * Update a specific version's status (draft/published/archived)
+   * Used when publishing a protocol to also mark the version as published
+   */
+  const updateVersionStatus = useCallback((
+    protocolId: string,
+    versionId: string,
+    status: 'draft' | 'published' | 'archived'
+  ) => {
+    console.log('[ProtocolContext] updateVersionStatus:', { protocolId, versionId, status });
+
+    const currentProtocols = allProtocolsRef.current;
+
+    const updatedProtocols = currentProtocols.map(protocol => {
+      if (protocol.id !== protocolId) return protocol;
+
+      const updatedVersions = protocol.versions.map(version => {
+        if (version.id !== versionId) return version;
+
+        return {
+          ...version,
+          status,
+          modifiedAt: new Date(),
+        };
+      });
+
+      const updatedProtocol = {
+        ...protocol,
+        versions: updatedVersions,
+        modifiedAt: new Date(),
+      };
+
+      // Update current states if this is the current protocol/version
+      if (currentProtocol?.id === protocolId) {
+        setCurrentProtocol(updatedProtocol);
+        const updatedVersion = updatedVersions.find(v => v.id === versionId);
+        if (updatedVersion && currentVersion?.id === versionId) {
+          setCurrentVersion(updatedVersion);
+        }
+      }
+
+      return updatedProtocol;
+    });
+
+    allProtocolsRef.current = updatedProtocols;
+    setAllProtocols(updatedProtocols);
+    saveProtocolsToStorage(updatedProtocols);
+
+    console.log('[ProtocolContext] Version status updated successfully');
+  }, [currentProtocol, currentVersion, saveProtocolsToStorage]);
+
   // Methodology configuration methods (moved from ProjectContext)
   const configureMethodology = useCallback((protocolId: string, config: {
     studyType: StudyMethodology['studyType'];
@@ -774,6 +826,7 @@ export function ProtocolProvider({ children }: ProtocolProviderProps) {
     refreshProtocols,
     setCurrentVersion: setCurrentVersionById,
     createNewVersion,
+    updateVersionStatus,
     configureMethodology,
     updateBlindingState,
     performUnblinding,
