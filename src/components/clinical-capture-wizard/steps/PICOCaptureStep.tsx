@@ -356,7 +356,7 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-600" />
-          Research Question
+          Step 1: Research Question
         </h3>
 
         <div className="space-y-4">
@@ -367,65 +367,24 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
             className="w-full h-32 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
           />
 
-          <button
-            onClick={handleExtractPICO}
-            disabled={!rawObservation.trim() || isProcessing}
-            className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Extracting PICO...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Extract PICO Framework
-              </>
-            )}
-          </button>
+          <p className="text-sm text-slate-600">
+            Describe your research question in detail. Upload foundational papers below to enhance PICO extraction.
+          </p>
         </div>
       </div>
 
-      {/* Step 2: PICO Fields */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">PICO Framework</h3>
-
-        <div className="space-y-4">
-          {Object.entries(picoFields).map(([key, field]) => {
-            const Icon = field.icon;
-            return (
-              <div key={key}>
-                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                  <Icon className="w-4 h-4" />
-                  {field.label}
-                </label>
-                <input
-                  type="text"
-                  value={field.value}
-                  onChange={e =>
-                    setPicoFields(prev => ({
-                      ...prev,
-                      [key]: { ...prev[key as keyof typeof prev], value: e.target.value },
-                    }))
-                  }
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder={`Enter ${field.label.toLowerCase()}...`}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Step 3: Foundational Papers */}
+      {/* Step 2: Foundational Papers */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-blue-600" />
-          Foundational Papers
+          Step 2: Foundational Papers (Optional)
         </h3>
 
         <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Upload relevant research papers to enhance PICO extraction with evidence-based context.
+          </p>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -478,26 +437,112 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
                   </button>
                 </div>
               ))}
-
-              <button
-                onClick={handleSynthesizePapers}
-                disabled={isSynthesizing}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isSynthesizing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Synthesizing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Synthesize Papers
-                  </>
-                )}
-              </button>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Step 3: Synthesize Papers (only shown if papers uploaded) */}
+      {foundationalPapers.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-blue-600" />
+            Step 3: Synthesize Papers
+          </h3>
+
+          <p className="text-sm text-slate-600 mb-4">
+            Synthesize {foundationalPapers.length} uploaded paper{foundationalPapers.length !== 1 ? 's' : ''} to extract common PICO patterns and methodology insights.
+          </p>
+
+          <button
+            onClick={handleSynthesizePapers}
+            disabled={isSynthesizing}
+            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isSynthesizing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Synthesizing Papers...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Synthesize Papers
+              </>
+            )}
+          </button>
+
+          {synthesis && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="text-sm text-green-800">
+                <strong>✓ Synthesis Complete</strong> - Papers analyzed and ready to inform PICO extraction
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Step 4: Extract PICO Framework */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-purple-600" />
+          Step {foundationalPapers.length > 0 ? '4' : '3'}: Extract PICO Framework
+        </h3>
+
+        <p className="text-sm text-slate-600 mb-4">
+          {foundationalPapers.length > 0
+            ? 'Extract PICO framework from your research question, enhanced with insights from uploaded papers.'
+            : 'Extract PICO framework from your research question using AI.'}
+        </p>
+
+        <button
+          onClick={handleExtractPICO}
+          disabled={!rawObservation.trim() || isProcessing}
+          className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Extracting PICO...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Extract PICO Framework
+              {foundationalPapers.length > 0 && ` (with ${foundationalPapers.length} paper${foundationalPapers.length !== 1 ? 's' : ''})`}
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Step 5: PICO Fields */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">PICO Framework</h3>
+
+        <div className="space-y-4">
+          {Object.entries(picoFields).map(([key, field]) => {
+            const Icon = field.icon;
+            return (
+              <div key={key}>
+                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                  <Icon className="w-4 h-4" />
+                  {field.label}
+                </label>
+                <input
+                  type="text"
+                  value={field.value}
+                  onChange={e =>
+                    setPicoFields(prev => ({
+                      ...prev,
+                      [key]: { ...prev[key as keyof typeof prev], value: e.target.value },
+                    }))
+                  }
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder={`Enter ${field.label.toLowerCase()}...`}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
