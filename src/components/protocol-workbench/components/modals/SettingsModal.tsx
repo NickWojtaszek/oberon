@@ -215,10 +215,26 @@ export function SettingsModal({
                 </div>
               )}
 
-              {/* Error State */}
+              {/* Error/Info State */}
               {aiSuggestionsEnabled && suggestionError && (
-                <div className="mb-3 bg-amber-50 border border-amber-200 rounded p-2">
+                <div className="mb-3 bg-amber-50 border border-amber-200 rounded p-2 flex items-center justify-between">
                   <span className="text-xs text-amber-800">{suggestionError}</span>
+                  <button
+                    onClick={loadAISuggestions}
+                    disabled={loadingSuggestion}
+                    className="text-xs px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {/* No Protocol Context Info */}
+              {aiSuggestionsEnabled && !protocolContext && !loadingSuggestion && !suggestionError && (
+                <div className="mb-3 bg-slate-50 border border-slate-200 rounded p-2">
+                  <span className="text-xs text-slate-600">
+                    💡 Dr. Puck suggestions available when protocol context is provided (PICO objectives, study phase, etc.)
+                  </span>
                 </div>
               )}
 
