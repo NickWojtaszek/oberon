@@ -62,14 +62,27 @@ export function DashboardV2({ onNavigate }: DashboardV2Props) {
 
               {/* Workflow Steps */}
               <div className="space-y-4">
-                {workflow.steps.map((step, index) => (
-                  <WorkflowStepCard
-                    key={step.id}
-                    step={step}
-                    stepNumber={index + 1}
-                    isCurrentStep={step.id === workflow.currentStep}
-                  />
-                ))}
+                {workflow.steps.map((step, index) => {
+                  // Find the blocking step (last incomplete step before this one)
+                  let blockedBy: string | undefined;
+                  if (!step.unlocked && index > 0) {
+                    for (let i = index - 1; i >= 0; i--) {
+                      if (workflow.steps[i].status !== 'complete') {
+                        blockedBy = workflow.steps[i].title;
+                        break;
+                      }
+                    }
+                  }
+                  return (
+                    <WorkflowStepCard
+                      key={step.id}
+                      step={step}
+                      stepNumber={index + 1}
+                      isCurrentStep={step.id === workflow.currentStep}
+                      blockedBy={blockedBy}
+                    />
+                  );
+                })}
               </div>
 
               {/* Help Section */}
@@ -95,7 +108,7 @@ export function DashboardV2({ onNavigate }: DashboardV2Props) {
                     </div>
                   </button>
                   <button
-                    onClick={() => onNavigate('methodology')}
+                    onClick={() => onNavigate('clinical-capture')}
                     className="text-left p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
                   >
                     <div className="text-slate-900 mb-1 font-medium">📖 {t('quickAccess.methodology.title')}</div>
@@ -110,24 +123,33 @@ export function DashboardV2({ onNavigate }: DashboardV2Props) {
               <div className="bg-white border border-slate-200 rounded-xl p-6">
                 <h3 className="text-sm font-medium text-slate-900 mb-3">{t('needHelp.title')}</h3>
                 <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="text-slate-600 mb-1">📖 {t('needHelp.documentation.title')}</div>
+                  <button
+                    onClick={() => onNavigate('ai-personas')}
+                    className="text-left p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <div className="text-slate-900 mb-1 font-medium">📖 {t('needHelp.documentation.title')}</div>
                     <div className="text-xs text-slate-500">
                       {t('needHelp.documentation.description')}
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-slate-600 mb-1">💡 {t('needHelp.quickStart.title')}</div>
+                  </button>
+                  <button
+                    onClick={() => onNavigate('protocol-library')}
+                    className="text-left p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <div className="text-slate-900 mb-1 font-medium">💡 {t('needHelp.quickStart.title')}</div>
                     <div className="text-xs text-slate-500">
                       {t('needHelp.quickStart.description')}
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-slate-600 mb-1">🆘 {t('needHelp.support.title')}</div>
+                  </button>
+                  <button
+                    onClick={() => onNavigate('governance')}
+                    className="text-left p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <div className="text-slate-900 mb-1 font-medium">🆘 {t('needHelp.support.title')}</div>
                     <div className="text-xs text-slate-500">
                       {t('needHelp.support.description')}
                     </div>
-                  </div>
+                  </button>
                 </div>
               </div>
             </>
@@ -150,9 +172,10 @@ interface WorkflowStepCardProps {
   step: WorkflowStepDetails;
   stepNumber: number;
   isCurrentStep: boolean;
+  blockedBy?: string; // Name of blocking step
 }
 
-function WorkflowStepCard({ step, stepNumber, isCurrentStep }: WorkflowStepCardProps) {
+function WorkflowStepCard({ step, stepNumber, isCurrentStep, blockedBy }: WorkflowStepCardProps) {
   const { t } = useTranslation('dashboard');
   
   // Determine card styling based on status
@@ -313,7 +336,9 @@ function WorkflowStepCard({ step, stepNumber, isCurrentStep }: WorkflowStepCardP
           {/* Locked Message */}
           {isLocked && step.status === 'not-started' && (
             <div className="mt-3 text-xs text-slate-500 italic">
-              Complete previous steps to unlock this section
+              {blockedBy
+                ? `Waiting for: ${blockedBy}`
+                : 'Complete previous steps to unlock this section'}
             </div>
           )}
         </div>

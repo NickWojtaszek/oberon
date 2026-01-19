@@ -15,7 +15,15 @@ export const FEATURE_FLAGS = {
    * Impact: Tab visibility, action restrictions
    */
   ENABLE_RBAC: true,  // ← ENABLED for testing
-  
+
+  /**
+   * Solo Mode: Single-user optimization
+   * Enables: Auto-approval of PI gates, simplified workflow
+   * Impact: Skips PI approval steps, streamlined dashboard
+   * Recommended for: Academic researchers working alone
+   */
+  ENABLE_SOLO_MODE: true,  // ← ENABLED by default for solo academic users
+
   /**
    * Team Mode: Multi-user collaboration
    * Enables: Team member invites, delegation

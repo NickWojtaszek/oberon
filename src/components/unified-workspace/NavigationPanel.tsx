@@ -116,9 +116,9 @@ const NAV_ITEMS: Array<{
   },
   {
     id: 'governance',
-    label: 'Governance',
-    icon: Lock,
-    description: 'Access control',
+    label: 'Settings',
+    icon: Settings,
+    description: 'Role & team settings',
   },
   {
     id: 'ethics',

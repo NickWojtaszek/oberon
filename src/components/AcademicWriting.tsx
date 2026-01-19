@@ -3,9 +3,9 @@ import { FileText, BookOpen, Sparkles, ShieldCheck, BarChart3, Target, AlertTria
 import { useProject } from '../contexts/ProtocolContext';
 import { usePersonas } from './ai-personas/core/personaContext';
 import { createDemoManuscript, shouldLoadDemoData, markDemoAsLoaded } from '../utils/demoAcademicData';
-import { useManuscriptState } from '../hooks/useManuscriptState.refactored';
-import { useVerificationState } from '../hooks/useVerificationState.refactored';
-import { useExportState } from '../hooks/useExportState.refactored';
+import { useManuscriptState } from '../hooks/useManuscriptState';
+import { useVerificationState } from '../hooks/useVerificationState';
+import { useExportState } from '../hooks/useExportState';
 import { useStatisticalManifestState } from '../hooks/useStatisticalManifestState';
 import { useJournalConstraints } from '../hooks/useJournalConstraints';
 import { useTrackedChanges } from '../hooks/useTrackedChanges';

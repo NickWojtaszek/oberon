@@ -8,9 +8,10 @@
 
 import { useAuth } from '../contexts/AuthContext';
 import { useProject } from '../contexts/ProtocolContext';
-import { 
-  getUserRole, 
-  getUserPermissions, 
+import { FEATURE_FLAGS } from '../config/featureFlags';
+import {
+  getUserRole,
+  getUserPermissions,
   canAccessTab,
   canPerformAction,
   getMaxAIAutonomy,
@@ -46,7 +47,15 @@ export function useGovernance() {
   
   // Get governance mode
   const governanceMode = getGovernanceMode(currentProject);
-  
+
+  // Solo mode: Single-user academic workflow optimization
+  // Enabled when: flag is ON + no team members + user is PI
+  const teamCount = currentProject?.governance?.teamMembers?.length || 0;
+  const isSoloMode = FEATURE_FLAGS.ENABLE_SOLO_MODE &&
+                     !FEATURE_FLAGS.ENABLE_TEAM_MODE &&
+                     teamCount === 0 &&
+                     isPI(role);
+
   return {
     // Current role and mode
     role,
@@ -89,6 +98,9 @@ export function useGovernance() {
     teamMembers: currentProject?.governance?.teamMembers || [],
     isTeamMode: governanceMode === 'team',
     isInstitutionalMode: governanceMode === 'institutional',
+
+    // Solo mode (single academic researcher)
+    isSoloMode,
     
     // Specific permission flags (for convenience)
     canCreateProject: permissions.canCreateProject,

@@ -3,11 +3,8 @@ import navigation from './navigation';
 import protocol from './protocol';
 import protocolLibrary from './protocolLibrary';
 import projectLibrary from './projectLibrary';
-import projectSetup from './projectSetup';
-import researchWizard from './researchWizard';
 import dataManagement from './dataManagement';
 import methodologyEngine from './methodologyEngine';
-import dashboard from './dashboard';
 import workflows from './workflows';
 import academic from './academic';
 import database from './database';
@@ -24,11 +21,8 @@ export default {
   protocol,
   protocolLibrary,
   projectLibrary,
-  projectSetup,
-  researchWizard,
   dataManagement,
   methodologyEngine,
-  dashboard,
   workflows,
   academic,
   database,

@@ -39,9 +39,9 @@ export default {
     analytics: "Analytics",
     academicWriting: "Academic Writing",
     dataManagement: "Data Management",
-    governance: "Governance",
+    governance: "Settings",
     ethics: "Ethics & IRB",
-    
+
     // Navigation descriptions
     descriptions: {
       dashboard: "Progress overview",
@@ -54,7 +54,7 @@ export default {
       analytics: "Statistical analysis",
       academicWriting: "Manuscript editor",
       dataManagement: "Import/Export",
-      governance: "Access control",
+      governance: "Role & team settings",
       ethics: "IRB & Compliance"
     },
     
