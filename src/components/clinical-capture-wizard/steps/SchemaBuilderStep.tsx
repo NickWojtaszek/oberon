@@ -25,7 +25,9 @@ import { SchemaTemplateLibrary } from '../../protocol-workbench/components/Schem
 import { SchemaGeneratorModal } from '../../protocol-workbench/components/modals/SchemaGeneratorModal';
 import { SettingsModal } from '../../protocol-workbench/components/modals/SettingsModal';
 import { DependencyModal } from '../../protocol-workbench/components/modals/DependencyModal';
+import { BulkAnalysisModal } from '../../protocol-workbench/components/modals/BulkAnalysisModal';
 import { useSchemaState } from '../../protocol-workbench/hooks/useSchemaState';
+import { Wand2 } from 'lucide-react';
 import { validateAndImportSchema, getAllSections, getBlockPosition } from '../../protocol-workbench/utils';
 import type { SchemaTemplate } from '../../protocol-workbench/components/SchemaTemplateLibrary';
 
@@ -65,6 +67,7 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
   // Modal state for settings and dependencies
   const [selectedBlockForSettings, setSelectedBlockForSettings] = useState<SchemaBlock | null>(null);
   const [selectedBlockForDependency, setSelectedBlockForDependency] = useState<SchemaBlock | null>(null);
+  const [showBulkAnalysis, setShowBulkAnalysis] = useState(false);
 
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -319,6 +322,16 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
             <Sparkles className="w-4 h-4" />
             AI Generate
           </button>
+
+          <button
+            onClick={() => setShowBulkAnalysis(true)}
+            disabled={schemaState.schemaBlocks.length === 0}
+            className="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+            title="Analyze all fields at once with Dr. Puck"
+          >
+            <Wand2 className="w-4 h-4" />
+            Bulk Analysis
+          </button>
         </div>
 
         {/* Status Indicators */}
@@ -520,6 +533,20 @@ export function SchemaBuilderStep({ onComplete, initialData, picoContext }: Sche
           allBlocks={schemaState.schemaBlocks}
           onClose={() => setSelectedBlockForDependency(null)}
           onSave={schemaState.updateBlock}
+        />
+      )}
+
+      {/* Bulk Analysis Modal - Dr. Puck analyzes all fields at once */}
+      {showBulkAnalysis && (
+        <BulkAnalysisModal
+          schemaBlocks={schemaState.schemaBlocks}
+          onClose={() => setShowBulkAnalysis(false)}
+          onApplySuggestions={schemaState.applyBulkUpdates}
+          protocolContext={{
+            primaryObjective: picoContext?.outcome || '',
+            studyPhase: picoContext?.studyPhase || 'Not specified',
+            therapeuticArea: picoContext?.intervention || '',
+          }}
         />
       )}
     </div>

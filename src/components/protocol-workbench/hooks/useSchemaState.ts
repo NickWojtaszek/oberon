@@ -207,6 +207,28 @@ export function useSchemaState() {
     setSchemaBlocks(prev => [...prev, block]);
   }, []);
 
+  // Apply bulk updates to multiple blocks at once (used by Dr. Puck bulk analysis)
+  const applyBulkUpdates = useCallback((updates: Map<string, Partial<SchemaBlock>>) => {
+    setSchemaBlocks(prev => {
+      // Recursively apply updates to blocks
+      const applyUpdates = (blocks: SchemaBlock[]): SchemaBlock[] => {
+        return blocks.map(block => {
+          const update = updates.get(block.id);
+          const updatedBlock = update ? { ...block, ...update } : block;
+
+          // Recursively update children
+          if (updatedBlock.children) {
+            updatedBlock.children = applyUpdates(updatedBlock.children);
+          }
+
+          return updatedBlock;
+        });
+      };
+
+      return applyUpdates(prev);
+    });
+  }, []);
+
   return {
     schemaBlocks,
     setSchemaBlocks,
@@ -222,6 +244,7 @@ export function useSchemaState() {
     moveBlockDown,
     changeBlockParent,
     clearSchema,
-    loadSchema
+    loadSchema,
+    applyBulkUpdates
   };
 }
