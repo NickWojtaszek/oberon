@@ -195,89 +195,8 @@ export function SettingsModal({
                 )}
               </div>
 
-              {/* AI Suggestion Banner */}
-              {aiSuggestionsEnabled && !suggestionError && aiSuggestion && (
-                <div className="mb-4 bg-white/70 border border-purple-300 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="text-xs font-semibold text-purple-900 mb-2">
-                        Dr. Puck's Suggestions
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                        <div>
-                          <span className="text-purple-700">Role:</span>{' '}
-                          <span className="font-semibold text-purple-900">{aiSuggestion.role}</span>
-                          <span className="text-purple-500 ml-1">({aiSuggestion.roleConfidence}%)</span>
-                        </div>
-                        <div>
-                          <span className="text-purple-700">Endpoint:</span>{' '}
-                          <span className="font-semibold text-purple-900">{aiSuggestion.endpointTier || 'None'}</span>
-                          <span className="text-purple-500 ml-1">({aiSuggestion.endpointConfidence}%)</span>
-                        </div>
-                        <div>
-                          <span className="text-purple-700">Analysis:</span>{' '}
-                          <span className="font-semibold text-purple-900">{aiSuggestion.analysisMethod || 'None'}</span>
-                          <span className="text-purple-500 ml-1">({aiSuggestion.analysisConfidence}%)</span>
-                        </div>
-                        <div>
-                          <span className="text-purple-700">Data Type:</span>{' '}
-                          <span className="font-semibold text-purple-900">{aiSuggestion.dataType}</span>
-                          <span className="text-purple-500 ml-1">({aiSuggestion.dataTypeConfidence}%)</span>
-                        </div>
-                      </div>
-                      {/* Dependencies suggestion */}
-                      {aiSuggestion.suggestedDependencies && aiSuggestion.suggestedDependencies.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-purple-200">
-                          <div className="text-xs text-purple-700 mb-1">Suggested Dependencies:</div>
-                          {aiSuggestion.suggestedDependencies.map((dep, idx) => (
-                            <div key={idx} className="text-xs bg-purple-50 rounded px-2 py-1 mb-1">
-                              <span className="font-medium text-purple-900">
-                                {dep.conditionType} when "{dep.targetFieldName}" {dep.conditionOperator} {dep.conditionValue || 'any value'}
-                              </span>
-                              <span className="text-purple-500 ml-1">({dep.confidence}%)</span>
-                              <div className="text-purple-600 text-[10px] mt-0.5">{dep.reasoning}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <button
-                        onClick={applyAISuggestion}
-                        className="mt-2 text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1"
-                      >
-                        <CheckCircle className="w-3 h-3" />
-                        Apply All Suggestions
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Error/Info State */}
-              {aiSuggestionsEnabled && suggestionError && (
-                <div className="mb-3 bg-amber-50 border border-amber-200 rounded p-2 flex items-center justify-between">
-                  <span className="text-xs text-amber-800">{suggestionError}</span>
-                  <button
-                    onClick={loadAISuggestions}
-                    disabled={loadingSuggestion}
-                    className="text-xs px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors"
-                  >
-                    Retry
-                  </button>
-                </div>
-              )}
-
-              {/* No Protocol Context Info */}
-              {aiSuggestionsEnabled && !protocolContext && !loadingSuggestion && !suggestionError && (
-                <div className="mb-3 bg-slate-50 border border-slate-200 rounded p-2">
-                  <span className="text-xs text-slate-600">
-                    💡 Dr. Puck suggestions available when protocol context is provided (PICO objectives, study phase, etc.)
-                  </span>
-                </div>
-              )}
-
-              {/* Classification Fields */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Classification Fields - MOVED ABOVE AI suggestions to prevent UI jumping */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 {/* Role */}
                 <div>
                   <label className="flex items-center gap-1 text-xs font-medium text-slate-700 mb-1.5">
@@ -327,9 +246,7 @@ export function SettingsModal({
                   <select
                     value={localBlock.analysisMethod || ''}
                     onChange={(e) =>
-                      updateField('analysisMethod', e.target.value
-                        ? (e.target.value as 'survival' | 'frequency' | 'mean-comparison' | 'non-parametric' | 'chi-square')
-                        : null)
+                      updateField('analysisMethod', e.target.value ? (e.target.value as 'survival' | 'frequency' | 'mean-comparison' | 'non-parametric' | 'chi-square') : null)
                     }
                     className="w-full text-sm border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
@@ -341,6 +258,101 @@ export function SettingsModal({
                   </select>
                 </div>
               </div>
+
+              {/* AI Suggestion Banner - NOW BELOW the form fields so loading doesn't cause jumps */}
+              {aiSuggestionsEnabled && (
+                <div className="border-t border-purple-200 pt-3">
+                  {/* Loading State */}
+                  {loadingSuggestion && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
+                      <span className="text-xs text-purple-700">Dr. Puck is analyzing this field...</span>
+                    </div>
+                  )}
+
+                  {/* Suggestion Ready */}
+                  {!loadingSuggestion && !suggestionError && aiSuggestion && (
+                    <div className="bg-white/70 border border-purple-300 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="text-xs font-semibold text-purple-900 mb-2">
+                            Dr. Puck's Suggestions
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                            <div>
+                              <span className="text-purple-700">Role:</span>{' '}
+                              <span className="font-semibold text-purple-900">{aiSuggestion.role}</span>
+                              <span className="text-purple-500 ml-1">({aiSuggestion.roleConfidence}%)</span>
+                            </div>
+                            <div>
+                              <span className="text-purple-700">Endpoint:</span>{' '}
+                              <span className="font-semibold text-purple-900">{aiSuggestion.endpointTier || 'None'}</span>
+                              <span className="text-purple-500 ml-1">({aiSuggestion.endpointConfidence}%)</span>
+                            </div>
+                            <div>
+                              <span className="text-purple-700">Analysis:</span>{' '}
+                              <span className="font-semibold text-purple-900">{aiSuggestion.analysisMethod || 'None'}</span>
+                              <span className="text-purple-500 ml-1">({aiSuggestion.analysisConfidence}%)</span>
+                            </div>
+                            <div>
+                              <span className="text-purple-700">Data Type:</span>{' '}
+                              <span className="font-semibold text-purple-900">{aiSuggestion.dataType}</span>
+                              <span className="text-purple-500 ml-1">({aiSuggestion.dataTypeConfidence}%)</span>
+                            </div>
+                          </div>
+                          {/* Dependencies suggestion */}
+                          {aiSuggestion.suggestedDependencies && aiSuggestion.suggestedDependencies.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-purple-200">
+                              <div className="text-xs text-purple-700 mb-1">Suggested Dependencies:</div>
+                              {aiSuggestion.suggestedDependencies.map((dep, idx) => (
+                                <div key={idx} className="text-xs bg-purple-50 rounded px-2 py-1 mb-1">
+                                  <span className="font-medium text-purple-900">
+                                    {dep.conditionType} when "{dep.targetFieldName}" {dep.conditionOperator} {dep.conditionValue || 'any value'}
+                                  </span>
+                                  <span className="text-purple-500 ml-1">({dep.confidence}%)</span>
+                                  <div className="text-purple-600 text-[10px] mt-0.5">{dep.reasoning}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <button
+                            onClick={applyAISuggestion}
+                            className="mt-2 text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Apply All Suggestions
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error State */}
+                  {!loadingSuggestion && suggestionError && (
+                    <div className="bg-amber-50 border border-amber-200 rounded p-2 flex items-center justify-between">
+                      <span className="text-xs text-amber-800">{suggestionError}</span>
+                      <button
+                        onClick={loadAISuggestions}
+                        disabled={loadingSuggestion}
+                        className="text-xs px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  )}
+
+                  {/* No Protocol Context Info */}
+                  {!loadingSuggestion && !protocolContext && !suggestionError && !aiSuggestion && (
+                    <div className="bg-slate-50 border border-slate-200 rounded p-2">
+                      <span className="text-xs text-slate-600">
+                        💡 Dr. Puck suggestions available when protocol context is provided (PICO objectives, study phase, etc.)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           )}
 
