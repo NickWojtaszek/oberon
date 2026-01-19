@@ -15,14 +15,14 @@ import { storage } from './storageService';
 import type { SavedProtocol, ClinicalDataRecord } from '../types/shared';
 import i18n from '../lib/i18n/config';
 
-export type WorkflowStep = 
-  | 'personas' 
-  | 'project-setup' 
+export type WorkflowStep =
+  | 'personas'
+  | 'clinical-capture'
   | 'methodology'
-  | 'ethics' 
-  | 'protocol' 
-  | 'database' 
-  | 'statistics' 
+  | 'ethics'
+  | 'protocol'
+  | 'database'
+  | 'statistics'
   | 'paper';
 
 export type WorkflowStepStatus = 'complete' | 'in-progress' | 'not-started' | 'locked';
@@ -285,7 +285,7 @@ export function calculateWorkflowProgress(
   if (!personasCheck.complete) {
     currentStep = 'personas';
   } else if (!projectSetupCheck.complete) {
-    currentStep = 'project-setup';
+    currentStep = 'clinical-capture';
   } else if (!methodologyCheck.complete) {
     currentStep = 'methodology';
   } else if (!ethicsCheck.complete) {
@@ -321,7 +321,7 @@ export function calculateWorkflowProgress(
       unlocked: true
     },
     {
-      id: 'project-setup',
+      id: 'clinical-capture',
       title: i18n.t('dashboard:steps.setupProject.title'),
       description: i18n.t('dashboard:steps.setupProject.description'),
       status: projectSetupCheck.complete ? 'complete' : 'in-progress',

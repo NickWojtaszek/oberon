@@ -22,7 +22,7 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
     defaultActive: true,
     priority: 1,
     applicableStudyTypes: ['rct', 'observational', 'single-arm', 'diagnostic', 'registry', 'phase-1', 'phase-2', 'phase-3', 'phase-4', 'medical-device'],
-    modules: ['protocol-workbench'],
+    modules: ['clinical-capture'],
     validationRules: [
       'protocol-title-required',
       'protocol-objectives-required',
@@ -92,7 +92,7 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
     defaultActive: true,
     priority: 2,
     applicableStudyTypes: ['rct', 'observational', 'single-arm', 'diagnostic', 'registry'],
-    modules: ['protocol-workbench', 'schema-builder'],
+    modules: ['clinical-capture', 'schema-builder'],
     validationRules: [
       'rct-randomization-variable',
       'rct-treatment-arm-variable',
@@ -162,7 +162,7 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
     defaultActive: true,
     priority: 3,
     applicableStudyTypes: ['rct', 'observational', 'single-arm', 'diagnostic', 'registry', 'phase-1', 'phase-2', 'phase-3', 'phase-4', 'medical-device'],
-    modules: ['protocol-workbench', 'analytics'],
+    modules: ['clinical-capture', 'analytics'],
     validationRules: [
       'rct-itt-pp-analysis',
       'rct-consort-flow',
@@ -289,7 +289,7 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
     },
     defaultActive: true,
     priority: 5,
-    modules: ['protocol-workbench', 'ethics-board'],
+    modules: ['clinical-capture', 'ethics-board'],
     validationRules: [
       'ethics-informed-consent-elements',
       'ethics-risk-benefit-assessment',
@@ -476,7 +476,7 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
     },
     defaultActive: false,
     priority: 8,
-    modules: ['protocol-workbench'],
+    modules: ['clinical-capture'],
     validationRules: [
       'amendment-substantial-change',
       'amendment-reconsent-needed',
@@ -701,7 +701,7 @@ export const PERSONA_REGISTRY: Record<PersonaId, PersonaConfig> = {
     defaultActive: true,
     priority: 11,
     applicableStudyTypes: ['rct', 'observational', 'single-arm', 'diagnostic', 'registry', 'phase-1', 'phase-2', 'phase-3', 'phase-4', 'medical-device'],
-    modules: ['research-wizard'],
+    modules: ['clinical-capture'],
     validationRules: [
       'pico-population-defined',
       'pico-intervention-specified',

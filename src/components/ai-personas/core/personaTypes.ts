@@ -173,8 +173,8 @@ export interface PersonaColor {
   icon: string; // e.g., 'text-purple-600'
 }
 
-export type PersonaModule = 
-  | 'protocol-workbench'
+export type PersonaModule =
+  | 'clinical-capture'
   | 'schema-builder'
   | 'database'
   | 'analytics'

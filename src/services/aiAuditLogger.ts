@@ -245,7 +245,7 @@ class AIAuditLoggerService {
       projectId,
       personaId,
       personaName,
-      'protocol-workbench', // Global action
+      'clinical-capture', // Global action
       'AI_PERSONA_ACTIVATED',
       'User',
       {},
@@ -268,7 +268,7 @@ class AIAuditLoggerService {
       projectId,
       personaId,
       personaName,
-      'protocol-workbench',
+      'clinical-capture',
       'AI_PERSONA_DEACTIVATED',
       'User',
       {},
@@ -293,7 +293,7 @@ class AIAuditLoggerService {
       projectId,
       personaId,
       personaName,
-      'protocol-workbench',
+      'clinical-capture',
       'AI_COMMUNICATION_SETTINGS_CHANGED',
       'User',
       { oldValue, newValue },
@@ -321,7 +321,7 @@ class AIAuditLoggerService {
       projectId,
       personaId,
       personaName,
-      'protocol-workbench',
+      'clinical-capture',
       'AI_INFERENCE_BOUNDARY_MODIFIED',
       'User',
       {
@@ -452,7 +452,7 @@ class AIAuditLoggerService {
       projectId,
       'protocol-auditor', // Default persona for system actions
       'System',
-      'protocol-workbench',
+      'clinical-capture',
       'AI_AUDIT_LOG_EXPORTED',
       'User',
       { message: 'Full audit log exported' }

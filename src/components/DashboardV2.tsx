@@ -57,7 +57,7 @@ export function DashboardV2({ onNavigate }: DashboardV2Props) {
 
               {/* Phase 4: Methodology Status Card */}
               <MethodologyStatusCard
-                onConfigure={() => onNavigate('project-setup')}
+                onConfigure={() => onNavigate('clinical-capture')}
               />
 
               {/* Workflow Steps */}

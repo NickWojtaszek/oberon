@@ -38,7 +38,7 @@ export function AnalyticsApp({ onNavigate }: AnalyticsAppProps = {}) {
       <div className="flex items-center justify-center min-h-[calc(100vh-250px)]">
         <EmptyState
           preset="noProtocols"
-          onAction={onNavigate ? () => onNavigate('protocol-workbench') : undefined}
+          onAction={onNavigate ? () => onNavigate('clinical-capture') : undefined}
           size="md"
         />
       </div>

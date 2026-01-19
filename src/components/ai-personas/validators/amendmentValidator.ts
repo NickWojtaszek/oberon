@@ -22,7 +22,7 @@ function createIssue(
     description,
     recommendation,
     location: {
-      module: 'protocol-workbench',
+      module: 'clinical-capture',
       tab: 'protocol',
       field
     },
