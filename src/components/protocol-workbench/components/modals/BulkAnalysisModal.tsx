@@ -3,8 +3,8 @@
  * Much more efficient than going through 100+ fields one by one
  */
 
-import { useState, useEffect } from 'react';
-import { X, Sparkles, CheckCircle, Loader2, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, Sparkles, CheckCircle, Loader2, AlertTriangle, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import type { SchemaBlock, DataType, RoleTag } from '../../types';
 import { analyzeBulkFieldConfiguration, isGeminiConfigured, type SchemaFieldSuggestion } from '../../../../services/geminiService';
 import { getAllBlocks } from '../../utils';
@@ -47,6 +47,8 @@ export function BulkAnalysisModal({
   const [suggestions, setSuggestions] = useState<FieldSuggestion[]>([]);
   const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Get all non-Section fields
   const allFields = getAllBlocks(schemaBlocks).filter(b => b.dataType !== 'Section');
@@ -176,6 +178,18 @@ export function BulkAnalysisModal({
 
   const selectedCount = suggestions.filter(s => s.selected).length;
 
+  // Pagination calculations
+  const totalPages = Math.ceil(suggestions.length / ITEMS_PER_PAGE);
+  const paginatedSuggestions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return suggestions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [suggestions, currentPage]);
+
+  // Reset to page 1 when suggestions change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [suggestions.length]);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden">
@@ -297,9 +311,9 @@ export function BulkAnalysisModal({
                 </div>
               </div>
 
-              {/* Suggestions List */}
+              {/* Suggestions List - Paginated */}
               <div className="space-y-2">
-                {suggestions.map(s => (
+                {paginatedSuggestions.map(s => (
                   <div
                     key={s.fieldId}
                     className={`border rounded-lg transition-colors ${
@@ -370,6 +384,41 @@ export function BulkAnalysisModal({
                   </div>
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-slate-200">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === page
+                            ? 'bg-purple-600 text-white'
+                            : 'hover:bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
