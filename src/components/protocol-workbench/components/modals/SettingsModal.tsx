@@ -317,8 +317,13 @@ export function SettingsModal({
                             </div>
                           )}
                           <button
-                            onClick={applyAISuggestion}
-                            className="mt-2 text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              applyAISuggestion();
+                            }}
+                            className="mt-2 text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                           >
                             <CheckCircle className="w-3 h-3" />
                             Apply All Suggestions

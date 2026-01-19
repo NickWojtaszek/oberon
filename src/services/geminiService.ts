@@ -159,15 +159,17 @@ function extractJSONFromResponse(responseText: string): any {
   let jsonText = responseText;
 
   // Try to extract JSON from markdown code blocks (```json ... ```)
-  const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+  // Use a more specific regex that captures content AFTER the optional "json" language identifier
+  const jsonMatch = responseText.match(/```(?:json)?\n?([\s\S]*?)```/);
   if (jsonMatch) {
     jsonText = jsonMatch[1];
   }
   jsonText = jsonText.trim();
 
-  // Strip "json" prefix if it appears at the start (Gemini sometimes includes it after code block extraction)
+  // Strip "json" prefix if it appears at the start (handles edge cases where it wasn't stripped)
+  // Also handle "json\n" at start
   if (jsonText.toLowerCase().startsWith('json')) {
-    jsonText = jsonText.substring(4).trim();
+    jsonText = jsonText.replace(/^json\s*/i, '').trim();
   }
 
   // If still starts with backticks, remove them
@@ -200,19 +202,42 @@ function extractJSONFromResponse(responseText: string): any {
     // If parsing fails, try more aggressive cleanup
     console.warn('Initial JSON parse failed, attempting cleanup...', error);
 
-    // Remove common issues: trailing commas, unescaped newlines in strings, etc.
-    let cleanedJson = jsonText
-      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas before } or ]
-      .replace(/\n/g, '\\n') // Escape literal newlines
-      .replace(/\r/g, '\\r') // Escape literal carriage returns
-      .replace(/\t/g, '\\t'); // Escape literal tabs
+    // Try to repair truncated JSON arrays (common with long Gemini responses)
+    let repairedJson = jsonText;
+
+    // If it looks like a truncated array, try to close it properly
+    if (jsonText.startsWith('[')) {
+      // Find the last complete object (ends with })
+      const lastCompleteObject = jsonText.lastIndexOf('}');
+      if (lastCompleteObject > 0) {
+        // Check if there's content after the last } that looks like a truncated object
+        const afterLastObject = jsonText.substring(lastCompleteObject + 1).trim();
+        if (afterLastObject && !afterLastObject.startsWith(']')) {
+          // Truncated - close at the last complete object
+          repairedJson = jsonText.substring(0, lastCompleteObject + 1) + ']';
+          console.log('[extractJSONFromResponse] Repaired truncated array');
+        } else if (!jsonText.trim().endsWith(']')) {
+          // Missing closing bracket
+          repairedJson = jsonText.trim().replace(/,\s*$/, '') + ']';
+        }
+      }
+    }
 
     try {
-      return JSON.parse(cleanedJson);
-    } catch (secondError) {
-      console.error('JSON parsing failed after cleanup. Original text:', responseText);
-      console.error('Cleaned text:', cleanedJson);
-      throw new Error(`Failed to parse JSON from Gemini response: ${secondError instanceof Error ? secondError.message : 'Unknown error'}`);
+      return JSON.parse(repairedJson);
+    } catch (repairError) {
+      // Try escaping newlines in string values (but not structural newlines)
+      // This is a last-resort cleanup
+      let cleanedJson = repairedJson
+        .replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas before } or ]
+
+      try {
+        return JSON.parse(cleanedJson);
+      } catch (secondError) {
+        console.error('JSON parsing failed after cleanup. Original text:', responseText.substring(0, 500) + '...');
+        console.error('Attempted repair:', repairedJson.substring(0, 500) + '...');
+        throw new Error(`Failed to parse JSON from Gemini response: ${secondError instanceof Error ? secondError.message : 'Unknown error'}`);
+      }
     }
   }
 }
