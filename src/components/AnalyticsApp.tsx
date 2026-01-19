@@ -1,14 +1,17 @@
 /**
  * Analytics App - Wrapper Component
  * Provides proper integration between Database schema and Analytics visualizations
+ * Includes AI-powered Statistician (Dr. Saga) for analysis suggestions
  */
 
 import { useState, useEffect } from 'react';
-import { BarChart3, AlertCircle } from 'lucide-react';
+import { BarChart3, AlertCircle, Brain, BarChart2 } from 'lucide-react';
 import { Analytics } from './Analytics';
 import { EmptyState } from './ui/EmptyState';
 import { useDatabase } from './database/index';
 import { ModulePersonaPanel } from './ai-personas/ui/ModulePersonaPanel';
+import { StatisticianPanel } from './ai-personas/statistician/components/StatisticianPanel';
+import { getRecordsByProtocol } from '../utils/dataStorage';
 
 interface AnalyticsAppProps {
   onNavigate?: (tab: string) => void;
@@ -27,10 +30,19 @@ export function AnalyticsApp({ onNavigate }: AnalyticsAppProps = {}) {
     loadProtocols
   } = useDatabase();
 
+  // Tab state: 'manual' or 'ai-assisted'
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai-assisted'>('ai-assisted');
+
   // Load protocols on mount - useDatabase will handle auto-selection
   useEffect(() => {
     loadProtocols();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Get records for the AI Statistician
+  const protocolNumber = (selectedProtocol as any)?.protocolNumber || selectedProtocol?.studyNumber;
+  const records = protocolNumber && selectedVersion
+    ? getRecordsByProtocol(protocolNumber, selectedVersion.versionNumber)
+    : [];
 
   // No protocols available
   if (!savedProtocols || savedProtocols.length === 0) {
@@ -146,23 +158,61 @@ export function AnalyticsApp({ onNavigate }: AnalyticsAppProps = {}) {
                 <div className="text-xs text-slate-500">Database Tables</div>
                 <div className="font-medium text-slate-900">{databaseTables.length}</div>
               </div>
+              <div>
+                <div className="text-xs text-slate-500">Records</div>
+                <div className="font-medium text-slate-900">{records.length}</div>
+              </div>
             </div>
           )}
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="px-8 pb-2 flex gap-1 border-t border-slate-100 pt-2">
+          <button
+            onClick={() => setActiveTab('ai-assisted')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'ai-assisted'
+                ? 'bg-purple-100 text-purple-700'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Brain className="w-4 h-4" />
+            AI-Assisted (Dr. Saga)
+          </button>
+          <button
+            onClick={() => setActiveTab('manual')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'manual'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <BarChart2 className="w-4 h-4" />
+            Manual Analysis
+          </button>
         </div>
       </div>
 
       {/* Analytics Content with Persona Panel */}
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <Analytics
-            tables={databaseTables}
-            protocolNumber={(selectedProtocol as any)?.protocolNumber || selectedProtocol?.studyNumber}
-            protocolVersion={selectedVersion?.versionNumber}
-          />
+          {activeTab === 'ai-assisted' ? (
+            <StatisticianPanel
+              protocol={selectedVersion}
+              schemaBlocks={selectedVersion?.schemaBlocks || []}
+              records={records}
+            />
+          ) : (
+            <Analytics
+              tables={databaseTables}
+              protocolNumber={(selectedProtocol as any)?.protocolNumber || selectedProtocol?.studyNumber}
+              protocolVersion={selectedVersion?.versionNumber}
+            />
+          )}
         </div>
-        
-        {/* AI Personas Panel */}
-        <ModulePersonaPanel module="analytics" />
+
+        {/* AI Personas Panel - only show in manual mode */}
+        {activeTab === 'manual' && <ModulePersonaPanel module="analytics" />}
       </div>
     </div>
   );

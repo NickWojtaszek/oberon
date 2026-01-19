@@ -1026,3 +1026,25 @@ IMPORTANT: Use the exact fieldId from the input. If no changes needed for any fi
 
   return suggestionMap;
 }
+
+/**
+ * Call Gemini for statistical analysis plan generation
+ * Used by the Statistician AI persona (Dr. Saga)
+ */
+export async function callGeminiForStatisticalAnalysis(prompt: string): Promise<string> {
+  if (!isGeminiConfigured()) {
+    throw new Error('Gemini API not configured');
+  }
+
+  console.log('🤖 [Gemini/Statistician] Generating statistical analysis plan...');
+
+  try {
+    // Use higher token limit for analysis plans
+    const response = await callGemini(prompt, 4096);
+    console.log('✅ [Gemini/Statistician] Analysis plan generated');
+    return response;
+  } catch (error) {
+    console.error('❌ [Gemini/Statistician] Failed to generate analysis plan:', error);
+    throw error;
+  }
+}
