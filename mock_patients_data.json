@@ -1,0 +1,1716 @@
+{
+  "patients": [
+    {
+      "id": "PAT-001",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-001",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Jan",
+        "nazwiskoPacjenta": "Kowalski",
+        "dataWlaczenia": "2024-01-15",
+        "inicjalyOsobyZbierajacejDane": "MK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "67",
+        "dataUrodzenia": "1956-08-22",
+        "plec": "Mężczyzna",
+        "wzrost": "178",
+        "masaCiala": "85",
+        "bmiObliczone": "26.8",
+        "statusPalenia": "Były Palacz (>1 roku)"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "przebytyZawalSerca": false,
+          "niewydolnoscSercaNYHA": "NYHA 2",
+          "migotaniePrzedsionkow": false,
+          "przebyraOperacjaKardiochirurgiczna": false
+        },
+        "stanPoStentgrafcie": {
+          "przebytyZabiegImplantacjiStentgraftu": "Nie",
+          "dataZabiegu": null,
+          "typStentgraftu": null
+        },
+        "ukladMozgowoNaczyniowy": {
+          "przebytyUdarNiedokrwienny": false,
+          "przebytyUdarKrwotoczny": false,
+          "przebytyTIA": false,
+          "zwezenieLetnicSzyjnej": false,
+          "endarterektomia": false,
+          "zaburzeniaPoznawcze": false
+        },
+        "inneChoroby": {
+          "cukrzyca": true,
+          "pochp": false,
+          "dializoterapia": false,
+          "chorobaTkankiLacznej": false,
+          "nowotworZlosliwy": false
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 72,
+          "wyjsciowaKreatynina": 98,
+          "wyjsciowaHemoglobina": 14.2,
+          "hemoglobinaPoZabiegu": 11.8
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak",
+          "poOperacjiBentalla": "Nie"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 62,
+          "lokalizacjaTetniaka": "Łuk aorty",
+          "kategoriaWielkosciTetniaka": "60-69mm",
+          "tetniak70mm": false,
+          "objawowy": false,
+          "peknieciOgraniczone": false
+        },
+        "wymiaryAorty": {
+          "srednicaAortyWstepujacej": 38,
+          "zlaczeStowoTubularne": 34,
+          "kategoriaAortyWstepujacej": ">36 do <=40",
+          "srednicaAortyWstepujacej40mm": false,
+          "srednicaLukuAorty": 42,
+          "aortaZstepujacaPrzyLSA": 28,
+          "dlugoscStrefy0": 45,
+          "dlugoscStrefy2": 22
+        },
+        "morfologiaAorty": {
+          "typLukuIshimaru": "Typ II",
+          "aortaShaggy": false,
+          "skrzeplinaWLukuAorty": false,
+          "skrzeplinaWAorcieWstepujacej": false,
+          "aortaPorcelanowa": false
+        }
+      },
+      "przedoperacyjnaOcenaNaczynMozgowych": {
+        "angioTKGlowy": {
+          "wykonanoAngioTK": true,
+          "dataAngioTK": "2024-01-10"
+        },
+        "krazenieePrzednie": {
+          "ACOMDrozna": true,
+          "srednicaACOM": 1.8,
+          "segmentA1": "Obustronnie drożny"
+        },
+        "krazenieTylne": {
+          "prawaPCOMDrozna": true,
+          "srednicaPrawejPCOM": 1.2,
+          "lewaPCOMDrozna": true,
+          "srednicaLewejPCOM": 1.4,
+          "klasyfikacjaKolaWillisa": "Pełne"
+        },
+        "ukladKregowoPodstawny": {
+          "prawaTetnicaKregowa": "Drożna (V1-V4)",
+          "lewaTetnicaKregowa": "Drożna (V1-V4)",
+          "dominacjaTetnicyKregowej": "Kodominacja",
+          "tętnicaPodstawnaDrozna": true
+        },
+        "ryzyko": {
+          "ryzykoKrazeniaTylnego": "Niskie (pełne PCOM, kodominacja VA)",
+          "ryzykoKolaWillisa": "Niskie (wszystkie VA drożne)"
+        }
+      },
+      "przedoperacyjnaOcenaKardiologiczna": {
+        "konsultacja": {
+          "wykonanoKonsultacje": "Tak",
+          "dataKonsultacji": "2024-01-12"
+        },
+        "echokardiografia": {
+          "wykonanoEcho": "TTE",
+          "LVEF": 55,
+          "funkcjaLewejKomory": "Prawidłowa (>=55%)",
+          "niedomykalnoscAortalna": false,
+          "stenozaAortalna": "Brak",
+          "PFO": false,
+          "ASD": false,
+          "skrzeplinaWUszku": false
+        },
+        "ocenaTetnicWiencowych": {
+          "metodaOceny": "AngioTK tętnic wieńcowych",
+          "chorobaWiencowa": "Zwężenie LAD 40%",
+          "rewaskularyzacjaWymagana": false
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-01-20",
+          "trybZabiegu": "Planowy",
+          "miejsceZabiegu": "Hybrydowa sala operacyjna",
+          "operator1": "JN",
+          "operator2": "PK"
+        },
+        "dostepNaczyniowy": {
+          "glownyDostepTetniczy": "Udowy prawy (R)",
+          "rozmiarKoszulkiGlownej": 24,
+          "dostepyDodatkowe": ["Promieniowy lewy (L)"]
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Nexus",
+          "rozmiarGlownegoStentgraftu": "34x150mm",
+          "konfiguracjaNexus": "LIFS (LCCA i LSA)"
+        }
+      },
+      "srodoperacyjneMonitorowanie": {
+        "monitorowanieNIRS": {
+          "stosowanoNIRS": true,
+          "urzadzenieNIRS": "INVOS 5100C",
+          "wyjscioweRSO2Prawa": 68,
+          "wyjscioweRSO2Lewa": 70,
+          "najnizszaRSO2Prawa": 58,
+          "najnizszaRSO2Lewa": 55,
+          "maxDeltaRSO2Prawa": 10,
+          "maxDeltaRSO2Lewa": 15,
+          "alertRSO2": false,
+          "interwencjaRSO2": false
+        },
+        "strefaKontroliMAP": {
+          "wyjscioweMAP": 85,
+          "najwyzszaMAP": 105,
+          "najnizszeMAP": 65,
+          "MAPPrzyRozprzezeniu": 45,
+          "czasMAP80": 8,
+          "czasMAP100": 3
+        },
+        "antykoagulacja": {
+          "dawkaHeparyny": 15000,
+          "ACTPoPodaniuHeparyny": 285,
+          "szczytowyACT": 320,
+          "ACTUtrzymany": true,
+          "podanoProtamine": true,
+          "dawkaProtaminy": 150
+        },
+        "szybkaStymulacja": {
+          "stosowanoRapidPacing": true,
+          "liczbaEpizodow": 3,
+          "calkowityCzasStymulacji": 45,
+          "czestoscStymulacji": 180
+        }
+      },
+      "zakonczenieZabiegu": {
+        "wybudzenieSala": {
+          "kontaktSlownoLogiczny": true,
+          "niedowladKonczyn": false
+        },
+        "parametryZabiegu": {
+          "czasFluoroskopii": 48,
+          "objetoscKontrastu": 180,
+          "szacowanaUtrataKrwi": 350
+        },
+        "wynikTechniczny": {
+          "sukcesTechniczny": true,
+          "przeciekTypuI": false,
+          "przeciekTypuII": false,
+          "przeciekTypuIII": false,
+          "niedroznosc Naczynia": false,
+          "konwersja": false
+        }
+      },
+      "wynikiNeurologiczne": {
+        "ocenaPooperacyjna24h": {
+          "nowyDeficytNeurologiczny": false,
+          "GCSPrzyWybudzeniu": 15,
+          "deficytRuchowy": false,
+          "deficytMowy": false,
+          "deficytWzrokowy": false
+        },
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "innePowiklania30Dni": {
+        "sercowoNaczyniowe": {
+          "zawalSerca": false,
+          "nowoMigotaniePrzedsionkow": false,
+          "zatrzymanieKrazenia": false,
+          "peknieAorty": false,
+          "wsteczneRozwarstwienie": false
+        },
+        "nerkowe": {
+          "ostreUszkodzenieNerek": false,
+          "nowaDializa": false
+        },
+        "oddechowe": {
+          "zapaleniePluc": false,
+          "przedluzonaWentylacja": false,
+          "tracheostomia": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "dataOstatniejWizyty": "2024-04-20",
+        "czasObserwacjiDni": 91,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0,
+        "poznyUdar": false,
+        "wymaganaReinterwencja": false,
+        "przeciekWKontrolnymBadaniu": false,
+        "drozeNaczynek": true
+      }
+    },
+    {
+      "id": "PAT-002",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-002",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Anna",
+        "nazwiskoPacjenta": "Nowak",
+        "dataWlaczenia": "2024-01-22",
+        "inicjalyOsobyZbierajacejDane": "MK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "72",
+        "dataUrodzenia": "1951-11-03",
+        "plec": "Kobieta",
+        "wzrost": "162",
+        "masaCiala": "68",
+        "bmiObliczone": "25.9",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": false,
+          "nadcisnienieTetnicze": true,
+          "przebytyZawalSerca": false,
+          "niewydolnoscSercaNYHA": "Brak",
+          "migotaniePrzedsionkow": true,
+          "przebyraOperacjaKardiochirurgiczna": false
+        },
+        "ukladMozgowoNaczyniowy": {
+          "przebytyUdarNiedokrwienny": true,
+          "przebytyUdarKrwotoczny": false,
+          "przebytyTIA": false,
+          "zwezenieLetnicSzyjnej": false,
+          "zaburzeniaPoznawcze": false
+        },
+        "inneChoroby": {
+          "cukrzyca": false,
+          "pochp": false,
+          "dializoterapia": false,
+          "chorobaTkankiLacznej": false,
+          "nowotworZlosliwy": false
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 58,
+          "wyjsciowaKreatynina": 112,
+          "wyjsciowaHemoglobina": 12.8,
+          "hemoglobinaPoZabiegu": 10.2
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Rozwarstwienie",
+          "poOperacjiBentalla": "Nie"
+        },
+        "wPrzypadkuRozwarstwienia": {
+          "klasyfikacjaStanford": "Typ B",
+          "klasyfikacjaDeBakey": "IIIb",
+          "faza": "Przewlekłe (>90 dni)",
+          "zespolNiedokrwieniaNarzadowego": false,
+          "proksymalnyEntry": "Zone 3",
+          "dystalnyReentry": "Zone 8",
+          "maksymalnaSzerokoscKanaluFalszywego": 35,
+          "szerokoscNaPoziomieLuku": 28,
+          "skrzeplinaWKanaleFalszywym": true,
+          "stopienZakrzepicy": "Częściowa (<50%)"
+        },
+        "wymiaryAorty": {
+          "srednicaAortyWstepujacej": 35,
+          "kategoriaAortyWstepujacej": "<=36 mm",
+          "srednicaLukuAorty": 38,
+          "aortaZstepujacaPrzyLSA": 32
+        },
+        "morfologiaAorty": {
+          "typLukuIshimaru": "Typ I",
+          "aortaShaggy": false,
+          "skrzeplinaWLukuAorty": false
+        }
+      },
+      "przedoperacyjnaOcenaNaczynMozgowych": {
+        "angioTKGlowy": {
+          "wykonanoAngioTK": true,
+          "dataAngioTK": "2024-01-18"
+        },
+        "krazenieTylne": {
+          "prawaPCOMDrozna": false,
+          "lewaPCOMDrozna": true,
+          "klasyfikacjaKolaWillisa": "Niepełne tylne"
+        },
+        "ukladKregowoPodstawny": {
+          "dominacjaTetnicyKregowej": "Dominacja lewej"
+        },
+        "ryzyko": {
+          "ryzykoKrazeniaTylnego": "Umiarkowane (jednostronna PCOM)",
+          "ryzykoKolaWillisa": "Umiarkowane (jedna VA niewydolna)"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-01-28",
+          "trybZabiegu": "Planowy",
+          "miejsceZabiegu": "Hybrydowa sala operacyjna",
+          "operator1": "JN",
+          "operator2": "AS"
+        },
+        "dostepNaczyniowy": {
+          "glownyDostepTetniczy": "Udowy lewy (L)",
+          "rozmiarKoszulkiGlownej": 22
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Cook Arch Branch",
+          "rozmiarGlownegoStentgraftu": "32x180mm",
+          "konfiguracjaCook": "3AB"
+        }
+      },
+      "srodoperacyjneMonitorowanie": {
+        "monitorowanieNIRS": {
+          "stosowanoNIRS": true,
+          "najnizszaRSO2Prawa": 52,
+          "najnizszaRSO2Lewa": 48,
+          "alertRSO2": true,
+          "interwencjaRSO2": false
+        },
+        "szybkaStymulacja": {
+          "stosowanoRapidPacing": true,
+          "liczbaEpizodow": 2,
+          "calkowityCzasStymulacji": 30
+        }
+      },
+      "zakonczenieZabiegu": {
+        "parametryZabiegu": {
+          "czasFluoroskopii": 65,
+          "objetoscKontrastu": 220,
+          "szacowanaUtrataKrwi": 500
+        },
+        "wynikTechniczny": {
+          "sukcesTechniczny": true,
+          "przeciekTypuII": true
+        }
+      },
+      "wynikiNeurologiczne": {
+        "ocenaPooperacyjna24h": {
+          "nowyDeficytNeurologiczny": false,
+          "GCSPrzyWybudzeniu": 15
+        },
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "innePowiklania30Dni": {
+        "nerkowe": {
+          "ostreUszkodzenieNerek": true,
+          "nowaDializa": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 180,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 1
+      }
+    },
+    {
+      "id": "PAT-003",
+      "daneAdministracyjne": {
+        "numerBadania": "KRK-2024-001",
+        "kodOsrodka": "KRK",
+        "imiePacjenta": "Piotr",
+        "nazwiskoPacjenta": "Wiśniewski",
+        "dataWlaczenia": "2024-02-05",
+        "inicjalyOsobyZbierajacejDane": "AB"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "58",
+        "dataUrodzenia": "1965-06-14",
+        "plec": "Mężczyzna",
+        "wzrost": "182",
+        "masaCiala": "95",
+        "bmiObliczone": "28.7",
+        "statusPalenia": "Aktualny palacz"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "przebytyZawalSerca": true,
+          "niewydolnoscSercaNYHA": "NYHA 3",
+          "migotaniePrzedsionkow": false,
+          "przebyraOperacjaKardiochirurgiczna": true
+        },
+        "stanPoStentgrafcie": {
+          "przebytyZabiegImplantacjiStentgraftu": "Tak",
+          "dataZabiegu": "2022-08-15",
+          "typStentgraftu": "TEVAR"
+        },
+        "przebytaOperacjaKardiochirurgiczna": {
+          "typOperacji": "CABG"
+        },
+        "inneChoroby": {
+          "cukrzyca": true,
+          "pochp": true,
+          "dializoterapia": false,
+          "chorobaTkankiLacznej": false
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 45,
+          "wyjsciowaKreatynina": 145,
+          "wyjsciowaHemoglobina": 11.5,
+          "hemoglobinaPoZabiegu": 9.2
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak",
+          "poOperacjiBentalla": "Nie"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 75,
+          "lokalizacjaTetniaka": "Aorta zstępująca proksymalna",
+          "kategoriaWielkosciTetniaka": "70-79mm",
+          "tetniak70mm": true,
+          "objawowy": true,
+          "peknieciOgraniczone": false
+        },
+        "wymiaryAorty": {
+          "srednicaAortyWstepujacej": 42,
+          "kategoriaAortyWstepujacej": ">40 mm",
+          "srednicaAortyWstepujacej40mm": true
+        },
+        "morfologiaAorty": {
+          "typLukuIshimaru": "Typ III",
+          "aortaShaggy": true,
+          "maksymalnaGruboscBlaszki": 8,
+          "lokalizacjaShaggy": "Łuk"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-02-12",
+          "trybZabiegu": "Pilny(<24h)",
+          "miejsceZabiegu": "Hybrydowa sala operacyjna"
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Nexus",
+          "konfiguracjaNexus": "LIFS (LCCA i LSA)"
+        }
+      },
+      "ochronaPrzedZatorami": {
+        "dystalnaOchronaZatorowa": {
+          "stosowanoEPD": true,
+          "wskazaniaDoEPD": "Shaggy aorta",
+          "urzadzenieOchronne": "Sentinel",
+          "filtrPomyslnieUsuniety": true,
+          "widocznyMaterialZatorowy": true,
+          "opisMaterialu": "Fragmenty miażdżycowe"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "ocenaPooperacyjna24h": {
+          "nowyDeficytNeurologiczny": true,
+          "GCSPrzyWybudzeniu": 14,
+          "deficytRuchowy": true,
+          "deficytMowy": false
+        },
+        "udar30Dni": {
+          "jakikolwiekUdar": true,
+          "dataWystapienia": "2024-02-12",
+          "czasOdZabieguGodziny": 6,
+          "typUdaru": "Niedokrwienny",
+          "obszarUdaru": "MCA prawa",
+          "stronaUdaru": "Prawa",
+          "potwierdzenieTKMR": true,
+          "NIHSSPrzyRozpoznaniu": 8,
+          "MRS30Dni": 3,
+          "klasyfikacjaUdaru": "Duży (mRS 3-5)"
+        }
+      },
+      "innePowiklania30Dni": {
+        "sercowoNaczyniowe": {
+          "nowoMigotaniePrzedsionkow": true
+        },
+        "oddechowe": {
+          "zapaleniePluc": true,
+          "przedluzonaWentylacja": true
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 120,
+        "statusWObserwacji": "Żyje z deficytem neurologicznym",
+        "MRSPrzyOstatniejWizycie": 2
+      }
+    },
+    {
+      "id": "PAT-004",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-003",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Maria",
+        "nazwiskoPacjenta": "Dąbrowska",
+        "dataWlaczenia": "2024-02-18",
+        "inicjalyOsobyZbierajacejDane": "MK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "79",
+        "dataUrodzenia": "1944-12-01",
+        "plec": "Kobieta",
+        "wzrost": "158",
+        "masaCiala": "62",
+        "bmiObliczone": "24.8",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "NYHA 2",
+          "migotaniePrzedsionkow": true
+        },
+        "inneChoroby": {
+          "cukrzyca": false,
+          "pochp": false,
+          "nowotworZlosliwy": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 52,
+          "wyjsciowaKreatynina": 105,
+          "wyjsciowaHemoglobina": 11.2
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Wrzód drążący (PAU)"
+        },
+        "wPrzypadkuPAU": {
+          "glebokoscPAU": 18,
+          "szerokoscSzyi": 12,
+          "lokalizacjaPAUStrefa": "Zone 4"
+        },
+        "morfologiaAorty": {
+          "typLukuIshimaru": "Typ II",
+          "aortaPorcelanowa": true
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-02-25",
+          "trybZabiegu": "Planowy"
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Gore TAG"
+        }
+      },
+      "zakonczenieZabiegu": {
+        "wynikTechniczny": {
+          "sukcesTechniczny": true
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 365,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 1
+      }
+    },
+    {
+      "id": "PAT-005",
+      "daneAdministracyjne": {
+        "numerBadania": "KRK-2024-002",
+        "kodOsrodka": "KRK",
+        "imiePacjenta": "Tomasz",
+        "nazwiskoPacjenta": "Lewandowski",
+        "dataWlaczenia": "2024-03-02",
+        "inicjalyOsobyZbierajacejDane": "AB"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "45",
+        "dataUrodzenia": "1978-09-28",
+        "plec": "Mężczyzna",
+        "wzrost": "185",
+        "masaCiala": "78",
+        "bmiObliczone": "22.8",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": false,
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "Brak"
+        },
+        "typChorobyTkankiLacznej": {
+          "typChoroby": "Marfan",
+          "wiekWMomencieRozpoznania": 28
+        },
+        "inneChoroby": {
+          "chorobaTkankiLacznej": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 95,
+          "wyjsciowaHemoglobina": 15.2
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Rozwarstwienie",
+          "poOperacjiBentalla": "Tak (zastawka sztuczna)"
+        },
+        "przebytaOperacjaKardiochirurgiczna": {
+          "typOperacji": "Bentall (zastawka sztuczna)",
+          "srednicaZastawki": "27mm",
+          "technikaImplantacji": "Przejście przez zastawkę"
+        },
+        "wPrzypadkuRozwarstwienia": {
+          "klasyfikacjaStanford": "Typ B",
+          "klasyfikacjaDeBakey": "IIIb",
+          "faza": "Ostre (<14 dni)",
+          "zespolNiedokrwieniaNarzadowego": true
+        },
+        "wymiaryAorty": {
+          "srednicaAortyWstepujacej": 34
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-03-05",
+          "trybZabiegu": "Nagły(<2h)"
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Nexus"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        },
+        "niedokrwienieRdzeniaKregowego": {
+          "SCI": true,
+          "nasilenieSCI": "Parapareza - częściowy powrót"
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 270,
+        "statusWObserwacji": "Żyje z deficytem",
+        "MRSPrzyOstatniejWizycie": 2
+      }
+    },
+    {
+      "id": "PAT-006",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-004",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Krzysztof",
+        "nazwiskoPacjenta": "Kamiński",
+        "dataWlaczenia": "2024-03-15",
+        "inicjalyOsobyZbierajacejDane": "PK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "71",
+        "dataUrodzenia": "1952-07-19",
+        "plec": "Mężczyzna",
+        "wzrost": "175",
+        "masaCiala": "88",
+        "bmiObliczone": "28.7",
+        "statusPalenia": "Były Palacz (>1 roku)"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "przebytyZawalSerca": false,
+          "niewydolnoscSercaNYHA": "NYHA 1"
+        },
+        "ukladMozgowoNaczyniowy": {
+          "przebytyUdarNiedokrwienny": false,
+          "przebytyTIA": true
+        },
+        "inneChoroby": {
+          "cukrzyca": true,
+          "pochp": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 62,
+          "wyjsciowaKreatynina": 118,
+          "wyjsciowaHemoglobina": 13.5
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 58,
+          "lokalizacjaTetniaka": "Łuk aorty",
+          "kategoriaWielkosciTetniaka": "50-59 mm",
+          "objawowy": false
+        },
+        "morfologiaAorty": {
+          "typLukuIshimaru": "Typ II",
+          "aortaShaggy": false
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-03-22",
+          "trybZabiegu": "Planowy"
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Cook Arch Branch",
+          "konfiguracjaCook": "3AB"
+        }
+      },
+      "zakonczenieZabiegu": {
+        "wynikTechniczny": {
+          "sukcesTechniczny": true
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 200,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-007",
+      "daneAdministracyjne": {
+        "numerBadania": "INNE-2024-001",
+        "kodOsrodka": "INNE",
+        "imiePacjenta": "Ewa",
+        "nazwiskoPacjenta": "Zielińska",
+        "dataWlaczenia": "2024-03-28",
+        "inicjalyOsobyZbierajacejDane": "JK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "65",
+        "dataUrodzenia": "1958-04-12",
+        "plec": "Kobieta",
+        "wzrost": "165",
+        "masaCiala": "72",
+        "bmiObliczone": "26.4",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "Brak"
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 78,
+          "wyjsciowaHemoglobina": 13.2
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Krwiak Śródścienny (IMH)"
+        },
+        "wymiaryAorty": {
+          "srednicaAortyWstepujacej": 36
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-04-02",
+          "trybZabiegu": "Pilny(<24h)"
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Gore TAG"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 150,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-008",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-005",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Andrzej",
+        "nazwiskoPacjenta": "Szymański",
+        "dataWlaczenia": "2024-04-10",
+        "inicjalyOsobyZbierajacejDane": "MK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "82",
+        "dataUrodzenia": "1941-10-05",
+        "plec": "Mężczyzna",
+        "wzrost": "170",
+        "masaCiala": "75",
+        "bmiObliczone": "26.0",
+        "statusPalenia": "Były Palacz (>1 roku)"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "przebytyZawalSerca": true,
+          "niewydolnoscSercaNYHA": "NYHA 3",
+          "migotaniePrzedsionkow": true
+        },
+        "ukladMozgowoNaczyniowy": {
+          "przebytyUdarNiedokrwienny": true,
+          "zaburzeniaPoznawcze": true
+        },
+        "inneChoroby": {
+          "cukrzyca": true,
+          "pochp": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 38,
+          "wyjsciowaKreatynina": 165,
+          "wyjsciowaHemoglobina": 10.8
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 82,
+          "kategoriaWielkosciTetniaka": ">=80 mm",
+          "tetniak70mm": true,
+          "objawowy": true,
+          "peknieciOgraniczone": true
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-04-12",
+          "trybZabiegu": "Ratunkowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": true,
+          "typUdaru": "Krwotoczny",
+          "NIHSSPrzyRozpoznaniu": 22,
+          "klasyfikacjaUdaru": "Śmiertelny"
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": true,
+        "dataZgonu": "2024-04-18",
+        "dniOdZabiegu": 6,
+        "kategoriaZgonu": "Związany z zabiegiem (neurologiczny)",
+        "glownaPrzyczynaZgonu": "Udar krwotoczny"
+      }
+    },
+    {
+      "id": "PAT-009",
+      "daneAdministracyjne": {
+        "numerBadania": "KRK-2024-003",
+        "kodOsrodka": "KRK",
+        "imiePacjenta": "Katarzyna",
+        "nazwiskoPacjenta": "Woźniak",
+        "dataWlaczenia": "2024-04-20",
+        "inicjalyOsobyZbierajacejDane": "AB"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "54",
+        "dataUrodzenia": "1969-08-15",
+        "plec": "Kobieta",
+        "wzrost": "168",
+        "masaCiala": "65",
+        "bmiObliczone": "23.0",
+        "statusPalenia": "Aktualny palacz"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 88,
+          "wyjsciowaHemoglobina": 14.0
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Urazowe"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-04-20",
+          "trybZabiegu": "Ratunkowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 90,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-010",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-006",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Stanisław",
+        "nazwiskoPacjenta": "Mazur",
+        "dataWlaczenia": "2024-05-05",
+        "inicjalyOsobyZbierajacejDane": "PK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "69",
+        "dataUrodzenia": "1954-11-22",
+        "plec": "Mężczyzna",
+        "wzrost": "180",
+        "masaCiala": "92",
+        "bmiObliczone": "28.4",
+        "statusPalenia": "Były Palacz (>1 roku)"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "NYHA 2"
+        },
+        "inneChoroby": {
+          "cukrzyca": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 55,
+          "wyjsciowaHemoglobina": 12.5
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 65,
+          "kategoriaWielkosciTetniaka": "60-69mm"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-05-12",
+          "trybZabiegu": "Planowy"
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Nexus"
+        }
+      },
+      "zakonczenieZabiegu": {
+        "wynikTechniczny": {
+          "sukcesTechniczny": true
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 180,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-011",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-007",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Barbara",
+        "nazwiskoPacjenta": "Krawczyk",
+        "dataWlaczenia": "2024-05-18",
+        "inicjalyOsobyZbierajacejDane": "MK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "76",
+        "dataUrodzenia": "1947-03-08",
+        "plec": "Kobieta",
+        "wzrost": "160",
+        "masaCiala": "58",
+        "bmiObliczone": "22.7",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true,
+          "migotaniePrzedsionkow": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 65,
+          "wyjsciowaHemoglobina": 12.0
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Rozwarstwienie"
+        },
+        "wPrzypadkuRozwarstwienia": {
+          "klasyfikacjaStanford": "Typ B",
+          "faza": "Podostre(14-90 dni)"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-05-25",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 150,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-012",
+      "daneAdministracyjne": {
+        "numerBadania": "KRK-2024-004",
+        "kodOsrodka": "KRK",
+        "imiePacjenta": "Marek",
+        "nazwiskoPacjenta": "Piotrowski",
+        "dataWlaczenia": "2024-06-01",
+        "inicjalyOsobyZbierajacejDane": "AB"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "63",
+        "dataUrodzenia": "1960-12-30",
+        "plec": "Mężczyzna",
+        "wzrost": "176",
+        "masaCiala": "82",
+        "bmiObliczone": "26.5",
+        "statusPalenia": "Aktualny palacz"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "przebytyZawalSerca": true
+        },
+        "inneChoroby": {
+          "pochp": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 70,
+          "wyjsciowaHemoglobina": 14.5
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 55,
+          "kategoriaWielkosciTetniaka": "50-59 mm"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-06-08",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "innePowiklania30Dni": {
+        "sercowoNaczyniowe": {
+          "zawalSerca": true
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 120,
+        "statusWObserwacji": "Żyje z powikłaniami",
+        "MRSPrzyOstatniejWizycie": 1
+      }
+    },
+    {
+      "id": "PAT-013",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-008",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Zofia",
+        "nazwiskoPacjenta": "Grabowska",
+        "dataWlaczenia": "2024-06-15",
+        "inicjalyOsobyZbierajacejDane": "PK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "68",
+        "dataUrodzenia": "1955-09-17",
+        "plec": "Kobieta",
+        "wzrost": "163",
+        "masaCiala": "70",
+        "bmiObliczone": "26.3",
+        "statusPalenia": "Były Palacz (>1 roku)"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "NYHA 1"
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 75,
+          "wyjsciowaHemoglobina": 13.0
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 60,
+          "kategoriaWielkosciTetniaka": "60-69mm"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-06-22",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 100,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-014",
+      "daneAdministracyjne": {
+        "numerBadania": "INNE-2024-002",
+        "kodOsrodka": "INNE",
+        "imiePacjenta": "Jerzy",
+        "nazwiskoPacjenta": "Pawłowski",
+        "dataWlaczenia": "2024-07-01",
+        "inicjalyOsobyZbierajacejDane": "JK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "74",
+        "dataUrodzenia": "1949-05-25",
+        "plec": "Mężczyzna",
+        "wzrost": "172",
+        "masaCiala": "80",
+        "bmiObliczone": "27.0",
+        "statusPalenia": "Były Palacz (>1 roku)"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "NYHA 2",
+          "migotaniePrzedsionkow": true
+        },
+        "inneChoroby": {
+          "cukrzyca": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 48,
+          "wyjsciowaHemoglobina": 11.8
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Rozwarstwienie"
+        },
+        "wPrzypadkuRozwarstwienia": {
+          "klasyfikacjaStanford": "Typ B",
+          "faza": "Przewlekłe (>90 dni)"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-07-08",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "TIA": {
+          "TIA": true,
+          "dataTIA": "2024-07-09",
+          "czasTrwaniaGodzin": 2,
+          "objawayTIA": "Niedowład prawej ręki"
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 80,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-015",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-009",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Henryk",
+        "nazwiskoPacjenta": "Michalski",
+        "dataWlaczenia": "2024-07-15",
+        "inicjalyOsobyZbierajacejDane": "MK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "77",
+        "dataUrodzenia": "1946-02-11",
+        "plec": "Mężczyzna",
+        "wzrost": "168",
+        "masaCiala": "72",
+        "bmiObliczone": "25.5",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "NYHA 2"
+        },
+        "inneChoroby": {
+          "dializoterapia": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 12,
+          "wyjsciowaKreatynina": 520,
+          "wyjsciowaHemoglobina": 10.2
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 70,
+          "kategoriaWielkosciTetniaka": "70-79mm",
+          "tetniak70mm": true
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-07-22",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "innePowiklania30Dni": {
+        "oddechowe": {
+          "zapaleniePluc": true
+        },
+        "infekcyjne": {
+          "posocznica": true
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": true,
+        "dataZgonu": "2024-08-05",
+        "dniOdZabiegu": 14,
+        "kategoriaZgonu": "Związany z zabiegiem (nie-aortalny)",
+        "glownaPrzyczynaZgonu": "Posocznica"
+      }
+    },
+    {
+      "id": "PAT-016",
+      "daneAdministracyjne": {
+        "numerBadania": "KRK-2024-005",
+        "kodOsrodka": "KRK",
+        "imiePacjenta": "Danuta",
+        "nazwiskoPacjenta": "Adamska",
+        "dataWlaczenia": "2024-08-01",
+        "inicjalyOsobyZbierajacejDane": "AB"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "61",
+        "dataUrodzenia": "1962-10-20",
+        "plec": "Kobieta",
+        "wzrost": "166",
+        "masaCiala": "68",
+        "bmiObliczone": "24.7",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true
+        },
+        "typChorobyTkankiLacznej": {
+          "typChoroby": "Loeys-Dietz",
+          "wiekWMomencieRozpoznania": 45
+        },
+        "inneChoroby": {
+          "chorobaTkankiLacznej": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 82,
+          "wyjsciowaHemoglobina": 13.5
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak",
+          "poOperacjiBentalla": "Tak (zastawka biologiczna)"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-08-08",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 60,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-017",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-010",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Ryszard",
+        "nazwiskoPacjenta": "Jankowski",
+        "dataWlaczenia": "2024-08-15",
+        "inicjalyOsobyZbierajacejDane": "PK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "70",
+        "dataUrodzenia": "1953-06-08",
+        "plec": "Mężczyzna",
+        "wzrost": "178",
+        "masaCiala": "85",
+        "bmiObliczone": "26.8",
+        "statusPalenia": "Były Palacz (>1 roku)"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "NYHA 1"
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 68,
+          "wyjsciowaHemoglobina": 14.2
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 56,
+          "kategoriaWielkosciTetniaka": "50-59 mm"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-08-22",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 45,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    },
+    {
+      "id": "PAT-018",
+      "daneAdministracyjne": {
+        "numerBadania": "KRK-2024-006",
+        "kodOsrodka": "KRK",
+        "imiePacjenta": "Jadwiga",
+        "nazwiskoPacjenta": "Wójcik",
+        "dataWlaczenia": "2024-09-01",
+        "inicjalyOsobyZbierajacejDane": "AB"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "66",
+        "dataUrodzenia": "1957-07-14",
+        "plec": "Kobieta",
+        "wzrost": "164",
+        "masaCiala": "74",
+        "bmiObliczone": "27.5",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true,
+          "migotaniePrzedsionkow": true
+        },
+        "ukladMozgowoNaczyniowy": {
+          "zwezenieLetnicSzyjnej": true,
+          "endarterektomia": true
+        },
+        "inneChoroby": {
+          "cukrzyca": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 72,
+          "wyjsciowaHemoglobina": 12.8
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 58,
+          "kategoriaWielkosciTetniaka": "50-59 mm"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-09-08",
+          "trybZabiegu": "Planowy"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": true,
+          "typUdaru": "Niedokrwienny",
+          "NIHSSPrzyRozpoznaniu": 4,
+          "MRS30Dni": 1,
+          "klasyfikacjaUdaru": "Mały (mRS 0-2)"
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 30,
+        "statusWObserwacji": "Żyje z minimalnym deficytem",
+        "MRSPrzyOstatniejWizycie": 1
+      }
+    },
+    {
+      "id": "PAT-019",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-011",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Wojciech",
+        "nazwiskoPacjenta": "Kowalczyk",
+        "dataWlaczenia": "2024-09-15",
+        "inicjalyOsobyZbierajacejDane": "MK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "59",
+        "dataUrodzenia": "1964-04-03",
+        "plec": "Mężczyzna",
+        "wzrost": "183",
+        "masaCiala": "90",
+        "bmiObliczone": "26.9",
+        "statusPalenia": "Aktualny palacz"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "chorobaWiencowa": true,
+          "nadcisnienieTetnicze": true,
+          "przebytyZawalSerca": true
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 78,
+          "wyjsciowaHemoglobina": 15.0
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Rozwarstwienie"
+        },
+        "wPrzypadkuRozwarstwienia": {
+          "klasyfikacjaStanford": "Typ A",
+          "faza": "Ostre (<14 dni)"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-09-16",
+          "trybZabiegu": "Nagły(<2h)"
+        }
+      },
+      "innePowiklania30Dni": {
+        "sercowoNaczyniowe": {
+          "wsteczneRozwarstwienie": true
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": true,
+        "dataZgonu": "2024-09-17",
+        "dniOdZabiegu": 1,
+        "kategoriaZgonu": "Związany z aortą",
+        "glownaPrzyczynaZgonu": "Wsteczne rozwarstwienie typu A"
+      }
+    },
+    {
+      "id": "PAT-020",
+      "daneAdministracyjne": {
+        "numerBadania": "UCK-2024-012",
+        "kodOsrodka": "UCK",
+        "imiePacjenta": "Teresa",
+        "nazwiskoPacjenta": "Sikora",
+        "dataWlaczenia": "2024-10-01",
+        "inicjalyOsobyZbierajacejDane": "PK"
+      },
+      "daneDemograficzne": {
+        "wiekWDniuZabiegu": "73",
+        "dataUrodzenia": "1950-12-18",
+        "plec": "Kobieta",
+        "wzrost": "159",
+        "masaCiala": "64",
+        "bmiObliczone": "25.3",
+        "statusPalenia": "Nigdy"
+      },
+      "chorobyWspolistniejace": {
+        "ukladSercowoNaczyniowy": {
+          "nadcisnienieTetnicze": true,
+          "niewydolnoscSercaNYHA": "NYHA 1"
+        },
+        "wynikiWyjsciowe": {
+          "wyjsciowyEGFR": 70,
+          "wyjsciowaHemoglobina": 12.5
+        }
+      },
+      "wskazaniaIPatologiaAorty": {
+        "glowneWskazania": {
+          "wskazanie": "Tętniak"
+        },
+        "wPrzypadkuTetniaka": {
+          "maksymalnaSrednicaTetniaka": 54,
+          "kategoriaWielkosciTetniaka": "50-59 mm"
+        }
+      },
+      "daneProceduralne": {
+        "czasIWarunki": {
+          "dataZabiegu": "2024-10-08",
+          "trybZabiegu": "Planowy"
+        },
+        "konfiguracjaUrzadzenia": {
+          "systemStentgraftu": "Nexus"
+        }
+      },
+      "wynikiNeurologiczne": {
+        "udar30Dni": {
+          "jakikolwiekUdar": false
+        }
+      },
+      "smiertelnosc": {
+        "zgon30Dni": false
+      },
+      "obserwacja": {
+        "czasObserwacjiDni": 14,
+        "statusWObserwacji": "Żyje bez powikłań",
+        "MRSPrzyOstatniejWizycie": 0
+      }
+    }
+  ],
+  "summary": {
+    "totalPatients": 20,
+    "byCenter": {
+      "UCK": 12,
+      "KRK": 6,
+      "INNE": 2
+    },
+    "byGender": {
+      "male": 12,
+      "female": 8
+    },
+    "byIndication": {
+      "aneurysm": 13,
+      "dissection": 5,
+      "PAU": 1,
+      "traumatic": 1
+    },
+    "outcomes": {
+      "deaths30Day": 3,
+      "strokes30Day": 3,
+      "TIA": 1,
+      "SCI": 1
+    },
+    "averageAge": 67.4,
+    "procedureTypes": {
+      "elective": 13,
+      "urgent": 3,
+      "emergency": 2,
+      "salvage": 2
+    }
+  }
+}
