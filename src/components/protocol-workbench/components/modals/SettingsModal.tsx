@@ -55,7 +55,16 @@ export function SettingsModal({
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
 
   // Filter out self and descendants from available sections (prevent circular nesting)
-  const validSections = availableSections.filter(section => section.id !== block.id);
+  // Get all descendant IDs of the current block
+  const getDescendantIds = (b: SchemaBlock): string[] => {
+    const ids = [b.id];
+    if (b.children) {
+      b.children.forEach(child => ids.push(...getDescendantIds(child)));
+    }
+    return ids;
+  };
+  const excludedIds = new Set(getDescendantIds(block));
+  const validSections = availableSections.filter(section => !excludedIds.has(section.id));
 
   // Classification options
   const roles: RoleTag[] = ['Predictor', 'Outcome', 'Structure', 'All'];
@@ -582,9 +591,12 @@ export function SettingsModal({
                     Parent Section
                   </label>
                   <select
-                    value={block.parentId || 'root'}
+                    value={localBlock.parentId || 'root'}
                     onChange={(e) => {
                       const newParentId = e.target.value === 'root' ? undefined : e.target.value;
+                      // Update local state first for immediate UI feedback
+                      setLocalBlock(prev => ({ ...prev, parentId: newParentId }));
+                      // Then update the actual schema
                       onChangeParent(block.id, newParentId);
                     }}
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -592,7 +604,7 @@ export function SettingsModal({
                     <option value="root">Root Level (No Parent)</option>
                     {validSections.map(section => (
                       <option key={section.id} value={section.id}>
-                        {section.variable.name}
+                        {section.customName || section.variable.name}
                       </option>
                     ))}
                   </select>
