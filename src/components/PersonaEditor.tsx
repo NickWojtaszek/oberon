@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Lock, Info, AlertTriangle, X, Shield, BookOpen, MessageSquare, Target, Link2, CheckCircle2, BarChart3, FileText, GraduationCap, MessageCircleQuestion, Command, Plus, Star, Search, ExternalLink, TrendingUp, Copy, ArrowRight, Sparkles, User, Brain, Type } from 'lucide-react';
-import { StatusBadge } from './StatusBadge';
 import { LivePreviewPanel } from './LivePreviewPanel';
 import { storage } from '../utils/storageService';
 import type { UserPersona } from '../types/shared';

@@ -24,7 +24,6 @@ import {
 import { DashboardV2 } from './DashboardV2';
 import { ProtocolLibraryScreen, type ProtocolLibraryScreenRef } from './ProtocolLibraryScreen';
 import { PersonaEditor } from './PersonaEditor';
-import { PersonaLibrary, type PersonaLibraryRef } from './PersonaLibrary';
 import { FairyCourtPersonas } from './FairyCourtPersonas';
 import { ClinicalCaptureWizard } from './clinical-capture-wizard';
 import { AcademicWriting } from './AcademicWriting';
@@ -35,7 +34,7 @@ import { DataImportExport } from './DataImportExport';
 import { Database } from './Database';
 import { JOURNAL_LIBRARY, getGenericJournal, updateGenericJournal } from '../data/journalLibrary';
 import type { NavigationTab } from './unified-workspace/NavigationPanel';
-import type { MismatchCard, AutonomyMode, PaperType, JournalProfile } from '../types/accountability';
+import type { MismatchCard, AutonomyMode, JournalProfile } from '../types/accountability';
 
 export function ResearchFactoryApp() {
   const { currentProtocol } = useProtocol();
@@ -48,9 +47,6 @@ export function ResearchFactoryApp() {
   
   // Ref for ProtocolLibraryScreen to trigger create new
   const protocolLibraryRef = useRef<ProtocolLibraryScreenRef>(null);
-  
-  // Ref for PersonaLibrary to trigger create new
-  const personaLibraryRef = useRef<PersonaLibraryRef>(null);
 
   // Protocol IDs for loading specific protocol in database (from wizard navigation)
   const [databaseInitialProtocolId, setDatabaseInitialProtocolId] = useState<string | undefined>();
@@ -58,7 +54,6 @@ export function ResearchFactoryApp() {
 
   // Phase 4: Journal Constraints
   const [selectedJournal, setSelectedJournal] = useState<JournalProfile>(JOURNAL_LIBRARY[0]);
-  const [paperType, setPaperType] = useState<PaperType>('original-research');
   
   // Custom journals and dialogs
   const [customJournals, setCustomJournals] = useState<JournalProfile[]>([]);
@@ -515,7 +510,7 @@ export function ResearchFactoryApp() {
           </div>
         );
     }
-  }, [activeTab, autonomyMode, selectedJournal, paperType, allJournals, databaseInitialProtocolId, databaseInitialVersionId]);
+  }, [activeTab, autonomyMode, selectedJournal, allJournals, databaseInitialProtocolId, databaseInitialVersionId]);
 
   return (
     <div className="h-screen overflow-hidden">
@@ -524,7 +519,7 @@ export function ResearchFactoryApp() {
           <NavigationPanel
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            projectName={currentProtocol?.protocolTitle || currentProtocol?.protocolTitle}
+            projectName={currentProtocol?.protocolTitle}
           />
         }
         utilitySidebar={

@@ -57,7 +57,7 @@ interface WizardState {
 const WIZARD_STEPS: Array<{
   id: WizardStep;
   label: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   required: boolean;
 }> = [
   { id: 'pico-capture', label: 'PICO Framework', icon: FileText, required: true },
