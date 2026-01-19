@@ -108,7 +108,9 @@ class ManuscriptService {
     }
 
     // Use localStorage
+    console.log('💾 [manuscriptService] Saving manuscript to localStorage:', manuscript.id, 'projectId:', manuscript.projectMeta.projectId);
     storage.manuscripts.save(manuscript, manuscript.projectMeta.projectId);
+    console.log('✅ [manuscriptService] Manuscript saved successfully');
     return manuscript;
   }
 

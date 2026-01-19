@@ -1,9 +1,77 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, CheckCircle2, AlertCircle, User, Calendar, Hash, ChevronLeft, ChevronRight, FileCheck, AlertTriangle, ArrowLeft, TestTube2 } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, User, Calendar, Hash, ChevronLeft, ChevronRight, FileCheck, AlertTriangle, ArrowLeft, TestTube2, X } from 'lucide-react';
 import { DatabaseTable } from './database/utils/schemaGenerator';
 import { DataEntryField } from './DataEntryField';
 import { validateDraft, validateComplete, getFormCompletion, getTableCompletionStatus, ValidationError } from '../utils/formValidation';
 import { saveDataRecord, ClinicalDataRecord } from '../utils/dataStorage';
+
+// Confirmation Modal Component
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText: string;
+  confirmVariant?: 'primary' | 'warning';
+  isLoading?: boolean;
+}
+
+function ConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
+  confirmVariant = 'primary',
+  isLoading = false
+}: ConfirmationModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          <p className="text-slate-600">{message}</p>
+        </div>
+        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoading}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 ${
+              confirmVariant === 'warning'
+                ? 'bg-amber-600 text-white hover:bg-amber-700'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {isLoading && (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            )}
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Auto-save delay in ms (5 seconds after last change)
 const AUTO_SAVE_DELAY = 5000;
@@ -15,6 +83,7 @@ interface DataEntryFormProps {
   onSave: (data: any) => void;
   initialRecord?: ClinicalDataRecord | null;
   onBackToBrowser?: () => void;
+  onUnsavedChanges?: (hasChanges: boolean) => void;
 }
 
 interface FormData {
@@ -23,7 +92,7 @@ interface FormData {
   };
 }
 
-export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave, initialRecord, onBackToBrowser }: DataEntryFormProps) {
+export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave, initialRecord, onBackToBrowser, onUnsavedChanges }: DataEntryFormProps) {
   const [subjectId, setSubjectId] = useState('');
   const [visitNumber, setVisitNumber] = useState('');
   const [enrollmentDate, setEnrollmentDate] = useState('');
@@ -43,14 +112,26 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved'>('idle');
 
+  // Confirmation modal states
+  const [showSaveDraftConfirm, setShowSaveDraftConfirm] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showLoadPatientConfirm, setShowLoadPatientConfirm] = useState(false);
+  const [pendingPatientLoad, setPendingPatientLoad] = useState<ClinicalDataRecord | null>(null);
+
   useEffect(() => {
     if (initialRecord) {
       setSubjectId(initialRecord.subjectId);
       setVisitNumber(initialRecord.visitNumber || '');
       setEnrollmentDate(initialRecord.enrollmentDate);
       setFormData(initialRecord.data);
+      setHasUnsavedChanges(false);
     }
   }, [initialRecord]);
+
+  // Report unsaved changes to parent component
+  useEffect(() => {
+    onUnsavedChanges?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChanges]);
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
@@ -130,10 +211,9 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
     setWarnings((prev) => prev.filter((w) => !(w.tableId === tableId && w.fieldId === fieldId)));
   };
 
-  const handleSaveDraft = async () => {
-    console.log('💾 Attempting to save draft...', { subjectId, enrollmentDate, formData });
-    
-    // Validate in draft mode (only base fields + data type validation)
+  // Show confirmation for save draft
+  const handleSaveDraftClick = () => {
+    // Validate first before showing confirmation
     const validation = validateDraft(subjectId, enrollmentDate, formData, tables);
     setErrors(validation.errors);
     setWarnings(validation.warnings);
@@ -143,6 +223,12 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
       return;
     }
 
+    setShowSaveDraftConfirm(true);
+  };
+
+  const handleSaveDraft = async () => {
+    console.log('💾 Saving draft...', { subjectId, enrollmentDate, formData });
+    setShowSaveDraftConfirm(false);
     setIsSaving(true);
 
     try {
@@ -161,6 +247,7 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
         console.log('✅ Draft saved successfully:', result.recordId);
         setSaveSuccess(true);
         setSaveMessage('Draft saved successfully');
+        setHasUnsavedChanges(false);
         onSave({ recordId: result.recordId, status: 'draft' });
 
         // Reset success message after 3 seconds
@@ -184,10 +271,9 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
     }
   };
 
-  const handleSubmitComplete = async () => {
-    console.log('📋 Attempting to submit complete form...', { testingMode });
-
-    // Validate in complete mode (skip required fields if testing mode enabled)
+  // Show confirmation for submit complete
+  const handleSubmitCompleteClick = () => {
+    // Validate first before showing confirmation
     const validation = validateComplete(subjectId, enrollmentDate, formData, tables, testingMode);
     setErrors(validation.errors);
     setWarnings(validation.warnings);
@@ -197,6 +283,12 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
       return;
     }
 
+    setShowSubmitConfirm(true);
+  };
+
+  const handleSubmitComplete = async () => {
+    console.log('📋 Submitting complete form...', { testingMode });
+    setShowSubmitConfirm(false);
     setIsSaving(true);
 
     try {
@@ -215,6 +307,7 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
         console.log('✅ Complete form submitted:', result.recordId);
         setSaveSuccess(true);
         setSaveMessage('Form submitted successfully');
+        setHasUnsavedChanges(false);
         onSave({ recordId: result.recordId, status: 'complete' });
 
         // Reset form after complete submission
@@ -589,7 +682,7 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
         </button>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleSaveDraft}
+            onClick={handleSaveDraftClick}
             disabled={isSaving}
             className="px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -606,7 +699,7 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
             )}
           </button>
           <button
-            onClick={handleSubmitComplete}
+            onClick={handleSubmitCompleteClick}
             disabled={isSaving}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -624,6 +717,28 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
           </button>
         </div>
       </div>
+
+      {/* Confirmation Modals */}
+      <ConfirmationModal
+        isOpen={showSaveDraftConfirm}
+        onClose={() => setShowSaveDraftConfirm(false)}
+        onConfirm={handleSaveDraft}
+        title="Save as Draft"
+        message={`Save data for Subject ${subjectId} as a draft? You can continue editing later.`}
+        confirmText="Save Draft"
+        isLoading={isSaving}
+      />
+
+      <ConfirmationModal
+        isOpen={showSubmitConfirm}
+        onClose={() => setShowSubmitConfirm(false)}
+        onConfirm={handleSubmitComplete}
+        title="Submit Complete Record"
+        message={`Submit complete record for Subject ${subjectId}? This marks the data as finalized. The form will be cleared after submission.`}
+        confirmText="Submit Complete"
+        confirmVariant="warning"
+        isLoading={isSaving}
+      />
 
       {/* Warnings (non-blocking) */}
       {warnings.length > 0 && errors.length === 0 && (

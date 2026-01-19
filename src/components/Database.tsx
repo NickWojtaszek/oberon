@@ -1,12 +1,73 @@
-import { Download, Plus, GitBranch, AlertTriangle, Table2, Edit, Search, Layers, BarChart3, Database as DatabaseIcon } from 'lucide-react';
+import { Download, Plus, GitBranch, AlertTriangle, Table2, Edit, Search, Layers, BarChart3, Database as DatabaseIcon, X } from 'lucide-react';
 import { SchemaView, DataEntryView, DataBrowserView, QueryView, useDatabase } from './database/index';
 import { Analytics } from './Analytics';
 import { ContentContainer } from './ui/ContentContainer';
 import { ModulePersonaPanel } from './ai-personas/ui/ModulePersonaPanel';
 import { useProject } from '../contexts/ProtocolContext';
 import { getRecordsByProtocol, ClinicalDataRecord } from '../utils/dataStorage';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+
+// Load Patient Confirmation Modal
+interface LoadPatientConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  onSaveFirst?: () => void;
+  patientId: string;
+}
+
+function LoadPatientConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  onSaveFirst,
+  patientId
+}: LoadPatientConfirmModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900">Load Different Patient?</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-slate-700 mb-2">
+                You have unsaved changes in the current form.
+              </p>
+              <p className="text-slate-600 text-sm">
+                Loading patient <span className="font-medium">{patientId}</span> will discard any unsaved data.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+          >
+            Discard & Load
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface DatabaseProps {
   initialProtocolId?: string;
@@ -36,6 +97,13 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
   // State for editing existing records from Data Browser
   const [selectedRecord, setSelectedRecord] = useState<ClinicalDataRecord | null>(null);
 
+  // State to track if data entry form has unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // State for load patient confirmation
+  const [showLoadConfirm, setShowLoadConfirm] = useState(false);
+  const [pendingRecord, setPendingRecord] = useState<ClinicalDataRecord | null>(null);
+
   // Refresh protocols when component mounts (in case we just came from wizard)
   useEffect(() => {
     console.log('🗄️ [Database] Component mounted, refreshing protocols...');
@@ -46,21 +114,49 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
   useEffect(() => {
     if (activeTab !== 'data-entry') {
       setSelectedRecord(null);
+      setHasUnsavedChanges(false);
     }
   }, [activeTab]);
 
   // Handler for editing a record from the Data Browser
-  const handleEditRecord = (record: ClinicalDataRecord) => {
-    console.log('📝 [Database] Editing record:', record.recordId);
+  const handleEditRecord = useCallback((record: ClinicalDataRecord) => {
+    console.log('📝 [Database] Edit record requested:', record.recordId, 'hasUnsavedChanges:', hasUnsavedChanges);
+
+    // If we're in data-entry and have unsaved changes, show confirmation
+    if (activeTab === 'data-entry' && hasUnsavedChanges && selectedRecord?.recordId !== record.recordId) {
+      setPendingRecord(record);
+      setShowLoadConfirm(true);
+      return;
+    }
+
+    // Otherwise, load the record directly
     setSelectedRecord(record);
     setActiveTab('data-entry');
-  };
+    setHasUnsavedChanges(false);
+  }, [activeTab, hasUnsavedChanges, selectedRecord?.recordId]);
+
+  // Confirm loading the new patient (discard unsaved changes)
+  const confirmLoadRecord = useCallback(() => {
+    if (pendingRecord) {
+      setSelectedRecord(pendingRecord);
+      setActiveTab('data-entry');
+      setHasUnsavedChanges(false);
+    }
+    setShowLoadConfirm(false);
+    setPendingRecord(null);
+  }, [pendingRecord]);
 
   // Handler for going back to browser from data entry
-  const handleBackToBrowser = () => {
+  const handleBackToBrowser = useCallback(() => {
     setSelectedRecord(null);
     setActiveTab('browser');
-  };
+    setHasUnsavedChanges(false);
+  }, []);
+
+  // Callback for DataEntryForm to report unsaved changes
+  const handleUnsavedChanges = useCallback((hasChanges: boolean) => {
+    setHasUnsavedChanges(hasChanges);
+  }, []);
 
   const getStatusBadge = (status: 'published' | 'draft' | 'archived') => {
     switch (status) {
@@ -191,6 +287,7 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
                 onSave={loadProtocols}
                 initialRecord={selectedRecord}
                 onBackToBrowser={handleBackToBrowser}
+                onUnsavedChanges={handleUnsavedChanges}
               />
             )}
 
@@ -217,7 +314,7 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
         </div>
 
         {/* AI Personas Panel with Data Quality - Always visible */}
-        <ModulePersonaPanel 
+        <ModulePersonaPanel
           module="database"
           dataRecords={dataRecords}
           schemaBlocks={schemaBlocks}
@@ -232,6 +329,17 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
           }}
         />
       </div>
+
+      {/* Load Patient Confirmation Modal */}
+      <LoadPatientConfirmModal
+        isOpen={showLoadConfirm}
+        onClose={() => {
+          setShowLoadConfirm(false);
+          setPendingRecord(null);
+        }}
+        onConfirm={confirmLoadRecord}
+        patientId={pendingRecord?.subjectId || ''}
+      />
     </div>
   );
 }

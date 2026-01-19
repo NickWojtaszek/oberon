@@ -11,9 +11,10 @@ interface DataEntryViewProps {
   onSave?: () => void;
   initialRecord?: ClinicalDataRecord | null;
   onBackToBrowser?: () => void;
+  onUnsavedChanges?: (hasChanges: boolean) => void;
 }
 
-export function DataEntryView({ tables, protocolNumber, protocolVersion, protocolStatus, onSave, initialRecord, onBackToBrowser }: DataEntryViewProps) {
+export function DataEntryView({ tables, protocolNumber, protocolVersion, protocolStatus, onSave, initialRecord, onBackToBrowser, onUnsavedChanges }: DataEntryViewProps) {
   // Show message if no tables
   if (tables.length === 0) {
     return (
@@ -78,6 +79,7 @@ export function DataEntryView({ tables, protocolNumber, protocolVersion, protoco
       onSave={onSave}
       initialRecord={initialRecord}
       onBackToBrowser={onBackToBrowser}
+      onUnsavedChanges={onUnsavedChanges}
     />
   );
 }

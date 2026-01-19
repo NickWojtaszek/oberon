@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Download, Eye, Trash2, FileText, Calendar, User, Hash, CheckCircle2, Clock, History, X } from 'lucide-react';
+import { Search, Filter, Download, Eye, Trash2, FileText, Calendar, User, Hash, CheckCircle2, Clock, History, X, Beaker, Loader2 } from 'lucide-react';
 import { getAllRecords, getRecordsByProtocol, deleteRecord, ClinicalDataRecord, AuditEntry } from '../utils/dataStorage';
+import { loadMockData, isMockDataLoaded, clearMockData } from '../utils/mockDataLoader';
 
 interface DataBrowserProps {
   protocolNumber?: string;
@@ -22,6 +23,9 @@ export function DataBrowser({ protocolNumber, protocolVersion, onViewRecord }: D
   // Audit trail modal state
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [auditRecord, setAuditRecord] = useState<ClinicalDataRecord | null>(null);
+  // Mock data loading state
+  const [isLoadingMockData, setIsLoadingMockData] = useState(false);
+  const [hasMockData, setHasMockData] = useState(false);
 
   // Load records
   useEffect(() => {
@@ -73,15 +77,59 @@ export function DataBrowser({ protocolNumber, protocolVersion, onViewRecord }: D
 
   const loadRecords = () => {
     let loadedRecords: ClinicalDataRecord[];
-    
+
     if (protocolNumber) {
       loadedRecords = getRecordsByProtocol(protocolNumber, protocolVersion);
+      // Check if mock data exists
+      setHasMockData(isMockDataLoaded(protocolNumber));
     } else {
       loadedRecords = getAllRecords();
     }
-    
+
     setRecords(loadedRecords);
     console.log('📊 Loaded records:', loadedRecords.length);
+  };
+
+  // Load mock data for testing
+  const handleLoadMockData = async () => {
+    if (!protocolNumber || !protocolVersion) {
+      alert('Please select a protocol and version first');
+      return;
+    }
+
+    if (hasMockData) {
+      if (!confirm('Mock data already exists. Do you want to clear it and reload?')) {
+        return;
+      }
+      clearMockData(protocolNumber);
+    }
+
+    setIsLoadingMockData(true);
+
+    // Small delay to show loading state
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const result = loadMockData(protocolNumber, protocolVersion);
+
+    setIsLoadingMockData(false);
+
+    if (result.success) {
+      loadRecords();
+      alert(`Successfully loaded ${result.count} mock patient records for testing Analytics!`);
+    } else {
+      alert(`Failed to load mock data: ${result.error}`);
+    }
+  };
+
+  // Clear mock data
+  const handleClearMockData = () => {
+    if (!protocolNumber) return;
+
+    if (confirm('Are you sure you want to remove all mock data (MOCK-xxx records)?')) {
+      const count = clearMockData(protocolNumber);
+      loadRecords();
+      alert(`Removed ${count} mock records`);
+    }
   };
 
   const handleSort = (column: SortColumn) => {
@@ -203,6 +251,34 @@ export function DataBrowser({ protocolNumber, protocolVersion, onViewRecord }: D
             <div className="text-sm text-slate-600">
               {filteredRecords.length} {filteredRecords.length === 1 ? 'record' : 'records'}
             </div>
+            {/* Mock Data Button for Testing */}
+            {protocolNumber && (
+              <div className="flex items-center gap-2">
+                {hasMockData && (
+                  <button
+                    onClick={handleClearMockData}
+                    className="px-3 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2 text-sm"
+                    title="Remove mock test data"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear Mock
+                  </button>
+                )}
+                <button
+                  onClick={handleLoadMockData}
+                  disabled={isLoadingMockData}
+                  className="px-3 py-2 border border-purple-200 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+                  title="Load 20 mock patients for testing Analytics"
+                >
+                  {isLoadingMockData ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Beaker className="w-4 h-4" />
+                  )}
+                  {hasMockData ? 'Reload Mock' : 'Load Mock Data'}
+                </button>
+              </div>
+            )}
             <button
               onClick={exportToCSV}
               disabled={filteredRecords.length === 0}

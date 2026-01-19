@@ -52,10 +52,17 @@ export function useManuscriptState(projectId: string | undefined) {
 
   // Create manuscript mutation
   const createMutation = useMutation({
-    mutationFn: (manuscript: ManuscriptManifest) => manuscriptService.create(manuscript),
+    mutationFn: (manuscript: ManuscriptManifest) => {
+      console.log('📝 [useManuscriptState] mutationFn called for:', manuscript.id);
+      return manuscriptService.create(manuscript);
+    },
     onSuccess: (newManuscript) => {
+      console.log('✅ [useManuscriptState] Manuscript created successfully:', newManuscript.id);
       queryClient.invalidateQueries({ queryKey: queryKeys.manuscripts.all(projectId || '') });
       setSelectedManuscriptId(newManuscript.id);
+    },
+    onError: (error) => {
+      console.error('❌ [useManuscriptState] Failed to create manuscript:', error);
     },
   });
 
@@ -142,7 +149,12 @@ export function useManuscriptState(projectId: string | undefined) {
 
   // Handler functions
   const handleCreateManuscript = (title: string) => {
-    if (!projectId) return null;
+    console.log('📝 [useManuscriptState] Creating manuscript:', { title, projectId });
+
+    if (!projectId) {
+      console.error('❌ [useManuscriptState] Cannot create manuscript: projectId is undefined');
+      return null;
+    }
 
     const newManuscript: ManuscriptManifest = {
       id: `manuscript-${Date.now()}`,
@@ -186,6 +198,7 @@ export function useManuscriptState(projectId: string | undefined) {
       reviewComments: [],
     };
 
+    console.log('📝 [useManuscriptState] Calling createMutation with:', newManuscript.id);
     createMutation.mutate(newManuscript);
     return newManuscript;
   };
