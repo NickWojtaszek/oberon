@@ -118,6 +118,15 @@ export function SettingsModal({
       role: aiSuggestion.role as RoleTag,
       endpointTier: aiSuggestion.endpointTier,
       analysisMethod: aiSuggestion.analysisMethod,
+      dataType: aiSuggestion.dataType as DataType,
+      // Apply dependencies if suggested
+      conditionalDependencies: aiSuggestion.suggestedDependencies?.map(dep => ({
+        id: `dep-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        targetFieldName: dep.targetFieldName,
+        conditionType: dep.conditionType,
+        conditionOperator: dep.conditionOperator,
+        conditionValue: dep.conditionValue,
+      })) || prev.conditionalDependencies,
     }));
   };
 
@@ -186,7 +195,7 @@ export function SettingsModal({
                       <div className="text-xs font-semibold text-purple-900 mb-2">
                         Dr. Puck's Suggestions
                       </div>
-                      <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                         <div>
                           <span className="text-purple-700">Role:</span>{' '}
                           <span className="font-semibold text-purple-900">{aiSuggestion.role}</span>
@@ -202,13 +211,33 @@ export function SettingsModal({
                           <span className="font-semibold text-purple-900">{aiSuggestion.analysisMethod || 'None'}</span>
                           <span className="text-purple-500 ml-1">({aiSuggestion.analysisConfidence}%)</span>
                         </div>
+                        <div>
+                          <span className="text-purple-700">Data Type:</span>{' '}
+                          <span className="font-semibold text-purple-900">{aiSuggestion.dataType}</span>
+                          <span className="text-purple-500 ml-1">({aiSuggestion.dataTypeConfidence}%)</span>
+                        </div>
                       </div>
+                      {/* Dependencies suggestion */}
+                      {aiSuggestion.suggestedDependencies && aiSuggestion.suggestedDependencies.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-purple-200">
+                          <div className="text-xs text-purple-700 mb-1">Suggested Dependencies:</div>
+                          {aiSuggestion.suggestedDependencies.map((dep, idx) => (
+                            <div key={idx} className="text-xs bg-purple-50 rounded px-2 py-1 mb-1">
+                              <span className="font-medium text-purple-900">
+                                {dep.conditionType} when "{dep.targetFieldName}" {dep.conditionOperator} {dep.conditionValue || 'any value'}
+                              </span>
+                              <span className="text-purple-500 ml-1">({dep.confidence}%)</span>
+                              <div className="text-purple-600 text-[10px] mt-0.5">{dep.reasoning}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <button
                         onClick={applyAISuggestion}
                         className="mt-2 text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1"
                       >
                         <CheckCircle className="w-3 h-3" />
-                        Apply Suggestions
+                        Apply All Suggestions
                       </button>
                     </div>
                   </div>
