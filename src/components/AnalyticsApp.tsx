@@ -45,14 +45,14 @@ export function AnalyticsApp({ onNavigate }: AnalyticsAppProps = {}) {
     );
   }
 
-  // No schema blocks
-  if (!selectedProtocol || !selectedProtocol.schemaBlocks || selectedProtocol.schemaBlocks.length === 0) {
+  // No schema blocks - check selectedVersion (not selectedProtocol) since schemaBlocks are on versions
+  if (!selectedVersion || !selectedVersion.schemaBlocks || selectedVersion.schemaBlocks.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-250px)] bg-slate-50">
         <EmptyState
           preset="database"
           title="No Database Schema"
-          description="The selected protocol doesn't have any schema blocks defined. Add schema blocks in the Protocol Workbench to generate database tables."
+          description="The selected protocol version doesn't have any schema blocks defined. Add schema blocks in the Protocol Workbench to generate database tables."
           action={null}
           size="md"
         />

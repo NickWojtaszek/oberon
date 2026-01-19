@@ -26,6 +26,7 @@ import { PICOCaptureStep } from './steps/PICOCaptureStep';
 import { PICOValidationStep } from './steps/PICOValidationStep';
 import { StudyDesignStep } from './steps/StudyDesignStep';
 import { SchemaBuilderStep } from './steps/SchemaBuilderStep';
+import { DependenciesStep } from './steps/DependenciesStep';
 import { ProtocolDetailsStep, type ProtocolDetailsData } from './steps/ProtocolDetailsStep';
 import { ReviewPublishStep } from './steps/ReviewPublishStep';
 import { DeployStep } from './steps/DeployStep';
@@ -341,6 +342,25 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
     }
   };
 
+  // Handle dependencies step completion (optional step)
+  const handleDependenciesComplete = () => {
+    if (currentProtocol) {
+      // Mark dependencies step as complete
+      completeStep('dependencies');
+
+      // Advance to protocol details
+      const currentIndex = WIZARD_STEPS.findIndex(s => s.id === 'dependencies');
+      if (currentIndex < WIZARD_STEPS.length - 1) {
+        goToStep(WIZARD_STEPS[currentIndex + 1].id);
+      }
+    }
+  };
+
+  // Handle going back to schema builder from dependencies
+  const handleBackToSchemaBuilder = () => {
+    goToStep('schema-builder');
+  };
+
   // Handle protocol details completion
   const handleProtocolDetailsComplete = (data: ProtocolDetailsData) => {
     if (currentProtocol) {
@@ -574,6 +594,19 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
             />
           )}
 
+          {wizardState.currentStep === 'dependencies' && (
+            <DependenciesStep
+              onComplete={handleDependenciesComplete}
+              onBack={handleBackToSchemaBuilder}
+              schemaBlocks={currentVersion?.schemaBlocks || []}
+              onSelectBlock={(blockId) => {
+                // Navigate back to schema builder to edit the block
+                console.log('[ClinicalCaptureWizard] Navigate to block:', blockId);
+                goToStep('schema-builder');
+              }}
+            />
+          )}
+
           {wizardState.currentStep === 'protocol-details' && currentProtocol && (
             <ProtocolDetailsStep
               onComplete={handleProtocolDetailsComplete}
@@ -647,11 +680,12 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
             />
           )}
 
-          {/* Fallback for steps without dedicated components (e.g., dependencies) */}
+          {/* Fallback for steps without dedicated components */}
           {wizardState.currentStep !== 'pico-capture' &&
            wizardState.currentStep !== 'pico-validation' &&
            wizardState.currentStep !== 'study-design' &&
            wizardState.currentStep !== 'schema-builder' &&
+           wizardState.currentStep !== 'dependencies' &&
            wizardState.currentStep !== 'protocol-details' &&
            wizardState.currentStep !== 'review-publish' &&
            wizardState.currentStep !== 'deploy' && (

@@ -58,7 +58,7 @@ export function getUserPermissions(role: UserRole): UserPermissions {
  * Backward-compatible: Returns true if RBAC disabled
  */
 export function canAccessTab(
-  tabName: string, 
+  tabName: string,
   role: UserRole,
   accessLevel: TabAccessLevel = 'full'
 ): boolean {
@@ -66,9 +66,9 @@ export function canAccessTab(
   if (!FEATURE_FLAGS.ENABLE_RBAC) {
     return true;
   }
-  
+
   const permissions = getUserPermissions(role);
-  
+
   // Map tab names to permission fields
   const tabPermissionMap: Record<string, keyof UserPermissions> = {
     'protocol': 'canAccessProtocol',
@@ -77,18 +77,18 @@ export function canAccessTab(
     'writing': 'canAccessWriting',
     'lab-management': 'canAccessLabManagement',
   };
-  
+
   const permissionKey = tabPermissionMap[tabName.toLowerCase()];
   if (!permissionKey) {
     return true; // Unknown tab, allow access
   }
-  
+
   const userAccess = permissions[permissionKey] as TabAccessLevel;
-  
+
   // Check if user's access level meets required level
   if (userAccess === 'hidden') return false;
   if (accessLevel === 'full' && userAccess !== 'full') return false;
-  
+
   return true;
 }
 

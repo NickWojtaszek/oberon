@@ -171,17 +171,19 @@ export function validateDraft(
 
 /**
  * Validate form in COMPLETE mode - all required fields must be filled
+ * @param skipRequiredValidation - If true, treats all fields as optional (for testing)
  */
 export function validateComplete(
   subjectId: string,
   enrollmentDate: string,
   formData: FormData,
-  tables: DatabaseTable[]
+  tables: DatabaseTable[],
+  skipRequiredValidation: boolean = false
 ): ValidationResult {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
 
-  // Validate base fields
+  // Validate base fields (always required - Subject ID and Enrollment Date)
   errors.push(...validateBaseFields(subjectId, enrollmentDate));
 
   // Validate all fields
@@ -190,11 +192,24 @@ export function validateComplete(
 
     table.fields.forEach((field) => {
       const value = tableData[field.id];
-      const error = validateField(field, value);
-      
-      if (error) {
-        error.tableId = table.tableName;
-        errors.push(error);
+
+      // If skipRequiredValidation is true, only validate data type (not required-ness)
+      if (skipRequiredValidation) {
+        // Only validate if value is provided (like draft mode)
+        if (value !== undefined && value !== null && value !== '') {
+          const fieldCopy = { ...field, isRequired: false };
+          const error = validateField(fieldCopy, value);
+          if (error) {
+            error.tableId = table.tableName;
+            errors.push(error);
+          }
+        }
+      } else {
+        const error = validateField(field, value);
+        if (error) {
+          error.tableId = table.tableName;
+          errors.push(error);
+        }
       }
     });
   });

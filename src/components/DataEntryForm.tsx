@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Save, CheckCircle2, AlertCircle, User, Calendar, Hash, ChevronLeft, ChevronRight, FileCheck, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Save, CheckCircle2, AlertCircle, User, Calendar, Hash, ChevronLeft, ChevronRight, FileCheck, AlertTriangle, ArrowLeft, TestTube2 } from 'lucide-react';
 import { DatabaseTable } from './database/utils/schemaGenerator';
 import { DataEntryField } from './DataEntryField';
 import { validateDraft, validateComplete, getFormCompletion, getTableCompletionStatus, ValidationError } from '../utils/formValidation';
 import { saveDataRecord, ClinicalDataRecord } from '../utils/dataStorage';
+
+// Auto-save delay in ms (5 seconds after last change)
+const AUTO_SAVE_DELAY = 5000;
 
 interface DataEntryFormProps {
   tables: DatabaseTable[];
@@ -32,6 +35,14 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
   const [saveMessage, setSaveMessage] = useState('');
   const [selectedTable, setSelectedTable] = useState<string>(tables[0]?.tableName || '');
 
+  // Testing mode: skip required field validation for easier testing
+  const [testingMode, setTestingMode] = useState(false);
+
+  // Auto-save timer ref
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved'>('idle');
+
   useEffect(() => {
     if (initialRecord) {
       setSubjectId(initialRecord.subjectId);
@@ -41,9 +52,68 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
     }
   }, [initialRecord]);
 
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    // Only auto-save if we have subject ID and enrollment date (minimum required)
+    if (!subjectId.trim() || !enrollmentDate) {
+      console.log('⏸️ Auto-save skipped: missing Subject ID or Enrollment Date');
+      setAutoSaveStatus('idle');
+      return;
+    }
+
+    setAutoSaveStatus('saving');
+
+    try {
+      const result = saveDataRecord({
+        protocolNumber,
+        protocolVersion,
+        subjectId,
+        visitNumber: visitNumber || null,
+        enrollmentDate,
+        collectedBy: 'Current User',
+        status: 'draft',
+        data: formData,
+      });
+
+      if (result.success) {
+        console.log('💾 Auto-saved successfully:', result.recordId);
+        setAutoSaveStatus('saved');
+        setHasUnsavedChanges(false);
+        // Reset status after 2 seconds
+        setTimeout(() => setAutoSaveStatus('idle'), 2000);
+      }
+    } catch (error) {
+      console.error('❌ Auto-save failed:', error);
+      setAutoSaveStatus('idle');
+    }
+  }, [subjectId, enrollmentDate, visitNumber, formData, protocolNumber, protocolVersion]);
+
+  // Schedule auto-save when data changes
+  useEffect(() => {
+    if (hasUnsavedChanges && subjectId && enrollmentDate) {
+      setAutoSaveStatus('pending');
+
+      // Clear existing timer
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+
+      // Schedule new auto-save
+      autoSaveTimerRef.current = setTimeout(() => {
+        performAutoSave();
+      }, AUTO_SAVE_DELAY);
+
+      return () => {
+        if (autoSaveTimerRef.current) {
+          clearTimeout(autoSaveTimerRef.current);
+        }
+      };
+    }
+  }, [hasUnsavedChanges, subjectId, enrollmentDate, performAutoSave]);
+
   const handleFieldChange = (tableId: string, fieldId: string, value: any) => {
     console.log('✅ Field changed:', { tableId, fieldId, value });
-    
+
     setFormData((prev) => ({
       ...prev,
       [tableId]: {
@@ -51,6 +121,9 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
         [fieldId]: value,
       },
     }));
+
+    // Mark as having unsaved changes (triggers auto-save)
+    setHasUnsavedChanges(true);
 
     // Clear error/warning for this field
     setErrors((prev) => prev.filter((e) => !(e.tableId === tableId && e.fieldId === fieldId)));
@@ -112,10 +185,10 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
   };
 
   const handleSubmitComplete = async () => {
-    console.log('📋 Attempting to submit complete form...');
-    
-    // Validate in complete mode (all required fields)
-    const validation = validateComplete(subjectId, enrollmentDate, formData, tables);
+    console.log('📋 Attempting to submit complete form...', { testingMode });
+
+    // Validate in complete mode (skip required fields if testing mode enabled)
+    const validation = validateComplete(subjectId, enrollmentDate, formData, tables, testingMode);
     setErrors(validation.errors);
     setWarnings(validation.warnings);
 
@@ -248,13 +321,51 @@ export function DataEntryForm({ tables, protocolNumber, protocolVersion, onSave,
               {initialRecord && <span className="ml-2">• {initialRecord.recordId}</span>}
             </p>
           </div>
-          {saveSuccess && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <span className="text-sm text-green-700">{saveMessage}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {/* Auto-save status indicator */}
+            {autoSaveStatus !== 'idle' && (
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs ${
+                autoSaveStatus === 'pending' ? 'bg-amber-50 text-amber-700' :
+                autoSaveStatus === 'saving' ? 'bg-blue-50 text-blue-700' :
+                'bg-green-50 text-green-700'
+              }`}>
+                {autoSaveStatus === 'pending' && '⏳ Auto-save pending...'}
+                {autoSaveStatus === 'saving' && '💾 Auto-saving...'}
+                {autoSaveStatus === 'saved' && '✅ Auto-saved'}
+              </div>
+            )}
+
+            {/* Testing Mode Toggle */}
+            <label className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={testingMode}
+                onChange={(e) => setTestingMode(e.target.checked)}
+                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+              />
+              <TestTube2 className="w-4 h-4 text-purple-600" />
+              <span className="text-xs font-medium text-purple-700">Testing Mode</span>
+            </label>
+
+            {saveSuccess && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <span className="text-sm text-green-700">{saveMessage}</span>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Testing Mode Notice */}
+        {testingMode && (
+          <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-purple-800">
+              <TestTube2 className="w-4 h-4" />
+              <span className="font-medium">Testing Mode Enabled:</span>
+              <span>Required field validation is disabled. You can submit with any fields filled.</span>
+            </div>
+          </div>
+        )}
 
         {/* Progress Bar */}
         <div className="mb-6">

@@ -93,6 +93,8 @@ export function AcademicWriting({ onNavigate }: AcademicWritingProps = {}) {
   const [ethicsCompliance, setEthicsCompliance] = useState<EthicsCompliance | null>(null);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [showAutoGenerateModal, setShowAutoGenerateModal] = useState(false);
+  const [showCreateManuscriptModal, setShowCreateManuscriptModal] = useState(false);
+  const [newManuscriptTitle, setNewManuscriptTitle] = useState('');
 
   // Load ethics compliance status for cross-tab validation
   useEffect(() => {
@@ -179,9 +181,15 @@ export function AcademicWriting({ onNavigate }: AcademicWritingProps = {}) {
   };
 
   const handleCreateManuscript = () => {
-    const title = prompt('Enter manuscript title:');
-    if (!title) return;
-    manuscriptState.handleCreateManuscript(title);
+    setNewManuscriptTitle('');
+    setShowCreateManuscriptModal(true);
+  };
+
+  const handleConfirmCreateManuscript = () => {
+    if (!newManuscriptTitle.trim()) return;
+    manuscriptState.handleCreateManuscript(newManuscriptTitle.trim());
+    setShowCreateManuscriptModal(false);
+    setNewManuscriptTitle('');
   };
 
   const simulateAIGeneration = (section: string, manifest: StatisticalManifest): string => {
@@ -801,6 +809,61 @@ export function AcademicWriting({ onNavigate }: AcademicWritingProps = {}) {
             conclusion: ''
           }}
         />
+
+        {/* Create Manuscript Modal */}
+        {showCreateManuscriptModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Create New Manuscript
+                </h3>
+                <button
+                  onClick={() => setShowCreateManuscriptModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+              <div className="p-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Manuscript Title
+                </label>
+                <input
+                  type="text"
+                  value={newManuscriptTitle}
+                  onChange={(e) => setNewManuscriptTitle(e.target.value)}
+                  placeholder="Enter manuscript title..."
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleConfirmCreateManuscript();
+                    if (e.key === 'Escape') setShowCreateManuscriptModal(false);
+                  }}
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  This will create a new manuscript linked to the current protocol.
+                </p>
+              </div>
+              <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowCreateManuscriptModal(false)}
+                  className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmCreateManuscript}
+                  disabled={!newManuscriptTitle.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Manuscript
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -242,12 +242,12 @@ export function NavigationPanel({
     if (item.id === 'methodology-engine') {
       return false;
     }
-    
+
     // Hide governance tab if RBAC is disabled
     if (item.id === 'governance' && !FEATURE_FLAGS.ENABLE_RBAC) {
       return false;
     }
-    
+
     // If RBAC enabled, check permissions (Phase 2)
     if (FEATURE_FLAGS.ENABLE_RBAC && governance) {
       const permissionKey = getTabPermissionKey(item.id);
@@ -256,7 +256,7 @@ export function NavigationPanel({
         return canAccess; // Hide if no access
       }
     }
-    
+
     return true;
   });
   
