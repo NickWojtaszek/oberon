@@ -22,11 +22,20 @@ import { SuggestionCard } from './SuggestionCard';
 import { ExecutionResultCard } from './ExecutionResultCard';
 import { ContextSummaryCard } from './ContextSummaryCard';
 
+interface PicoData {
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  timeframe?: string;
+}
+
 interface StatisticianPanelProps {
   protocol: ProtocolVersion | null;
   schemaBlocks: SchemaBlock[];
   records: ClinicalDataRecord[];
   foundationalPapers?: FoundationalPaperExtraction[];
+  picoData?: PicoData | null;
 }
 
 export function StatisticianPanel({
@@ -34,6 +43,7 @@ export function StatisticianPanel({
   schemaBlocks,
   records,
   foundationalPapers,
+  picoData,
 }: StatisticianPanelProps) {
   const {
     context,
@@ -54,6 +64,7 @@ export function StatisticianPanel({
     schemaBlocks,
     records,
     foundationalPapers,
+    picoData,
     autoGenerate: true,
   });
 

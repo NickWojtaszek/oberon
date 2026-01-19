@@ -35,6 +35,7 @@ ${context.protocol.studyPhase ? `Phase: ${context.protocol.studyPhase}` : ''}
 - **Intervention**: ${context.protocol.pico.intervention || 'Not specified'}
 - **Comparison**: ${context.protocol.pico.comparison || 'Not specified'}
 - **Outcome**: ${context.protocol.pico.outcome || 'Not specified'}
+${context.protocol.pico.timeframe ? `- **Timeframe**: ${context.protocol.pico.timeframe}` : ''}
 
 ### Objectives
 - **Primary**: ${context.protocol.primaryObjective || 'Not specified'}

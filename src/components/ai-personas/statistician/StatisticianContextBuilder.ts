@@ -27,13 +27,16 @@ export class StatisticianContextBuilder {
     protocol: ProtocolVersion,
     schemaBlocks: SchemaBlock[],
     records: ClinicalDataRecord[],
-    foundationalPapers?: FoundationalPaperExtraction[]
+    foundationalPapers?: FoundationalPaperExtraction[],
+    picoData?: { population?: string; intervention?: string; comparison?: string; outcome?: string; timeframe?: string } | null
   ): StatisticalAnalysisContext {
     // Filter to completed records only for analysis
     const completedRecords = records.filter(r => r.status === 'complete');
 
     console.log(`🔬 [ContextBuilder] Input: ${records.length} total records, ${completedRecords.length} complete`);
     console.log(`🔬 [ContextBuilder] Schema blocks: ${schemaBlocks.length}`);
+    console.log(`🔬 [ContextBuilder] PICO data provided:`, picoData ? 'Yes' : 'No');
+    console.log(`🔬 [ContextBuilder] Foundational papers:`, foundationalPapers?.length || 0);
 
     // Debug: Log structure of first record and first few blocks
     if (completedRecords.length > 0) {
@@ -61,7 +64,7 @@ export class StatisticianContextBuilder {
       console.log(`🔬 [ContextBuilder] Sample block IDs:`, allBlockIds.slice(0, 5));
     }
 
-    const protocolContext = this.buildProtocolContext(protocol);
+    const protocolContext = this.buildProtocolContext(protocol, picoData);
     const distributions = this.extractDistributions(schemaBlocks, completedRecords);
     const schemaContext = this.buildSchemaContext(schemaBlocks, distributions);
     const dataContext = this.buildDataContext(schemaBlocks, completedRecords, distributions);
@@ -80,20 +83,24 @@ export class StatisticianContextBuilder {
   /**
    * Extract protocol-level context
    */
-  private buildProtocolContext(protocol: ProtocolVersion): ProtocolContext {
+  private buildProtocolContext(
+    protocol: ProtocolVersion,
+    picoData?: { population?: string; intervention?: string; comparison?: string; outcome?: string; timeframe?: string } | null
+  ): ProtocolContext {
     const content = protocol.protocolContent;
     const metadata = protocol.metadata;
 
-    // Extract PICO from primary/secondary objectives text
+    // Use provided PICO data or fall back to extracting from objectives
     const primaryObj = content?.primaryObjective || '';
 
     return {
       pico: {
-        population: '', // Would need to be extracted from objectives text
-        intervention: '', // Would need to be extracted from objectives text
-        comparison: '', // Would need to be extracted from objectives text
-        outcome: primaryObj, // Primary objective often describes the outcome
-        confidence: undefined,
+        population: picoData?.population || '',
+        intervention: picoData?.intervention || '',
+        comparison: picoData?.comparison || '',
+        outcome: picoData?.outcome || primaryObj,
+        timeframe: picoData?.timeframe,
+        confidence: picoData ? 0.9 : undefined, // Higher confidence if PICO was explicitly provided
       },
       studyDesign: (metadata?.studyPhase as any) || 'rct',
       studyPhase: metadata?.studyPhase,

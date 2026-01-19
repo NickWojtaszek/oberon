@@ -14,11 +14,20 @@ import type {
 } from '../types';
 import { StatisticianService } from '../StatisticianService';
 
+interface PicoData {
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  timeframe?: string;
+}
+
 interface UseStatisticianOptions {
   protocol: ProtocolVersion | null;
   schemaBlocks: SchemaBlock[];
   records: ClinicalDataRecord[];
   foundationalPapers?: FoundationalPaperExtraction[];
+  picoData?: PicoData | null;
   config?: Partial<StatisticianConfig>;
   autoGenerate?: boolean;
 }
@@ -52,6 +61,7 @@ export function useStatistician({
   schemaBlocks,
   records,
   foundationalPapers,
+  picoData,
   config,
   autoGenerate = true,
 }: UseStatisticianOptions): UseStatisticianReturn {
@@ -82,7 +92,8 @@ export function useStatistician({
           protocol,
           schemaBlocks,
           records,
-          foundationalPapers
+          foundationalPapers,
+          picoData
         );
         setContext(newContext);
         setError(null);
@@ -92,7 +103,7 @@ export function useStatistician({
         setIsLoading(false);
       }
     }
-  }, [protocol, schemaBlocks, records, foundationalPapers, service]);
+  }, [protocol, schemaBlocks, records, foundationalPapers, picoData, service]);
 
   // Auto-generate if enabled and conditions are met
   useEffect(() => {

@@ -27,6 +27,7 @@ export interface ProtocolContext {
     intervention: string;
     comparison: string;
     outcome: string;
+    timeframe?: string;
     confidence?: number;
   };
   studyDesign: StudyType;

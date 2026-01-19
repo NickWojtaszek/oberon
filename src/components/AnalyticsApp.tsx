@@ -4,7 +4,7 @@
  * Includes AI-powered Statistician (Dr. Saga) for analysis suggestions
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BarChart3, AlertCircle, Brain, BarChart2 } from 'lucide-react';
 import { Analytics } from './Analytics';
 import { EmptyState } from './ui/EmptyState';
@@ -12,6 +12,7 @@ import { useDatabase } from './database/index';
 import { ModulePersonaPanel } from './ai-personas/ui/ModulePersonaPanel';
 import { StatisticianPanel } from './ai-personas/statistician/components/StatisticianPanel';
 import { getRecordsByProtocol } from '../utils/dataStorage';
+import type { FoundationalPaperExtraction } from '../services/geminiService';
 
 interface AnalyticsAppProps {
   onNavigate?: (tab: string) => void;
@@ -47,6 +48,30 @@ export function AnalyticsApp({ onNavigate }: AnalyticsAppProps = {}) {
   const records = protocolNumber && selectedVersion
     ? getRecordsByProtocol(protocolNumber, selectedVersion.versionNumber)
     : [];
+
+  // Extract PICO from protocol's studyMethodology for AI analytics
+  const picoData = useMemo(() => {
+    const methodology = (selectedProtocol as any)?.studyMethodology;
+    const pico = methodology?.hypothesis?.picoFramework || methodology?.picoFields;
+    return pico || null;
+  }, [selectedProtocol]);
+
+  // Extract foundational papers from protocol for AI analytics context
+  const foundationalPapers = useMemo((): FoundationalPaperExtraction[] | undefined => {
+    const methodology = (selectedProtocol as any)?.studyMethodology;
+    const papers = methodology?.foundationalPapers;
+    if (!papers || papers.length === 0) return undefined;
+
+    // Convert to FoundationalPaperExtraction format
+    return papers.map((paper: any) => ({
+      title: paper.title || '',
+      authors: paper.authors || '',
+      year: paper.year,
+      doi: paper.doi,
+      studyDesign: paper.studyDesign || '',
+      protocolElements: paper.protocolElements || {},
+    }));
+  }, [selectedProtocol]);
 
   // No protocols available
   if (!savedProtocols || savedProtocols.length === 0) {
@@ -205,6 +230,8 @@ export function AnalyticsApp({ onNavigate }: AnalyticsAppProps = {}) {
               protocol={selectedVersion}
               schemaBlocks={selectedVersion?.schemaBlocks || []}
               records={records}
+              foundationalPapers={foundationalPapers}
+              picoData={picoData}
             />
           ) : (
             <Analytics

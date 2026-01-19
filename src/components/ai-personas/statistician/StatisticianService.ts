@@ -59,13 +59,15 @@ export class StatisticianService {
     protocol: ProtocolVersion,
     schemaBlocks: SchemaBlock[],
     records: ClinicalDataRecord[],
-    foundationalPapers?: FoundationalPaperExtraction[]
+    foundationalPapers?: FoundationalPaperExtraction[],
+    picoData?: { population?: string; intervention?: string; comparison?: string; outcome?: string; timeframe?: string } | null
   ): StatisticalAnalysisContext {
     return this.contextBuilder.buildContext(
       protocol,
       schemaBlocks,
       records,
-      this.config.enableLiteratureGrounding ? foundationalPapers : undefined
+      this.config.enableLiteratureGrounding ? foundationalPapers : undefined,
+      picoData
     );
   }
 
