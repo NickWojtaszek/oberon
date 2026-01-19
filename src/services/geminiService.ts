@@ -906,8 +906,10 @@ export async function analyzeBulkFieldConfiguration(
   onProgress?: (processed: number, total: number) => void
 ): Promise<Map<string, SchemaFieldSuggestion>> {
 
-  // BATCH PROCESSING: Process fields in chunks to avoid API limits
-  const BATCH_SIZE = 40; // 40 fields per batch is a safe limit
+  // BATCH PROCESSING: Process fields in smaller chunks to avoid truncated responses
+  // Reduced from 40 to 20 - each field generates ~150-200 tokens of response
+  // With 20 fields, response should be ~3000-4000 tokens, well within 4096 limit
+  const BATCH_SIZE = 20;
   const batches: typeof fields[] = [];
 
   for (let i = 0; i < fields.length; i += BATCH_SIZE) {

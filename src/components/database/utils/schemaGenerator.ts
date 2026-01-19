@@ -187,29 +187,30 @@ export function findDeprecatedFields(
 
 /**
  * Generate database tables from protocol version
+ * Uses the actual Section structure from schema rather than hardcoded categories
  */
 export function generateDatabaseTables(
   protocolVersion: ProtocolVersion,
   previousVersion?: ProtocolVersion
 ): DatabaseTable[] {
   const tables: DatabaseTable[] = [];
-  
+
   // 🛡️ PHASE 3 FIX: Defensive check and auto-conversion
   console.log('🛡️ Database Generator - Checking schema block format...');
-  
+
   // Check if we have simplified blocks and convert if needed
   let schemaBlocks = protocolVersion.schemaBlocks;
-  
+
   if (schemaBlocks.length > 0) {
     const firstBlock = schemaBlocks[0];
-    
+
     if (isSimplifiedSchemaBlock(firstBlock)) {
       console.warn('⚠️ WARNING: Simplified schema blocks detected in protocol version!');
       console.warn('⚠️ Auto-converting to full format for database compatibility...');
       debugSchemaBlockFormat(schemaBlocks, 'Simplified Blocks (Before)');
-      
+
       schemaBlocks = convertSchemaBlocks(schemaBlocks as any);
-      
+
       debugSchemaBlockFormat(schemaBlocks, 'Full Blocks (After)');
       console.log(`✅ Converted ${schemaBlocks.length} blocks to full format`);
     } else {
@@ -219,47 +220,8 @@ export function generateDatabaseTables(
     console.warn('⚠️ No schema blocks found in protocol version');
   }
 
-  // Generate fields from current version
-  const activeFields = generateDatabaseFields(
-    schemaBlocks,
-    protocolVersion.versionNumber,
-    previousVersion
-  );
-  
-  // Find deprecated fields if there's a previous version
-  const deprecatedFields = previousVersion 
-    ? findDeprecatedFields(protocolVersion, previousVersion)
-    : [];
-  
-  const allFields = [...activeFields, ...deprecatedFields];
-
-  // Determine the order of categories by scanning schema blocks
-  const categoryOrder: string[] = [];
-  const processCategoryOrder = (blocks: SchemaBlock[]) => {
-    blocks.forEach(block => {
-      const category = block.variable.category;
-      if (category && !categoryOrder.includes(category)) {
-        categoryOrder.push(category);
-      }
-      if (block.children && block.children.length > 0) {
-        processCategoryOrder(block.children);
-      }
-    });
-  };
-  processCategoryOrder(protocolVersion.schemaBlocks);
-
-  // Log field and category info for debugging
-  console.log(`📋 Schema Analysis: ${schemaBlocks.length} blocks, ${allFields.length} fields`);
-  console.log(`   Categories found: [${categoryOrder.join(', ')}]`);
-
-  // Group fields by category
-  const demographicFields = allFields.filter(f => f.category === 'Demographics');
-  const endpointFields = allFields.filter(f => f.endpointTier);
-  const laboratoryFields = allFields.filter(f => f.category === 'Laboratory');
-  const clinicalFields = allFields.filter(f => f.category === 'Clinical');
-  const treatmentFields = allFields.filter(f => f.category === 'Treatments');
-
-  console.log(`   Demographics: ${demographicFields.length}, Endpoints: ${endpointFields.length}, Lab: ${laboratoryFields.length}, Clinical: ${clinicalFields.length}, Treatments: ${treatmentFields.length}`);
+  // Log schema structure info for debugging
+  console.log(`📋 Schema Analysis: ${schemaBlocks.length} top-level blocks`);
 
   // Always add subject ID, enrollment date, and visit tracking to all tables
   const baseFields: DatabaseField[] = [
@@ -310,134 +272,97 @@ export function generateDatabaseTables(
     }
   ];
 
-  // Create tables in the order they appear in the schema
-  const tableCreators = [
-    {
-      categories: ['Demographics'],
-      condition: () => demographicFields.length > 0,
-      create: () => ({
-        tableName: `subjects_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-        displayName: 'Subject Demographics',
-        description: 'Demographic and baseline characteristics tracked across study visits. Each row represents one subject at one timepoint.',
-        fields: [...baseFields, ...demographicFields],
+  // NEW APPROACH: Generate tables based on Section structure from schema
+  // Each top-level Section becomes a database table, preserving user's organization
+  const sectionBlocks = schemaBlocks.filter(block => block.dataType === 'Section');
+  const nonSectionBlocks = schemaBlocks.filter(block => block.dataType !== 'Section');
+
+  console.log(`   Found ${sectionBlocks.length} sections and ${nonSectionBlocks.length} root-level fields`);
+
+  // Create a table for each Section in the schema
+  for (const section of sectionBlocks) {
+    const sectionName = section.customName || section.variable.name;
+    const tableName = `${sectionName}_${protocolVersion.metadata.protocolNumber}`
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/_+/g, '_'); // Collapse multiple underscores
+
+    // Get fields from this section's children
+    const sectionFields = generateDatabaseFields(
+      section.children || [],
+      protocolVersion.versionNumber,
+      previousVersion
+    );
+
+    if (sectionFields.length > 0) {
+      tables.push({
+        tableName,
+        displayName: sectionName,
+        description: `Data fields from "${sectionName}" section of the protocol.`,
+        fields: [...baseFields, ...sectionFields],
         recordCount: 0,
         protocolNumber: protocolVersion.metadata.protocolNumber,
         protocolVersion: protocolVersion.versionNumber
-      })
-    },
-    {
-      categories: ['Endpoints'],
-      condition: () => endpointFields.length > 0,
-      create: () => ({
+      });
+
+      console.log(`   📁 Created table "${sectionName}" with ${sectionFields.length} fields`);
+    }
+  }
+
+  // Handle root-level fields (not in any section) - create a "General Data" table
+  if (nonSectionBlocks.length > 0) {
+    const rootFields = generateDatabaseFields(
+      nonSectionBlocks,
+      protocolVersion.versionNumber,
+      previousVersion
+    );
+
+    if (rootFields.length > 0) {
+      tables.push({
+        tableName: `general_data_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+        displayName: 'General Data',
+        description: 'Fields not organized into specific sections.',
+        fields: [...baseFields, ...rootFields],
+        recordCount: 0,
+        protocolNumber: protocolVersion.metadata.protocolNumber,
+        protocolVersion: protocolVersion.versionNumber
+      });
+
+      console.log(`   📁 Created "General Data" table with ${rootFields.length} root-level fields`);
+    }
+  }
+
+  // FALLBACK: If no sections exist, create tables by role/endpointTier
+  if (tables.length === 0 && schemaBlocks.length > 0) {
+    console.log('⚠️ No sections found. Falling back to role-based table generation.');
+
+    const allFields = generateDatabaseFields(schemaBlocks, protocolVersion.versionNumber, previousVersion);
+    const endpointFields = allFields.filter(f => f.endpointTier);
+    const otherFields = allFields.filter(f => !f.endpointTier);
+
+    if (endpointFields.length > 0) {
+      tables.push({
         tableName: `endpoints_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         displayName: 'Study Endpoints',
-        description: 'Primary, secondary, and exploratory endpoints measured longitudinally. Records multiple assessments per subject over time.',
-        fields: [
-          ...baseFields,
-          {
-            id: 'visit_number',
-            fieldName: 'visit_number',
-            displayName: 'Visit Number',
-            dataType: 'Continuous',
-            sqlType: 'INT',
-            isRequired: true,
-            category: 'Structural',
-            status: 'normal',
-            schemaBlockId: 'base_visit_number'
-          },
-          ...endpointFields
-        ],
+        description: 'Primary, secondary, and exploratory endpoints.',
+        fields: [...baseFields, ...endpointFields],
         recordCount: 0,
         protocolNumber: protocolVersion.metadata.protocolNumber,
         protocolVersion: protocolVersion.versionNumber
-      })
-    },
-    {
-      categories: ['Clinical'],
-      condition: () => clinicalFields.length > 0 || treatmentFields.length > 0,
-      create: () => ({
-        tableName: `clinical_data_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-        displayName: 'Clinical Data',
-        description: 'Treatments, adverse events, and clinical observations captured at each study visit. Supports longitudinal tracking of interventions and safety data.',
-        fields: [
-          ...baseFields,
-          {
-            id: 'visit_number',
-            fieldName: 'visit_number',
-            displayName: 'Visit Number',
-            dataType: 'Continuous',
-            sqlType: 'INT',
-            isRequired: true,
-            category: 'Structural',
-            status: 'normal',
-            schemaBlockId: 'base_visit_number'
-          },
-          ...clinicalFields,
-          ...treatmentFields
-        ],
-        recordCount: 0,
-        protocolNumber: protocolVersion.metadata.protocolNumber,
-        protocolVersion: protocolVersion.versionNumber
-      })
-    },
-    {
-      categories: ['Laboratory'],
-      condition: () => laboratoryFields.length > 0,
-      create: () => ({
-        tableName: `laboratory_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-        displayName: 'Laboratory Results',
-        description: 'Lab tests and biomarkers measured across study visits. Tracks repeated laboratory assessments for each subject over time.',
-        fields: [
-          ...baseFields,
-          {
-            id: 'visit_number',
-            fieldName: 'visit_number',
-            displayName: 'Visit Number',
-            dataType: 'Continuous',
-            sqlType: 'INT',
-            isRequired: true,
-            category: 'Structural',
-            status: 'normal',
-            schemaBlockId: 'base_visit_number'
-          },
-          ...laboratoryFields
-        ],
-        recordCount: 0,
-        protocolNumber: protocolVersion.metadata.protocolNumber,
-        protocolVersion: protocolVersion.versionNumber
-      })
+      });
     }
-  ];
 
-  // Add tables in the order they appear in the schema
-  for (const category of categoryOrder) {
-    const creator = tableCreators.find(tc => tc.categories.includes(category));
-    if (creator && creator.condition() && !tables.some(t => t.displayName === creator.create().displayName)) {
-      tables.push(creator.create());
+    if (otherFields.length > 0) {
+      tables.push({
+        tableName: `study_data_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+        displayName: 'Study Data',
+        description: 'All study data fields.',
+        fields: [...baseFields, ...otherFields],
+        recordCount: 0,
+        protocolNumber: protocolVersion.metadata.protocolNumber,
+        protocolVersion: protocolVersion.versionNumber
+      });
     }
-  }
-
-  // Add endpoints if they exist (they might not have a regular category)
-  const endpointsCreator = tableCreators.find(tc => tc.categories.includes('Endpoints'));
-  if (endpointsCreator && endpointsCreator.condition() && !tables.some(t => t.displayName === 'Study Endpoints')) {
-    tables.push(endpointsCreator.create());
-  }
-
-  // 🛡️ FALLBACK: If no tables were generated but we have fields, create a general data table
-  // This handles cases where schema blocks don't have recognized categories
-  if (tables.length === 0 && allFields.length > 0) {
-    console.log('⚠️ No standard tables generated. Creating fallback table with', allFields.length, 'fields');
-    console.log('   Field categories:', [...new Set(allFields.map(f => f.category || 'undefined'))].join(', '));
-
-    tables.push({
-      tableName: `study_data_${protocolVersion.metadata.protocolNumber}`.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-      displayName: 'Study Data',
-      description: 'All study data fields captured during the protocol. Contains both structured and custom fields.',
-      fields: [...baseFields, ...allFields],
-      recordCount: 0,
-      protocolNumber: protocolVersion.metadata.protocolNumber,
-      protocolVersion: protocolVersion.versionNumber
-    });
   }
 
   // Log table generation result
