@@ -1,6 +1,7 @@
 import { Edit, Lock, AlertCircle } from 'lucide-react';
 import { DataEntryForm } from '../../DataEntryForm';
 import type { DatabaseTable } from '../utils/schemaGenerator';
+import type { ClinicalDataRecord } from '../../../utils/dataStorage';
 
 interface DataEntryViewProps {
   tables: DatabaseTable[];
@@ -8,9 +9,11 @@ interface DataEntryViewProps {
   protocolVersion?: string;
   protocolStatus?: 'draft' | 'published' | 'archived';
   onSave?: () => void;
+  initialRecord?: ClinicalDataRecord | null;
+  onBackToBrowser?: () => void;
 }
 
-export function DataEntryView({ tables, protocolNumber, protocolVersion, protocolStatus, onSave }: DataEntryViewProps) {
+export function DataEntryView({ tables, protocolNumber, protocolVersion, protocolStatus, onSave, initialRecord, onBackToBrowser }: DataEntryViewProps) {
   // Show message if no tables
   if (tables.length === 0) {
     return (
@@ -73,6 +76,8 @@ export function DataEntryView({ tables, protocolNumber, protocolVersion, protoco
       protocolNumber={protocolNumber || ''}
       protocolVersion={protocolVersion || ''}
       onSave={onSave}
+      initialRecord={initialRecord}
+      onBackToBrowser={onBackToBrowser}
     />
   );
 }

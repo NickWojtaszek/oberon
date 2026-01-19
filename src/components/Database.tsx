@@ -4,7 +4,7 @@ import { Analytics } from './Analytics';
 import { ContentContainer } from './ui/ContentContainer';
 import { ModulePersonaPanel } from './ai-personas/ui/ModulePersonaPanel';
 import { useProject } from '../contexts/ProtocolContext';
-import { getRecordsByProtocol } from '../utils/dataStorage';
+import { getRecordsByProtocol, ClinicalDataRecord } from '../utils/dataStorage';
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,11 +33,34 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
     refreshProtocols
   } = useDatabase({ initialProtocolId, initialVersionId });
 
+  // State for editing existing records from Data Browser
+  const [selectedRecord, setSelectedRecord] = useState<ClinicalDataRecord | null>(null);
+
   // Refresh protocols when component mounts (in case we just came from wizard)
   useEffect(() => {
     console.log('🗄️ [Database] Component mounted, refreshing protocols...');
     refreshProtocols();
   }, [refreshProtocols]);
+
+  // Clear selected record when switching away from data-entry tab
+  useEffect(() => {
+    if (activeTab !== 'data-entry') {
+      setSelectedRecord(null);
+    }
+  }, [activeTab]);
+
+  // Handler for editing a record from the Data Browser
+  const handleEditRecord = (record: ClinicalDataRecord) => {
+    console.log('📝 [Database] Editing record:', record.recordId);
+    setSelectedRecord(record);
+    setActiveTab('data-entry');
+  };
+
+  // Handler for going back to browser from data entry
+  const handleBackToBrowser = () => {
+    setSelectedRecord(null);
+    setActiveTab('browser');
+  };
 
   const getStatusBadge = (status: 'published' | 'draft' | 'archived') => {
     switch (status) {
@@ -166,6 +189,8 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
                 protocolVersion={selectedVersion?.versionNumber}
                 protocolStatus={selectedVersion?.status}
                 onSave={loadProtocols}
+                initialRecord={selectedRecord}
+                onBackToBrowser={handleBackToBrowser}
               />
             )}
 
@@ -173,7 +198,7 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
               <DataBrowserView
                 protocolNumber={selectedVersion?.metadata.protocolNumber}
                 protocolVersion={selectedVersion?.versionNumber}
-                onEditRecord={() => setActiveTab('data-entry')}
+                onEditRecord={handleEditRecord}
               />
             )}
 

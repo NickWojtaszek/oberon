@@ -513,7 +513,7 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
 
       {/* Step content */}
       <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
           {isInitializing ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">

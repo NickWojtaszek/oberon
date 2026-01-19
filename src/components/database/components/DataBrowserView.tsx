@@ -1,9 +1,10 @@
 import { DataBrowser } from '../../DataBrowser';
+import type { ClinicalDataRecord } from '../../../utils/dataStorage';
 
 interface DataBrowserViewProps {
   protocolNumber?: string;
   protocolVersion?: string;
-  onEditRecord?: () => void;
+  onEditRecord?: (record: ClinicalDataRecord) => void;
 }
 
 export function DataBrowserView({ protocolNumber, protocolVersion, onEditRecord }: DataBrowserViewProps) {
@@ -11,7 +12,7 @@ export function DataBrowserView({ protocolNumber, protocolVersion, onEditRecord 
     <DataBrowser
       protocolNumber={protocolNumber}
       protocolVersion={protocolVersion}
-      onViewRecord={onEditRecord}
+      onViewRecord={onEditRecord || (() => {})}
     />
   );
 }
