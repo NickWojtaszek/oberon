@@ -24,6 +24,7 @@ interface UseProtocolLibraryReturn {
   setDraftToDelete: (draft: { protocolId: string; versionId: string; versionNumber: string } | null) => void;
   filteredProtocols: SavedProtocol[];
   loadProtocols: () => void;
+  refreshProtocols: () => void;
   handlePublishVersion: (protocolId: string, versionId: string) => void;
   confirmPublishVersion: () => void;
   handleEditPublishedVersion: (protocolId: string, versionId: string, onNavigateToBuilder: (protocolId?: string, versionId?: string) => void) => void;
@@ -58,7 +59,7 @@ export function useProtocolLibrary(): UseProtocolLibraryReturn {
         ...p,
         createdAt: p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt),
         modifiedAt: p.modifiedAt instanceof Date ? p.modifiedAt : new Date(p.modifiedAt),
-        versions: p.versions.map(v => ({
+        versions: p.versions.map((v: any) => ({
           ...v,
           createdAt: v.createdAt instanceof Date ? v.createdAt : new Date(v.createdAt),
           modifiedAt: v.modifiedAt instanceof Date ? v.modifiedAt : new Date(v.modifiedAt)
@@ -121,7 +122,7 @@ export function useProtocolLibrary(): UseProtocolLibraryReturn {
 
         return {
           ...protocol,
-          currentVersion: updatedVersion, // Update reference
+          currentVersion: updatedVersion.versionNumber, // Update to version number string
           versions: updatedVersions,
           modifiedAt: new Date()
         };
@@ -320,6 +321,7 @@ export function useProtocolLibrary(): UseProtocolLibraryReturn {
     setDraftToDelete,
     filteredProtocols,
     loadProtocols,
+    refreshProtocols: loadProtocols, // Alias for semantic clarity
     handlePublishVersion,
     confirmPublishVersion,
     handleEditPublishedVersion,

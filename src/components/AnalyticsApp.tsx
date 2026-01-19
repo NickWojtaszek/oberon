@@ -39,7 +39,11 @@ export function AnalyticsApp({ onNavigate }: AnalyticsAppProps = {}) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get records for the AI Statistician
-  const protocolNumber = (selectedProtocol as any)?.protocolNumber || selectedProtocol?.studyNumber;
+  // Use version metadata protocolNumber first (matches how DataBrowser saves mock data)
+  // then fall back to protocol-level fields
+  const protocolNumber = selectedVersion?.metadata?.protocolNumber
+    || (selectedProtocol as any)?.protocolNumber
+    || selectedProtocol?.studyNumber;
   const records = protocolNumber && selectedVersion
     ? getRecordsByProtocol(protocolNumber, selectedVersion.versionNumber)
     : [];

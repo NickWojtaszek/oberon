@@ -1,8 +1,9 @@
-import { FileText, Calendar, CheckCircle2, Edit3, Eye, Archive, GitBranch, Clock, Trash2, ArrowUpCircle, XCircle, AlertCircle, Blocks, FileCheck, Shield } from 'lucide-react';
+import { FileText, Calendar, CheckCircle2, Edit3, Eye, Archive, GitBranch, Clock, Trash2, ArrowUpCircle, XCircle, AlertCircle, Blocks, FileCheck, Shield, Download } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SavedProtocol, ProtocolVersion } from '../../protocol-workbench/types';
 import { calculateProtocolCompleteness, getMissingItemsCount } from '../utils/completenessCalculator';
+import { downloadProtocolExport } from '../../../utils/protocolExportImport';
 
 interface ProtocolCardProps {
   protocol: SavedProtocol;
@@ -143,6 +144,13 @@ export function ProtocolCard({
 
           {/* Actions */}
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => downloadProtocolExport(protocol, { includeClinicalData: true, includeManifests: true })}
+              className="px-3 py-2 bg-white hover:bg-blue-50 text-blue-600 border border-slate-300 hover:border-blue-300 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
+              title="Export protocol to JSON file"
+            >
+              <Download className="w-4 h-4" />
+            </button>
             <button
               onClick={() => onArchiveProtocol(protocol.id)}
               className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"

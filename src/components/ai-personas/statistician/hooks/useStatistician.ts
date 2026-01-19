@@ -105,7 +105,8 @@ export function useStatistician({
     ) {
       generateSuggestions(true);
     }
-  }, [context, autoGenerate, hasGenerated, isGenerating]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [context, autoGenerate, hasGenerated, isGenerating, service]);
 
   // Generate suggestions
   const generateSuggestions = useCallback(
