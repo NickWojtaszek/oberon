@@ -7,18 +7,14 @@ import {
   LayoutDashboard,
   FlaskConical,
   FolderOpen,
-  FileText,
-  User,
   BarChart3,
   Database,
   Upload,
   Shield,
   Settings,
   Lock,
-  Users,
   Brain,
   BookOpen,
-  Lightbulb,
   Crown,
   GraduationCap,
   Building,
@@ -34,10 +30,7 @@ export type NavigationTab =
   | 'protocol-library'
   | 'ai-personas'
   | 'persona-editor'
-  | 'protocol-workbench'
-  | 'research-wizard'
   | 'clinical-capture'
-  | 'project-setup'
   | 'methodology-engine'
   | 'database'
   | 'analytics'
@@ -72,22 +65,10 @@ const NAV_ITEMS: Array<{
     description: 'Browse protocols',
   },
   {
-    id: 'research-wizard',
-    label: 'Research Wizard',
-    icon: Lightbulb,
-    description: 'Guided research setup',
-  },
-  {
     id: 'clinical-capture',
     label: 'Clinical Capture',
     icon: Workflow,
     description: 'Unified protocol workflow',
-  },
-  {
-    id: 'protocol-workbench',
-    label: 'Protocol Workbench',
-    icon: FlaskConical,
-    description: 'Build schemas',
   },
   {
     id: 'ai-personas',
@@ -102,12 +83,7 @@ const NAV_ITEMS: Array<{
   //   icon: User,
   //   description: 'Create & edit personas',
   // },
-  {
-    id: 'project-setup',
-    label: 'Project Setup',
-    icon: Users,
-    description: 'Team & methodology',
-  },
+  // Research Wizard, Protocol Workbench, Project Setup - deprecated (consolidated into Clinical Capture)
   {
     id: 'methodology-engine',
     label: 'Methodology Engine',
@@ -167,13 +143,10 @@ export function NavigationPanel({
   const getNavLabel = (id: NavigationTab): string => {
     const labelMap: Record<NavigationTab, string> = {
       'dashboard': t('navigation.dashboard'),
-      'project-library': t('navigation.projectLibrary'),
       'protocol-library': t('navigation.protocolLibrary'),
       'ai-personas': t('navigation.aiPersonas'),
       'persona-editor': t('navigation.personaEditor'),
-      'protocol-workbench': t('navigation.protocolWorkbench'),
-      'research-wizard': t('navigation.researchWizard'),
-      'project-setup': t('navigation.projectSetup'),
+      'clinical-capture': t('navigation.clinicalCapture'),
       'methodology-engine': t('navigation.methodologyEngine'),
       'database': t('navigation.database'),
       'analytics': t('navigation.analytics'),
@@ -190,13 +163,10 @@ export function NavigationPanel({
   const getNavDescription = (id: NavigationTab): string => {
     const descMap: Record<NavigationTab, string> = {
       'dashboard': t('navigation.descriptions.dashboard'),
-      'project-library': t('navigation.descriptions.projectLibrary'),
       'protocol-library': t('navigation.descriptions.protocolLibrary'),
       'ai-personas': t('navigation.descriptions.aiPersonas'),
       'persona-editor': t('navigation.descriptions.personaEditor'),
-      'protocol-workbench': t('navigation.descriptions.protocolWorkbench'),
-      'research-wizard': t('navigation.descriptions.researchWizard'),
-      'project-setup': t('navigation.descriptions.projectSetup'),
+      'clinical-capture': t('navigation.descriptions.clinicalCapture'),
       'methodology-engine': t('navigation.descriptions.methodologyEngine'),
       'database': t('navigation.descriptions.database'),
       'analytics': t('navigation.descriptions.analytics'),
@@ -212,8 +182,8 @@ export function NavigationPanel({
   // Map navigation tabs to permission keys
   const getTabPermissionKey = (tabId: NavigationTab): string | null => {
     switch (tabId) {
-      case 'protocol-workbench':
       case 'protocol-library':
+      case 'clinical-capture':
         return 'protocol';
       case 'database':
       case 'data-management':
@@ -226,9 +196,7 @@ export function NavigationPanel({
       case 'persona-editor':
       case 'ai-personas':
         return 'lab-management';
-      case 'research-wizard':
       case 'dashboard':
-      case 'project-library':
       case 'governance':
         return null; // Always accessible
       default:

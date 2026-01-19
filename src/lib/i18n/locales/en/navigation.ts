@@ -30,13 +30,10 @@ export default {
 
     // Navigation items
     dashboard: "Dashboard",
-    projectLibrary: "Protocol Library",
     protocolLibrary: "Protocol Library",
     aiPersonas: "AI Personas",
     personaEditor: "Persona Editor",
-    protocolWorkbench: "Protocol Workbench",
-    researchWizard: "Research Wizard",
-    projectSetup: "Project Setup",
+    clinicalCapture: "Clinical Capture",
     methodologyEngine: "Methodology Engine",
     database: "Database",
     analytics: "Analytics",
@@ -48,13 +45,10 @@ export default {
     // Navigation descriptions
     descriptions: {
       dashboard: "Progress overview",
-      projectLibrary: "Browse projects",
       protocolLibrary: "Browse protocols",
       aiPersonas: "Persona library",
       personaEditor: "Create & edit personas",
-      protocolWorkbench: "Build schemas",
-      researchWizard: "Guided research setup",
-      projectSetup: "Team & methodology",
+      clinicalCapture: "Unified protocol workflow",
       methodologyEngine: "Automated methodology generation",
       database: "Schema & records",
       analytics: "Statistical analysis",

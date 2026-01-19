@@ -26,17 +26,13 @@ import { ProtocolLibraryScreen, type ProtocolLibraryScreenRef } from './Protocol
 import { PersonaEditor } from './PersonaEditor';
 import { PersonaLibrary, type PersonaLibraryRef } from './PersonaLibrary';
 import { FairyCourtPersonas } from './FairyCourtPersonas';
-import { ProtocolWorkbench } from './ProtocolWorkbench';
-import { ResearchWizard } from './ResearchWizard';
 import { ClinicalCaptureWizard } from './clinical-capture-wizard';
 import { AcademicWriting } from './AcademicWriting';
 import { GovernanceDashboard } from './governance/GovernanceDashboard';
 import { EthicsBoard } from './EthicsBoard';
-// ProjectLibraryScreen removed - protocols are now the top-level entity
 import { AnalyticsApp } from './AnalyticsApp';
 import { DataImportExport } from './DataImportExport';
 import { Database } from './Database';
-import { ProjectSetup } from './ProjectSetup';
 import { JOURNAL_LIBRARY, getGenericJournal, updateGenericJournal } from '../data/journalLibrary';
 import type { NavigationTab } from './unified-workspace/NavigationPanel';
 import type { MismatchCard, AutonomyMode, PaperType, JournalProfile } from '../types/accountability';
@@ -55,10 +51,6 @@ export function ResearchFactoryApp() {
   
   // Ref for PersonaLibrary to trigger create new
   const personaLibraryRef = useRef<PersonaLibraryRef>(null);
-
-  // Protocol IDs for loading specific protocol in workbench
-  const [loadProtocolId, setLoadProtocolId] = useState<string | undefined>();
-  const [loadVersionId, setLoadVersionId] = useState<string | undefined>();
 
   // Protocol IDs for loading specific protocol in database (from wizard navigation)
   const [databaseInitialProtocolId, setDatabaseInitialProtocolId] = useState<string | undefined>();
@@ -231,25 +223,27 @@ export function ResearchFactoryApp() {
             <div className="flex-1 overflow-y-auto">
               <DashboardV2 onNavigate={(tab) => {
                 // Map dashboard navigation to unified workspace tabs
+                // Note: protocol-workbench, research-wizard, project-setup consolidated into clinical-capture
                 const tabMap: Record<string, NavigationTab> = {
                   'personas': 'persona-editor',
                   'persona-editor': 'persona-editor',
-                  'protocol-builder': 'protocol-workbench',
-                  'protocol-workbench': 'protocol-workbench',
+                  'protocol-builder': 'clinical-capture',
+                  'protocol-workbench': 'clinical-capture',
+                  'research-wizard': 'clinical-capture',
+                  'project-setup': 'clinical-capture',
+                  'clinical-capture': 'clinical-capture',
                   'protocol-library': 'protocol-library',
                   'database': 'database',
                   'analytics': 'analytics',
                   'academic-writing': 'academic-writing',
-                  'project-settings': 'project-setup',
-                  'project-setup': 'project-setup',
-                  'methodology': 'methodology-engine',
-                  'methodology-engine': 'methodology-engine',
+                  'methodology': 'clinical-capture',
+                  'methodology-engine': 'clinical-capture',
                   'irb': 'ethics',
                   'ethics': 'ethics',
                   'governance': 'governance',
                   'data-management': 'data-import-export',
                 };
-                
+
                 const mappedTab = tabMap[tab];
                 if (mappedTab) {
                   setActiveTab(mappedTab);
@@ -259,74 +253,7 @@ export function ResearchFactoryApp() {
           </div>
         );
 
-      // project-library case removed - protocols are now the top-level entity
-
-      case 'protocol-workbench':
-        return (
-          <div className="h-full flex flex-col">
-            <GlobalHeader
-              breadcrumbs={[
-                { label: 'Protocol Workbench' }
-              ]}
-              autonomyMode={autonomyMode}
-              onAutonomyChange={setAutonomyMode}
-              primaryAction={{
-                label: 'Save Draft',
-                onClick: () => {
-                  // Trigger save from workbench
-                  const event = new CustomEvent('protocol-save-draft');
-                  window.dispatchEvent(event);
-                },
-              }}
-              secondaryActions={[
-                {
-                  label: 'Template Library',
-                  onClick: () => {
-                    const event = new CustomEvent('protocol-show-templates');
-                    window.dispatchEvent(event);
-                  },
-                },
-                {
-                  label: 'AI Generate',
-                  onClick: () => {
-                    const event = new CustomEvent('protocol-show-ai-generator');
-                    window.dispatchEvent(event);
-                  },
-                },
-                {
-                  label: 'Import Schema',
-                  onClick: () => {
-                    const event = new CustomEvent('protocol-import-schema');
-                    window.dispatchEvent(event);
-                  },
-                },
-                {
-                  label: 'Export Schema',
-                  onClick: () => {
-                    const event = new CustomEvent('protocol-export-schema');
-                    window.dispatchEvent(event);
-                  },
-                },
-              ]}
-            />
-            <div className="flex-1 overflow-y-auto">
-              <ProtocolWorkbench
-                initialProtocolId={loadProtocolId}
-                initialVersionId={loadVersionId}
-                onNavigateToLibrary={() => {
-                  setLoadProtocolId(undefined);
-                  setLoadVersionId(undefined);
-                  setActiveTab('protocol-library');
-                }}
-                onNavigateToDatabase={(protocolId, versionId) => {
-                  console.log('📊 Navigate to Database with protocol:', protocolId, versionId);
-                  // The Database module will auto-select this protocol
-                  setActiveTab('database');
-                }}
-              />
-            </div>
-          </div>
-        );
+      // protocol-workbench, research-wizard, project-setup consolidated into clinical-capture
 
       case 'protocol-library':
         return (
@@ -346,11 +273,9 @@ export function ResearchFactoryApp() {
               <ProtocolLibraryScreen
                 ref={protocolLibraryRef}
                 onNavigateToBuilder={(protocolId, versionId) => {
-                  console.log('Navigate to builder:', protocolId, versionId);
-                  // Set protocol IDs and navigate to workbench
-                  setLoadProtocolId(protocolId);
-                  setLoadVersionId(versionId);
-                  setActiveTab('protocol-workbench');
+                  console.log('Navigate to Clinical Capture:', protocolId, versionId);
+                  // Navigate to clinical-capture (consolidated workflow)
+                  setActiveTab('clinical-capture');
                 }}
               />
             </div>
@@ -539,22 +464,6 @@ export function ResearchFactoryApp() {
           </div>
         );
 
-      case 'research-wizard':
-        return (
-          <div className="h-full">
-            <ResearchWizard
-              onComplete={(hypothesis) => {
-                console.log('Hypothesis completed:', hypothesis);
-                // Navigate to Protocol Workbench where AI can help pre-fill objectives, criteria, and stats plan
-                setActiveTab('protocol-workbench');
-              }}
-              onCancel={() => {
-                setActiveTab('dashboard');
-              }}
-            />
-          </div>
-        );
-
       case 'clinical-capture':
         return (
           <div className="h-full">
@@ -567,21 +476,6 @@ export function ResearchFactoryApp() {
                   setDatabaseInitialVersionId(versionId);
                 }
                 setActiveTab('database');
-              }}
-            />
-          </div>
-        );
-
-      case 'project-setup':
-        return (
-          <div className="h-full">
-            <ProjectSetup
-              onComplete={() => {
-                // Navigate to protocol workbench after completion
-                setActiveTab('protocol-workbench');
-              }}
-              onCancel={() => {
-                setActiveTab('dashboard');
               }}
             />
           </div>
@@ -621,7 +515,7 @@ export function ResearchFactoryApp() {
           </div>
         );
     }
-  }, [activeTab, autonomyMode, loadProtocolId, loadVersionId, selectedJournal, paperType, allJournals]);
+  }, [activeTab, autonomyMode, selectedJournal, paperType, allJournals, databaseInitialProtocolId, databaseInitialVersionId]);
 
   return (
     <div className="h-screen overflow-hidden">
