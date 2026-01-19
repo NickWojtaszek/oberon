@@ -32,6 +32,35 @@ export class StatisticianContextBuilder {
     // Filter to completed records only for analysis
     const completedRecords = records.filter(r => r.status === 'complete');
 
+    console.log(`🔬 [ContextBuilder] Input: ${records.length} total records, ${completedRecords.length} complete`);
+    console.log(`🔬 [ContextBuilder] Schema blocks: ${schemaBlocks.length}`);
+
+    // Debug: Log structure of first record and first few blocks
+    if (completedRecords.length > 0) {
+      const firstRecord = completedRecords[0];
+      const tableNames = Object.keys(firstRecord.data);
+      console.log(`🔬 [ContextBuilder] First record tables:`, tableNames);
+      if (tableNames.length > 0) {
+        const firstTable = tableNames[0];
+        const fieldIds = Object.keys(firstRecord.data[firstTable]);
+        console.log(`🔬 [ContextBuilder] First table "${firstTable}" has ${fieldIds.length} fields`);
+        console.log(`🔬 [ContextBuilder] Sample field IDs:`, fieldIds.slice(0, 5));
+      }
+    }
+    if (schemaBlocks.length > 0) {
+      // Flatten to get all block IDs including children
+      const allBlockIds: string[] = [];
+      const collectIds = (blocks: SchemaBlock[]) => {
+        blocks.forEach(b => {
+          allBlockIds.push(b.id);
+          if (b.children) collectIds(b.children);
+        });
+      };
+      collectIds(schemaBlocks);
+      console.log(`🔬 [ContextBuilder] Total flattened blocks: ${allBlockIds.length}`);
+      console.log(`🔬 [ContextBuilder] Sample block IDs:`, allBlockIds.slice(0, 5));
+    }
+
     const protocolContext = this.buildProtocolContext(protocol);
     const distributions = this.extractDistributions(schemaBlocks, completedRecords);
     const schemaContext = this.buildSchemaContext(schemaBlocks, distributions);
@@ -212,11 +241,21 @@ export class StatisticianContextBuilder {
     records: ClinicalDataRecord[]
   ): Map<string, DataDistributionSummary> {
     const distributions = new Map<string, DataDistributionSummary>();
+    let extractedCount = 0;
+    let emptyCount = 0;
 
     const processBlock = (block: SchemaBlock) => {
       const values = this.extractValuesForBlock(block, records);
       const distribution = this.computeDistribution(block, values);
       distributions.set(block.id, distribution);
+
+      if (block.dataType !== 'Section') {
+        if (values.length > 0) {
+          extractedCount++;
+        } else {
+          emptyCount++;
+        }
+      }
 
       // Process children
       if (block.children) {
@@ -225,31 +264,89 @@ export class StatisticianContextBuilder {
     };
 
     blocks.forEach(processBlock);
+
+    console.log(`🔬 [extractDistributions] Total: ${extractedCount} blocks with data, ${emptyCount} blocks empty`);
+
     return distributions;
   }
 
   /**
    * Extract all values for a specific block from records
+   * Tries multiple matching strategies: block.id, variable.name, and fieldName patterns
    */
   private extractValuesForBlock(
     block: SchemaBlock,
     records: ClinicalDataRecord[]
   ): (string | number | null)[] {
     const values: (string | number | null)[] = [];
+    let foundVia = '';
+
+    // Generate alternative field name patterns (snake_case version of variable name)
+    const variableName = block.variable?.name || '';
+    const snakeCaseName = variableName.toLowerCase().replace(/\s+/g, '_');
 
     for (const record of records) {
+      let foundValue = false;
+
       // Look through all tables in the record data
       for (const tableData of Object.values(record.data)) {
-        if (tableData && block.id in tableData) {
+        if (!tableData) continue;
+
+        // Strategy 1: Direct block.id match
+        if (block.id in tableData) {
           values.push(tableData[block.id]);
-        } else if (tableData && block.variable?.name && block.variable.name in tableData) {
-          values.push(tableData[block.variable.name]);
+          foundValue = true;
+          if (!foundVia) foundVia = 'block.id';
+          break;
+        }
+
+        // Strategy 2: Variable name match
+        if (variableName && variableName in tableData) {
+          values.push(tableData[variableName]);
+          foundValue = true;
+          if (!foundVia) foundVia = 'variable.name';
+          break;
+        }
+
+        // Strategy 3: Snake case name match (for legacy data)
+        if (snakeCaseName && snakeCaseName in tableData) {
+          values.push(tableData[snakeCaseName]);
+          foundValue = true;
+          if (!foundVia) foundVia = 'snakeCaseName';
+          break;
         }
       }
+
+      // If no value found for this record, don't push anything
+      // (this affects N count - only records with values are counted)
+    }
+
+    // Debug: Log first block that finds or doesn't find values
+    if (values.length === 0 && records.length > 0 && block.dataType !== 'Section') {
+      // Only log once per session to avoid spam
+      if (!this._debugLogged) {
+        this._debugLogged = true;
+        console.log(`🔬 [extractValues] No values found for block "${variableName}" (${block.id})`);
+        console.log(`🔬 [extractValues] Tried: block.id, "${variableName}", "${snakeCaseName}"`);
+        if (records[0]?.data) {
+          const firstTable = Object.keys(records[0].data)[0];
+          if (firstTable) {
+            console.log(`🔬 [extractValues] Available fields in "${firstTable}":`,
+              Object.keys(records[0].data[firstTable]).slice(0, 10));
+          }
+        }
+      }
+    } else if (values.length > 0 && !this._debugLoggedSuccess) {
+      this._debugLoggedSuccess = true;
+      console.log(`🔬 [extractValues] Found ${values.length} values for "${variableName}" via ${foundVia}`);
     }
 
     return values;
   }
+
+  // Debug flags to avoid console spam
+  private _debugLogged = false;
+  private _debugLoggedSuccess = false;
 
   /**
    * Compute distribution summary for a variable
