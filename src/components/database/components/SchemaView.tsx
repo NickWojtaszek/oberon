@@ -1,4 +1,4 @@
-import { FileSpreadsheet, Settings, Lock } from 'lucide-react';
+import { FileSpreadsheet, Lock } from 'lucide-react';
 import type { DatabaseTable, DatabaseField } from '../utils/schemaGenerator';
 
 interface SchemaViewProps {
@@ -164,9 +164,12 @@ export function SchemaView({ tables, showFieldFilter, onFilterChange }: SchemaVi
                   <div className="text-sm text-slate-600">
                     {filteredFields.length} fields
                   </div>
-                  <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600">
-                    <Settings className="w-4 h-4" />
-                  </button>
+                  <div
+                    className="p-2 text-slate-400 cursor-help"
+                    title="Schema is read-only. Edit fields in Protocol Workbench."
+                  >
+                    <Lock className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
             </div>
