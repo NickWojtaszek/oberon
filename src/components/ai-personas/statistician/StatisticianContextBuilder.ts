@@ -1,5 +1,6 @@
 // StatisticianContextBuilder
 // Gathers all relevant context from the system for AI analysis
+// Integrated with Clinical Benchmark Library for domain detection
 
 import type { SchemaBlock, ProtocolVersion } from '../../protocol-workbench/types';
 import type { ClinicalDataRecord } from '../../../utils/dataStorage';
@@ -15,6 +16,16 @@ import type {
   MissingDataSummary,
   FoundationalPaperSummary,
 } from './types';
+
+// Import Clinical Benchmark Library for domain detection
+import {
+  detectClinicalDomain,
+  detectSubspecialty,
+  matchVariableToEndpoint,
+  matchVariableToRiskFactor,
+  type ClinicalDomain,
+  type DomainSubspecialty,
+} from './clinicalBenchmarkLibrary';
 
 /**
  * Builds the complete analysis context for the Statistician AI
@@ -37,6 +48,25 @@ export class StatisticianContextBuilder {
     console.log(`🔬 [ContextBuilder] Schema blocks: ${schemaBlocks.length}`);
     console.log(`🔬 [ContextBuilder] PICO data provided:`, picoData ? 'Yes' : 'No');
     console.log(`🔬 [ContextBuilder] Foundational papers:`, foundationalPapers?.length || 0);
+
+    // Detect clinical domain from PICO and schema using Clinical Benchmark Library
+    const detectedDomain = detectClinicalDomain(
+      picoData,
+      schemaBlocks.map(b => ({ name: b.variable?.name || b.id, label: b.customName || b.variable?.name || b.id })),
+      protocol.protocolContent?.primaryObjective
+    );
+    const detectedSubspecialty = detectedDomain
+      ? detectSubspecialty(detectedDomain, picoData, schemaBlocks.map(b => ({ name: b.variable?.name || b.id, label: b.customName || b.variable?.name || b.id })))
+      : null;
+
+    if (detectedDomain) {
+      console.log(`🔬 [ContextBuilder] Detected clinical domain: ${detectedDomain.domain}`);
+      if (detectedSubspecialty) {
+        console.log(`🔬 [ContextBuilder] Detected subspecialty: ${detectedSubspecialty.name}`);
+      }
+    } else {
+      console.log(`🔬 [ContextBuilder] No specific clinical domain detected - using general statistical guidance`);
+    }
 
     // Debug: Log structure of first record and first few blocks
     if (completedRecords.length > 0) {
@@ -72,11 +102,77 @@ export class StatisticianContextBuilder {
       ? this.buildFoundationalPapersContext(foundationalPapers)
       : undefined;
 
+    // Build detected domain context with matched variables
+    const detectedDomainContext = detectedDomain
+      ? this.buildDetectedDomainContext(detectedDomain, detectedSubspecialty, schemaBlocks)
+      : undefined;
+
     return {
       protocol: protocolContext,
       schema: schemaContext,
       data: dataContext,
       foundationalPapers: papersContext,
+      detectedDomain: detectedDomainContext,
+    };
+  }
+
+  /**
+   * Build detected domain context with matched variables
+   */
+  private buildDetectedDomainContext(
+    domain: ClinicalDomain,
+    subspecialty: DomainSubspecialty | null,
+    blocks: SchemaBlock[]
+  ): StatisticalAnalysisContext['detectedDomain'] {
+    const matchedEndpoints: StatisticalAnalysisContext['detectedDomain'] extends { matchedEndpoints: infer T } ? T : never = [];
+    const matchedRiskFactors: StatisticalAnalysisContext['detectedDomain'] extends { matchedRiskFactors: infer T } ? T : never = [];
+
+    // Match schema blocks to known endpoints and risk factors
+    for (const block of blocks) {
+      const variableName = block.variable?.name || block.id;
+      const variableLabel = block.customName || variableName;
+
+      // Try to match to endpoint
+      const endpoint = matchVariableToEndpoint(variableName, variableLabel, domain, subspecialty ?? undefined);
+      if (endpoint) {
+        matchedEndpoints.push({
+          variableId: block.id,
+          variableLabel,
+          endpointName: endpoint.name,
+          benchmarks: {
+            acceptable: endpoint.acceptable,
+            concerning: endpoint.concerning,
+          },
+          recommendedAnalysis: endpoint.analysisMethod,
+        });
+      }
+
+      // Try to match to risk factor
+      const riskFactor = matchVariableToRiskFactor(variableName, variableLabel, domain, subspecialty ?? undefined);
+      if (riskFactor) {
+        matchedRiskFactors.push({
+          variableId: block.id,
+          variableLabel,
+          riskFactorName: riskFactor.name,
+          expectedEffect: riskFactor.expectedOR || riskFactor.expectedHR,
+          direction: riskFactor.direction,
+        });
+      }
+    }
+
+    // Calculate confidence based on number of matches
+    const totalVariables = blocks.filter(b => b.dataType !== 'Section').length;
+    const matchCount = matchedEndpoints.length + matchedRiskFactors.length;
+    const confidence = totalVariables > 0
+      ? Math.min(0.95, 0.5 + (matchCount / totalVariables) * 0.5)
+      : 0.5;
+
+    return {
+      domain: domain.domain,
+      subspecialty: subspecialty?.name,
+      confidence,
+      matchedEndpoints,
+      matchedRiskFactors,
     };
   }
 

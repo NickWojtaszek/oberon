@@ -1,6 +1,7 @@
 // StatisticianPromptEngine
 // Builds domain-specific prompts for Gemini and parses responses
 // Enhanced with study-type-specific guidance and multi-domain interpretation
+// Now integrated with Clinical Benchmark Library for domain-specific expertise
 
 import type {
   StatisticalAnalysisContext,
@@ -15,6 +16,22 @@ import type {
   FeasibilityResult,
   StudyType,
 } from './types';
+
+// Import Clinical Benchmark Library
+import {
+  CLINICAL_BENCHMARK_LIBRARY,
+  detectClinicalDomain,
+  detectSubspecialty,
+  matchVariableToEndpoint,
+  matchVariableToRiskFactor,
+  getFormattedBenchmarksForPrompt,
+  getAllDomainEndpoints,
+  getAllDomainRiskFactors,
+  type ClinicalDomain,
+  type DomainSubspecialty,
+  type EndpointBenchmark,
+  type RiskFactor,
+} from './clinicalBenchmarkLibrary';
 
 // =============================================================================
 // DOMAIN-SPECIFIC KNOWLEDGE BASE
@@ -234,30 +251,8 @@ const VARIABLE_ANALYSIS_MATRIX: Record<string, Record<string, {
   },
 };
 
-/**
- * Clinical domain benchmarks
- */
-const CLINICAL_BENCHMARKS: Record<string, Record<string, {
-  acceptable: [number, number];
-  concerning: number;
-  source: string;
-}>> = {
-  'cardiovascular': {
-    '30-day_mortality': { acceptable: [0, 5], concerning: 10, source: 'ACC/AHA Guidelines' },
-    'stroke_rate': { acceptable: [0, 7], concerning: 13, source: 'EVAR/TEVAR literature' },
-    'major_bleeding': { acceptable: [0, 8], concerning: 15, source: 'BARC criteria' },
-    'aki_rate': { acceptable: [0, 10], concerning: 20, source: 'AKIN criteria' },
-  },
-  'oncology': {
-    'overall_response': { acceptable: [20, 100], concerning: 10, source: 'RECIST 1.1' },
-    'complete_response': { acceptable: [5, 100], concerning: 2, source: 'RECIST 1.1' },
-    'progression_free_survival_6mo': { acceptable: [40, 100], concerning: 20, source: 'Disease-specific' },
-  },
-  'diabetes': {
-    'hba1c_reduction': { acceptable: [0.5, 3], concerning: 0.3, source: 'ADA Guidelines' },
-    'hypoglycemia_rate': { acceptable: [0, 5], concerning: 10, source: 'ADA Guidelines' },
-  },
-};
+// Note: Clinical domain benchmarks are now sourced from clinicalBenchmarkLibrary.ts
+// This provides comprehensive, extensible domain-specific knowledge
 
 // =============================================================================
 // PROMPT ENGINE CLASS
@@ -273,7 +268,16 @@ export class StatisticianPromptEngine {
   buildAnalysisPlanPrompt(context: StatisticalAnalysisContext): string {
     const studyDesign = this.normalizeStudyDesign(context.protocol.studyDesign);
     const template = STUDY_DESIGN_TEMPLATES[studyDesign] || STUDY_DESIGN_TEMPLATES['cohort'];
-    const clinicalDomain = this.detectClinicalDomain(context);
+
+    // Use Clinical Benchmark Library for domain detection
+    const detectedDomain = detectClinicalDomain(
+      context.protocol.pico,
+      context.schema.blocks.map(b => ({ name: b.name, label: b.label })),
+      context.protocol.primaryObjective
+    );
+    const detectedSubspecialty = detectedDomain
+      ? detectSubspecialty(detectedDomain, context.protocol.pico, context.schema.blocks.map(b => ({ name: b.name, label: b.label })))
+      : null;
 
     return `You are Dr. Saga, an expert clinical biostatistician with deep knowledge of regulatory requirements, clinical trial methodology, and domain-specific analysis standards. You provide rigorous, publication-ready statistical guidance.
 
@@ -338,7 +342,7 @@ ${this.formatKeyDistributions(context)}
 
 ${context.foundationalPapers ? this.formatFoundationalPapersEnhanced(context.foundationalPapers) : ''}
 
-${clinicalDomain ? this.formatDomainBenchmarks(clinicalDomain) : ''}
+${detectedDomain ? this.formatDomainBenchmarksFromLibrary(detectedDomain, detectedSubspecialty, context) : ''}
 
 ## STATISTICAL ANALYSIS REQUIREMENTS
 
@@ -665,46 +669,114 @@ Respond with valid JSON only:
   }
 
   /**
-   * Detect clinical domain from PICO and variables
+   * Format domain-specific benchmarks from the Clinical Benchmark Library
+   * This provides comprehensive, publication-ready benchmarks and guidance
    */
-  private detectClinicalDomain(context: StatisticalAnalysisContext): string | null {
-    const text = [
-      context.protocol.pico.population,
-      context.protocol.pico.intervention,
-      context.protocol.pico.outcome,
-      context.protocol.primaryObjective,
-    ].join(' ').toLowerCase();
+  private formatDomainBenchmarksFromLibrary(
+    domain: ClinicalDomain,
+    subspecialty: DomainSubspecialty | null,
+    context: StatisticalAnalysisContext
+  ): string {
+    const sections: string[] = [];
 
-    if (text.includes('cardio') || text.includes('heart') || text.includes('aortic') ||
-        text.includes('stroke') || text.includes('vascular') || text.includes('endovascular')) {
-      return 'cardiovascular';
+    sections.push(`## CLINICAL DOMAIN EXPERTISE: ${domain.domain.toUpperCase()}`);
+    sections.push(`Description: ${domain.description}`);
+    sections.push(`Regulatory Bodies: ${domain.regulatoryBodies.join(', ')}`);
+    sections.push('');
+
+    if (subspecialty) {
+      sections.push(`### Subspecialty: ${subspecialty.name.replace(/_/g, ' ').toUpperCase()}`);
+      sections.push(`${subspecialty.description}`);
+      sections.push('');
+
+      // Endpoint benchmarks with clinical significance
+      sections.push('### ENDPOINT BENCHMARKS (use these to contextualize your results)');
+      for (const ep of subspecialty.endpoints) {
+        const direction = ep.direction === 'lower-better' ? '↓ lower is better' : '↑ higher is better';
+        sections.push(`**${ep.name.replace(/_/g, ' ')}** (${ep.type})`);
+        sections.push(`  - Acceptable: ${ep.acceptable.low}-${ep.acceptable.high}${ep.unit || ''}`);
+        sections.push(`  - Concerning: ${ep.direction === 'lower-better' ? '>' : '<'}${ep.concerning}${ep.unit || ''}`);
+        if (ep.excellent !== undefined) {
+          sections.push(`  - Excellent: ${ep.direction === 'lower-better' ? '<' : '>'}${ep.excellent}${ep.unit || ''}`);
+        }
+        sections.push(`  - Recommended Analysis: ${ep.analysisMethod}`);
+        sections.push(`  - Source: ${ep.source}`);
+        if (ep.clinicalSignificance) {
+          sections.push(`  - Clinical Significance: ${ep.clinicalSignificance}`);
+        }
+        sections.push('');
+      }
+
+      // Known risk factors with expected effect sizes
+      sections.push('### KNOWN RISK FACTORS (from literature - use for validation)');
+      for (const rf of subspecialty.riskFactors) {
+        const effect = rf.expectedOR
+          ? `Expected OR: ${rf.expectedOR}`
+          : rf.expectedHR
+            ? `Expected HR: ${rf.expectedHR}`
+            : '';
+        sections.push(`**${rf.name.replace(/_/g, ' ')}**: ${rf.direction} factor (${rf.strength} evidence)`);
+        if (effect) sections.push(`  - ${effect}`);
+        sections.push(`  - Source: ${rf.source}`);
+        sections.push(`  - Modifiable: ${rf.modifiable ? 'Yes' : 'No'}`);
+      }
+      sections.push('');
+
+      // Required analyses per domain standards
+      sections.push('### DOMAIN-REQUIRED ANALYSES');
+      subspecialty.requiredAnalyses.forEach(a => sections.push(`- ${a}`));
+      sections.push('');
+
+      sections.push('### RECOMMENDED ADDITIONAL ANALYSES');
+      subspecialty.recommendedAnalyses.forEach(a => sections.push(`- ${a}`));
+      sections.push('');
+
+      // Regulatory guidance
+      sections.push('### REGULATORY GUIDANCE');
+      subspecialty.regulatoryGuidance.forEach(g => sections.push(`- ${g}`));
+      sections.push('');
+
+      // Key references
+      if (subspecialty.keyReferences.length > 0) {
+        sections.push('### KEY LITERATURE REFERENCES');
+        subspecialty.keyReferences.forEach(r => sections.push(`- ${r}`));
+        sections.push('');
+      }
     }
-    if (text.includes('cancer') || text.includes('tumor') || text.includes('oncolog') ||
-        text.includes('chemotherapy') || text.includes('response rate')) {
-      return 'oncology';
+
+    // Match schema variables to known endpoints/risk factors
+    const matchedEndpoints = this.matchSchemaToLibrary(context, domain, subspecialty);
+    if (matchedEndpoints.length > 0) {
+      sections.push('### VARIABLE-ENDPOINT MATCHING (auto-detected from schema)');
+      for (const match of matchedEndpoints) {
+        sections.push(`- Schema variable "${match.variable}" → Known endpoint "${match.endpoint.name}"`);
+        sections.push(`  Recommended analysis: ${match.endpoint.analysisMethod}`);
+        sections.push(`  Benchmark: ${match.endpoint.acceptable.low}-${match.endpoint.acceptable.high}${match.endpoint.unit || ''}`);
+      }
+      sections.push('');
     }
-    if (text.includes('diabet') || text.includes('hba1c') || text.includes('glucose') ||
-        text.includes('insulin')) {
-      return 'diabetes';
-    }
-    return null;
+
+    return sections.join('\n');
   }
 
   /**
-   * Format domain-specific benchmarks
+   * Match schema variables to known clinical endpoints/risk factors
    */
-  private formatDomainBenchmarks(domain: string): string {
-    const benchmarks = CLINICAL_BENCHMARKS[domain];
-    if (!benchmarks) return '';
+  private matchSchemaToLibrary(
+    context: StatisticalAnalysisContext,
+    domain: ClinicalDomain,
+    subspecialty: DomainSubspecialty | null
+  ): Array<{ variable: string; endpoint: EndpointBenchmark }> {
+    const matches: Array<{ variable: string; endpoint: EndpointBenchmark }> = [];
 
-    let section = `## DOMAIN-SPECIFIC BENCHMARKS (${domain.toUpperCase()})\n\n`;
-    section += 'Use these benchmarks to contextualize results:\n\n';
-
-    for (const [metric, data] of Object.entries(benchmarks)) {
-      section += `- **${metric.replace(/_/g, ' ')}**: Acceptable range ${data.acceptable[0]}-${data.acceptable[1]}%, concerning if >${data.concerning}% (Source: ${data.source})\n`;
+    for (const block of context.schema.blocks) {
+      const endpoint = matchVariableToEndpoint(block.name, block.label, domain, subspecialty ?? undefined);
+      if (endpoint) {
+        matches.push({ variable: block.label, endpoint });
+      }
     }
 
-    return section;
+    return matches;
   }
 
   /**

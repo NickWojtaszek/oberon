@@ -19,6 +19,30 @@ export interface StatisticalAnalysisContext {
   schema: SchemaContext;
   data: DataContext;
   foundationalPapers?: FoundationalPapersContext;
+
+  // Detected clinical domain from benchmark library
+  detectedDomain?: {
+    domain: string;
+    subspecialty?: string;
+    confidence: number;
+    matchedEndpoints: Array<{
+      variableId: string;
+      variableLabel: string;
+      endpointName: string;
+      benchmarks: {
+        acceptable: { low: number; high: number };
+        concerning: number;
+      };
+      recommendedAnalysis: string;
+    }>;
+    matchedRiskFactors: Array<{
+      variableId: string;
+      variableLabel: string;
+      riskFactorName: string;
+      expectedEffect?: number;
+      direction: 'harmful' | 'protective';
+    }>;
+  };
 }
 
 export interface ProtocolContext {
