@@ -178,9 +178,9 @@ export function BulkAnalysisModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-purple-50 to-blue-50">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col">
+        {/* Header - fixed at top */}
+        <div className="flex-shrink-0 px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-purple-50 to-blue-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -202,8 +202,8 @@ export function BulkAnalysisModal({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Content - scrollable area */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
           {/* Not Configured State */}
           {!geminiConfigured && (
             <div className="text-center py-12">
@@ -374,8 +374,8 @@ export function BulkAnalysisModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50">
+        {/* Footer - fixed at bottom */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="text-sm text-slate-600">
             {suggestions.length > 0 ? (
               <span>{selectedCount} of {suggestions.length} suggestions selected</span>
