@@ -296,6 +296,7 @@ export function Database({ initialProtocolId, initialVersionId }: DatabaseProps 
                 protocolNumber={selectedVersion?.metadata.protocolNumber}
                 protocolVersion={selectedVersion?.versionNumber}
                 onEditRecord={handleEditRecord}
+                tables={databaseTables}
               />
             )}
 

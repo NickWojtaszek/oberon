@@ -1,9 +1,10 @@
 /**
  * Mock Data Loader for Testing Analytics
- * Generates 20 realistic patient records for the Clinical Capture Schema
+ * Generates realistic patient records that match the actual schema structure
  */
 
 import { saveDataRecord, ClinicalDataRecord, getAllRecords } from './dataStorage';
+import { DatabaseTable, DatabaseField } from '../components/database/utils/schemaGenerator';
 
 // Check if mock data is already loaded
 export function isMockDataLoaded(protocolNumber: string): boolean {
@@ -14,25 +15,34 @@ export function isMockDataLoaded(protocolNumber: string): boolean {
 // Clear mock data for a protocol
 export function clearMockData(protocolNumber: string): number {
   const records = getAllRecords();
-  let deletedCount = 0;
+  const mockRecords = records.filter(
+    r => r.protocolNumber === protocolNumber && r.subjectId.startsWith('MOCK-')
+  );
 
-  records.forEach(r => {
-    if (r.protocolNumber === protocolNumber && r.subjectId.startsWith('MOCK-')) {
-      // Use localStorage directly to delete
-      const allRecords = getAllRecords();
-      const filtered = allRecords.filter(rec => rec.recordId !== r.recordId);
-      localStorage.setItem('clinical-intelligence-data', JSON.stringify(filtered));
-      deletedCount++;
-    }
-  });
+  // Get all records and filter out mock ones
+  const remainingRecords = records.filter(
+    r => !(r.protocolNumber === protocolNumber && r.subjectId.startsWith('MOCK-'))
+  );
 
-  return deletedCount;
+  localStorage.setItem('clinical-intelligence-data', JSON.stringify(remainingRecords));
+
+  return mockRecords.length;
 }
 
-// Generate mock patients
-export function loadMockData(protocolNumber: string, protocolVersion: string): { success: boolean; count: number; error?: string } {
+/**
+ * Generate mock patients with data that matches the actual schema tables
+ */
+export function loadMockData(
+  protocolNumber: string,
+  protocolVersion: string,
+  tables: DatabaseTable[]
+): { success: boolean; count: number; error?: string } {
   try {
-    const mockPatients = generateMockPatients();
+    if (!tables || tables.length === 0) {
+      return { success: false, count: 0, error: 'No schema tables provided. Please ensure a protocol with schema is selected.' };
+    }
+
+    const mockPatients = generateMockPatients(tables, 20);
     let successCount = 0;
 
     for (const patient of mockPatients) {
@@ -55,14 +65,27 @@ export function loadMockData(protocolNumber: string, protocolVersion: string): {
       }
     }
 
+    console.log(`📊 Mock data loaded: ${successCount} patients with ${tables.length} tables`);
     return { success: true, count: successCount };
   } catch (error) {
+    console.error('Failed to load mock data:', error);
     return { success: false, count: 0, error: String(error) };
   }
 }
 
-// Generate 20 realistic mock patients
-function generateMockPatients(): Array<{
+// Polish names for realistic data
+const MALE_NAMES = ['Jan', 'Piotr', 'Tomasz', 'Krzysztof', 'Andrzej', 'Stanisław', 'Marek', 'Jerzy', 'Henryk', 'Ryszard', 'Wojciech', 'Adam', 'Michał'];
+const FEMALE_NAMES = ['Anna', 'Maria', 'Katarzyna', 'Ewa', 'Barbara', 'Zofia', 'Danuta', 'Jadwiga', 'Teresa', 'Małgorzata', 'Agnieszka'];
+const SURNAMES = ['Kowalski', 'Nowak', 'Wiśniewski', 'Dąbrowska', 'Lewandowski', 'Kamiński', 'Zielińska', 'Szymański', 'Woźniak', 'Mazur', 'Krawczyk', 'Piotrowski', 'Grabowska', 'Pawłowski', 'Michalski', 'Adamska', 'Jankowski', 'Wójcik', 'Kowalczyk', 'Sikora'];
+const COLLECTORS = ['MK', 'PK', 'AB', 'JN', 'AS', 'JK'];
+
+/**
+ * Generate mock patients that match the actual schema structure
+ */
+function generateMockPatients(
+  tables: DatabaseTable[],
+  count: number = 20
+): Array<{
   subjectId: string;
   visitNumber: string | null;
   enrollmentDate: string;
@@ -72,242 +95,192 @@ function generateMockPatients(): Array<{
 }> {
   const patients = [];
 
-  // Polish names for realism
-  const maleNames = ['Jan', 'Piotr', 'Tomasz', 'Krzysztof', 'Andrzej', 'Stanisław', 'Marek', 'Jerzy', 'Henryk', 'Ryszard', 'Wojciech'];
-  const femaleNames = ['Anna', 'Maria', 'Katarzyna', 'Ewa', 'Barbara', 'Zofia', 'Danuta', 'Jadwiga', 'Teresa'];
-  const surnames = ['Kowalski', 'Nowak', 'Wiśniewski', 'Dąbrowska', 'Lewandowski', 'Kamiński', 'Zielińska', 'Szymański', 'Woźniak', 'Mazur', 'Krawczyk', 'Piotrowski', 'Grabowska', 'Pawłowski', 'Michalski', 'Adamska', 'Jankowski', 'Wójcik', 'Kowalczyk', 'Sikora'];
-  const collectors = ['MK', 'PK', 'AB', 'JN', 'AS', 'JK'];
-  const centers = ['UCK', 'KRK', 'INNE'];
-
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= count; i++) {
     const isMale = Math.random() > 0.4; // 60% male
     const firstName = isMale
-      ? maleNames[Math.floor(Math.random() * maleNames.length)]
-      : femaleNames[Math.floor(Math.random() * femaleNames.length)];
-    const surname = surnames[i - 1] || surnames[Math.floor(Math.random() * surnames.length)];
-    const center = centers[Math.floor(Math.random() * centers.length)];
+      ? MALE_NAMES[Math.floor(Math.random() * MALE_NAMES.length)]
+      : FEMALE_NAMES[Math.floor(Math.random() * FEMALE_NAMES.length)];
+    const surname = SURNAMES[i - 1] || SURNAMES[Math.floor(Math.random() * SURNAMES.length)];
 
-    // Generate realistic age (45-85)
+    // Generate realistic age (45-85 for clinical trial)
     const age = 45 + Math.floor(Math.random() * 40);
     const birthYear = 2024 - age;
     const birthMonth = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
     const birthDay = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+    const birthDate = `${birthYear}-${birthMonth}-${birthDay}`;
 
     // Enrollment date in 2024
     const enrollMonth = Math.floor(Math.random() * 10) + 1;
     const enrollDay = Math.floor(Math.random() * 28) + 1;
     const enrollmentDate = `2024-${String(enrollMonth).padStart(2, '0')}-${String(enrollDay).padStart(2, '0')}`;
 
-    // Procedure date slightly after enrollment
-    const procDay = enrollDay + Math.floor(Math.random() * 7);
-    const procedureDate = `2024-${String(enrollMonth).padStart(2, '0')}-${String(Math.min(procDay, 28)).padStart(2, '0')}`;
+    // Create patient context for consistent data generation
+    const patientContext = {
+      index: i,
+      isMale,
+      firstName,
+      surname,
+      age,
+      birthDate,
+      enrollmentDate
+    };
 
-    // Generate vitals
-    const height = isMale ? 165 + Math.floor(Math.random() * 25) : 155 + Math.floor(Math.random() * 20);
-    const weight = isMale ? 70 + Math.floor(Math.random() * 35) : 55 + Math.floor(Math.random() * 30);
-    const bmi = (weight / ((height / 100) ** 2)).toFixed(1);
+    // Generate data for each table using actual table names and field IDs
+    const data: Record<string, Record<string, any>> = {};
 
-    // Comorbidities (more likely with age)
-    const hasHypertension = Math.random() < 0.8;
-    const hasCAD = Math.random() < 0.4;
-    const hasDiabetes = Math.random() < 0.35;
-    const hasAF = Math.random() < 0.25;
-    const hasPriorStroke = Math.random() < 0.15;
-    const hasCOPD = Math.random() < 0.2;
+    for (const table of tables) {
+      const tableData: Record<string, any> = {};
 
-    // Indication
-    const indications = ['Tętniak', 'Rozwarstwienie', 'Krwiak Śródścienny (IMH)', 'Wrzód drążący (PAU)'];
-    const indicationWeights = [0.65, 0.25, 0.05, 0.05];
-    let indicationIndex = 0;
-    const rand = Math.random();
-    let cumWeight = 0;
-    for (let j = 0; j < indicationWeights.length; j++) {
-      cumWeight += indicationWeights[j];
-      if (rand < cumWeight) {
-        indicationIndex = j;
-        break;
+      for (const field of table.fields) {
+        // Skip structural/base fields that are handled separately
+        if (field.category === 'Structural') continue;
+
+        // Generate appropriate value based on field metadata
+        const value = generateFieldValue(field, patientContext);
+        if (value !== undefined && value !== null) {
+          tableData[field.id] = value;
+        }
+      }
+
+      // Only add table data if it has values
+      if (Object.keys(tableData).length > 0) {
+        data[table.tableName] = tableData;
       }
     }
-    const indication = indications[indicationIndex];
-
-    // Aneurysm size if applicable
-    const aneurysmSize = indication === 'Tętniak' ? 50 + Math.floor(Math.random() * 35) : null;
-
-    // Lab values
-    const egfr = 30 + Math.floor(Math.random() * 70);
-    const creatinine = egfr > 60 ? 70 + Math.floor(Math.random() * 50) : 120 + Math.floor(Math.random() * 100);
-    const hemoglobin = isMale ? 12 + Math.random() * 4 : 11 + Math.random() * 3.5;
-
-    // Outcomes
-    const hadStroke = Math.random() < 0.15;
-    const died = Math.random() < 0.08;
-    const procedureType = Math.random() < 0.65 ? 'Planowy' : (Math.random() < 0.5 ? 'Pilny(<24h)' : 'Nagły(<2h)');
-
-    // Device
-    const devices = ['Nexus', 'Cook Arch Branch', 'Gore TAG', 'Relay Branch'];
-    const device = devices[Math.floor(Math.random() * devices.length)];
 
     patients.push({
       subjectId: `MOCK-${String(i).padStart(3, '0')}`,
       visitNumber: 'Baseline',
       enrollmentDate,
-      collectedBy: collectors[Math.floor(Math.random() * collectors.length)],
+      collectedBy: COLLECTORS[Math.floor(Math.random() * COLLECTORS.length)],
       status: Math.random() < 0.85 ? 'complete' as const : 'draft' as const,
-      data: {
-        // Administrative Data
-        'dane-administracyjne': {
-          'numer-badania': `${center}-2024-${String(i).padStart(3, '0')}`,
-          'kod-osrodka': center,
-          'imie-pacjenta': firstName,
-          'nazwisko-pacjenta': surname,
-          'data-wlaczenia': enrollmentDate,
-          'inicjaly-osoby-zbierajacej-dane': collectors[Math.floor(Math.random() * collectors.length)]
-        },
-        // Demographics
-        'dane-demograficzne': {
-          'wiek-w-dniu-zabiegu': String(age),
-          'data-urodzenia': `${birthYear}-${birthMonth}-${birthDay}`,
-          'plec': isMale ? 'Mężczyzna' : 'Kobieta',
-          'wzrost': String(height),
-          'masa-ciala': String(weight),
-          'bmi-obliczone': bmi,
-          'status-palenia': ['Nigdy', 'Były Palacz (>1 roku)', 'Aktualny palacz'][Math.floor(Math.random() * 3)]
-        },
-        // Cardiovascular comorbidities
-        'uklad-sercowo-naczyniowy': {
-          'choroba-wiencowa': hasCAD,
-          'nadcisnienie-tetnicze': hasHypertension,
-          'przebyty-zawal-serca': hasCAD && Math.random() < 0.3,
-          'niewydolnosc-serca-nyha': hasCAD ? ['NYHA 1', 'NYHA 2', 'NYHA 3', 'Brak'][Math.floor(Math.random() * 4)] : 'Brak',
-          'migotanie-przedsionkow': hasAF,
-          'przebyta-operacja-kardiochirurgiczna': Math.random() < 0.1
-        },
-        // Cerebrovascular
-        'uklad-mozgowo-naczyniowy': {
-          'przebyty-udar-niedokrwienny': hasPriorStroke,
-          'przebyty-udar-krwotoczny': hasPriorStroke && Math.random() < 0.2,
-          'przebyty-tia': Math.random() < 0.1,
-          'zwezenie-tetnicy-szyjnej': Math.random() < 0.15,
-          'zaburzenia-poznawcze': age > 75 && Math.random() < 0.2
-        },
-        // Other comorbidities
-        'inne-choroby': {
-          'cukrzyca': hasDiabetes,
-          'pochp': hasCOPD,
-          'dializoterapia': egfr < 15,
-          'choroba-tkanki-lacznej': Math.random() < 0.05,
-          'nowotwor-zlosliwy': Math.random() < 0.08
-        },
-        // Baseline results
-        'wyniki-wyjsciowe': {
-          'wyjsciowy-egfr': egfr,
-          'wyjsciowa-kreatynina': creatinine,
-          'wyjsciowa-hemoglobina': hemoglobin.toFixed(1),
-          'hemoglobina-po-zabiegu': (hemoglobin - 1 - Math.random() * 2).toFixed(1)
-        },
-        // Indications
-        'glowne-wskazania': {
-          'wskazanie': indication,
-          'po-operacji-bentalla': Math.random() < 0.1 ? 'Tak (zastawka sztuczna)' : 'Nie'
-        },
-        // Aneurysm details (if applicable)
-        'w-przypadku-tetniaka': indication === 'Tętniak' ? {
-          'maksymalna-srednica-tetniaka': aneurysmSize,
-          'lokalizacja-tetniaka': ['Aorta wstępująca', 'Łuk aorty', 'Aorta zstępująca proksymalna'][Math.floor(Math.random() * 3)],
-          'kategoria-wielkosci-tetniaka': aneurysmSize! >= 80 ? '>=80 mm' : aneurysmSize! >= 70 ? '70-79mm' : aneurysmSize! >= 60 ? '60-69mm' : '50-59 mm',
-          'tetniak-70mm': aneurysmSize! >= 70,
-          'objawowy': Math.random() < 0.3,
-          'pekniecie-ograniczone': Math.random() < 0.05
-        } : {},
-        // Dissection details (if applicable)
-        'w-przypadku-rozwarstwienia': indication === 'Rozwarstwienie' ? {
-          'klasyfikacja-stanford': Math.random() < 0.15 ? 'Typ A' : 'Typ B',
-          'klasyfikacja-debakey': ['I', 'II', 'IIIa', 'IIIb'][Math.floor(Math.random() * 4)],
-          'faza': ['Ostre (<14 dni)', 'Podostre(14-90 dni)', 'Przewlekłe (>90 dni)'][Math.floor(Math.random() * 3)],
-          'zespol-niedokrwienia-narzadowego': Math.random() < 0.2
-        } : {},
-        // Aortic dimensions
-        'wymiary-aorty': {
-          'srednica-aorty-wstepujacej': 30 + Math.floor(Math.random() * 15),
-          'srednica-luku-aorty': 35 + Math.floor(Math.random() * 15),
-          'aorta-zstepujaca-przy-lsa': 25 + Math.floor(Math.random() * 10)
-        },
-        // Aortic morphology
-        'morfologia-aorty': {
-          'typ-luku-ishimaru': ['Typ I', 'Typ II', 'Typ III'][Math.floor(Math.random() * 3)],
-          'aorta-shaggy': Math.random() < 0.15,
-          'skrzeplina-w-luku-aorty': Math.random() < 0.1,
-          'aorta-porcelanowa': Math.random() < 0.08
-        },
-        // Procedure data
-        'czas-i-warunki': {
-          'data-zabiegu': procedureDate,
-          'tryb-zabiegu': procedureType,
-          'miejsce-zabiegu': 'Hybrydowa sala operacyjna',
-          'operator-1': collectors[Math.floor(Math.random() * collectors.length)],
-          'operator-2': collectors[Math.floor(Math.random() * collectors.length)]
-        },
-        // Device configuration
-        'konfiguracja-urzadzenia': {
-          'system-stentgraftu': device,
-          'rozmiar-glownego-stentgraftu': `${28 + Math.floor(Math.random() * 12)}x${120 + Math.floor(Math.random() * 80)}mm`
-        },
-        // Procedure parameters
-        'parametry-zabiegu': {
-          'czas-fluoroskopii': 30 + Math.floor(Math.random() * 50),
-          'objetosc-kontrastu': 120 + Math.floor(Math.random() * 150),
-          'szacowana-utrata-krwi': 200 + Math.floor(Math.random() * 500)
-        },
-        // Technical result
-        'wynik-techniczny': {
-          'sukces-techniczny': Math.random() < 0.95,
-          'przeciek-typu-i': Math.random() < 0.05,
-          'przeciek-typu-ii': Math.random() < 0.15,
-          'przeciek-typu-iii': Math.random() < 0.02
-        },
-        // Neurological outcomes
-        'ocena-pooperacyjna-24h': {
-          'nowy-deficyt-neurologiczny': hadStroke,
-          'gcs-przy-wybudzeniu': hadStroke ? 12 + Math.floor(Math.random() * 4) : 15,
-          'deficyt-ruchowy': hadStroke && Math.random() < 0.6,
-          'deficyt-mowy': hadStroke && Math.random() < 0.3
-        },
-        // Stroke (if applicable)
-        'udar-30-dni': {
-          'jakikolwiek-udar': hadStroke,
-          'typ-udaru': hadStroke ? (Math.random() < 0.85 ? 'Niedokrwienny' : 'Krwotoczny') : null,
-          'nihss-przy-rozpoznaniu': hadStroke ? Math.floor(Math.random() * 20) : null,
-          'mrs-30-dni': hadStroke ? Math.floor(Math.random() * 5) : null
-        },
-        // Other complications
-        'sercowo-naczyniowe': {
-          'zawal-serca': Math.random() < 0.03,
-          'nowo-migotanie-przedsionkow': Math.random() < 0.15,
-          'zatrzymanie-krazenia': Math.random() < 0.02
-        },
-        'nerkowe': {
-          'ostre-uszkodzenie-nerek': Math.random() < 0.15,
-          'nowa-dializa': Math.random() < 0.03
-        },
-        'oddechowe': {
-          'zapalenie-pluc': Math.random() < 0.1,
-          'przedluzona-wentylacja': Math.random() < 0.08
-        },
-        // Mortality
-        'zgon': {
-          'zgon-30-dni': died,
-          'dni-od-zabiegu': died ? Math.floor(Math.random() * 30) : null,
-          'glowna-przyczyna-zgonu': died ? ['Udar', 'Posocznica', 'Niewydolność wielonarządowa', 'Pęknięcie aorty'][Math.floor(Math.random() * 4)] : null
-        },
-        // Follow-up
-        'obserwacja': {
-          'czas-obserwacji-dni': 30 + Math.floor(Math.random() * 300),
-          'status-w-obserwacji': died ? 'Zgon' : (hadStroke ? 'Żyje z deficytem' : 'Żyje bez powikłań'),
-          'mrs-przy-ostatniej-wizycie': died ? null : (hadStroke ? 1 + Math.floor(Math.random() * 3) : 0)
-        }
-      }
+      data
     });
   }
 
   return patients;
+}
+
+/**
+ * Generate appropriate field value based on field metadata and name patterns
+ */
+function generateFieldValue(
+  field: DatabaseField,
+  context: {
+    index: number;
+    isMale: boolean;
+    firstName: string;
+    surname: string;
+    age: number;
+    birthDate: string;
+    enrollmentDate: string;
+  }
+): any {
+  const fieldNameLower = (field.fieldName || field.id).toLowerCase();
+  const displayNameLower = field.displayName.toLowerCase();
+
+  // Pattern matching for common field types
+
+  // Name fields
+  if (fieldNameLower.includes('imie') || fieldNameLower.includes('first_name') || displayNameLower.includes('imię')) {
+    return context.firstName;
+  }
+  if (fieldNameLower.includes('nazwisko') || fieldNameLower.includes('last_name') || fieldNameLower.includes('surname')) {
+    return context.surname;
+  }
+
+  // Age
+  if (fieldNameLower.includes('wiek') || fieldNameLower.includes('age')) {
+    return String(context.age);
+  }
+
+  // Gender/Sex
+  if (fieldNameLower.includes('plec') || fieldNameLower.includes('sex') || fieldNameLower.includes('gender')) {
+    if (field.options && field.options.length > 0) {
+      // Match to available options
+      const maleOption = field.options.find(o => o.toLowerCase().includes('męż') || o.toLowerCase().includes('male') || o.toLowerCase() === 'm');
+      const femaleOption = field.options.find(o => o.toLowerCase().includes('kob') || o.toLowerCase().includes('female') || o.toLowerCase() === 'f' || o.toLowerCase() === 'k');
+      return context.isMale ? (maleOption || field.options[0]) : (femaleOption || field.options[1] || field.options[0]);
+    }
+    return context.isMale ? 'Mężczyzna' : 'Kobieta';
+  }
+
+  // Birth date
+  if (fieldNameLower.includes('urodzeni') || fieldNameLower.includes('birth') || fieldNameLower.includes('dob')) {
+    return context.birthDate;
+  }
+
+  // Date fields
+  if (field.dataType === 'Date' || fieldNameLower.includes('data') || fieldNameLower.includes('date')) {
+    // Generate a date around enrollment
+    const baseDate = new Date(context.enrollmentDate);
+    const offset = Math.floor(Math.random() * 30) - 15; // +/- 15 days
+    baseDate.setDate(baseDate.getDate() + offset);
+    return baseDate.toISOString().split('T')[0];
+  }
+
+  // Height
+  if (fieldNameLower.includes('wzrost') || fieldNameLower.includes('height')) {
+    const height = context.isMale ? 165 + Math.floor(Math.random() * 25) : 155 + Math.floor(Math.random() * 20);
+    return String(height);
+  }
+
+  // Weight
+  if (fieldNameLower.includes('masa') || fieldNameLower.includes('waga') || fieldNameLower.includes('weight')) {
+    const weight = context.isMale ? 70 + Math.floor(Math.random() * 35) : 55 + Math.floor(Math.random() * 30);
+    return String(weight);
+  }
+
+  // BMI
+  if (fieldNameLower.includes('bmi')) {
+    return (22 + Math.random() * 10).toFixed(1);
+  }
+
+  // Study/Case number
+  if (fieldNameLower.includes('numer') || fieldNameLower.includes('number') || fieldNameLower.includes('id') || fieldNameLower.includes('kod')) {
+    return `STUDY-2024-${String(context.index).padStart(3, '0')}`;
+  }
+
+  // Initials
+  if (fieldNameLower.includes('inicjaly') || fieldNameLower.includes('initials')) {
+    return COLLECTORS[Math.floor(Math.random() * COLLECTORS.length)];
+  }
+
+  // Handle by data type
+  switch (field.dataType) {
+    case 'Boolean':
+      return Math.random() < 0.3; // 30% true for most boolean fields
+
+    case 'Categorical':
+      if (field.options && field.options.length > 0) {
+        return field.options[Math.floor(Math.random() * field.options.length)];
+      }
+      return null;
+
+    case 'Continuous':
+      // Generate within range if specified
+      const min = field.minValue ?? 0;
+      const max = field.maxValue ?? 100;
+      const value = min + Math.random() * (max - min);
+      return value.toFixed(1);
+
+    case 'Text':
+      // Generate placeholder text for text fields
+      if (fieldNameLower.includes('uwagi') || fieldNameLower.includes('comment') || fieldNameLower.includes('note')) {
+        return Math.random() < 0.2 ? 'Bez uwag' : '';
+      }
+      return '';
+
+    case 'Multi-Select':
+      if (field.options && field.options.length > 0) {
+        // Select 1-3 random options
+        const numSelections = 1 + Math.floor(Math.random() * Math.min(3, field.options.length));
+        const shuffled = [...field.options].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, numSelections);
+      }
+      return [];
+
+    default:
+      return null;
+  }
 }

@@ -2,17 +2,19 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, Download, Eye, Trash2, FileText, Calendar, User, Hash, CheckCircle2, Clock, History, X, Beaker, Loader2 } from 'lucide-react';
 import { getAllRecords, getRecordsByProtocol, deleteRecord, ClinicalDataRecord, AuditEntry } from '../utils/dataStorage';
 import { loadMockData, isMockDataLoaded, clearMockData } from '../utils/mockDataLoader';
+import { DatabaseTable } from './database/utils/schemaGenerator';
 
 interface DataBrowserProps {
   protocolNumber?: string;
   protocolVersion?: string;
   onViewRecord: (record: ClinicalDataRecord) => void;
+  tables?: DatabaseTable[];
 }
 
 type SortColumn = 'subjectId' | 'visitNumber' | 'enrollmentDate' | 'collectedAt' | 'status';
 type SortDirection = 'asc' | 'desc';
 
-export function DataBrowser({ protocolNumber, protocolVersion, onViewRecord }: DataBrowserProps) {
+export function DataBrowser({ protocolNumber, protocolVersion, onViewRecord, tables = [] }: DataBrowserProps) {
   const [records, setRecords] = useState<ClinicalDataRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<ClinicalDataRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,6 +99,11 @@ export function DataBrowser({ protocolNumber, protocolVersion, onViewRecord }: D
       return;
     }
 
+    if (!tables || tables.length === 0) {
+      alert('No schema tables available. Please ensure the protocol has a defined schema.');
+      return;
+    }
+
     if (hasMockData) {
       if (!confirm('Mock data already exists. Do you want to clear it and reload?')) {
         return;
@@ -109,13 +116,13 @@ export function DataBrowser({ protocolNumber, protocolVersion, onViewRecord }: D
     // Small delay to show loading state
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const result = loadMockData(protocolNumber, protocolVersion);
+    const result = loadMockData(protocolNumber, protocolVersion, tables);
 
     setIsLoadingMockData(false);
 
     if (result.success) {
       loadRecords();
-      alert(`Successfully loaded ${result.count} mock patient records for testing Analytics!`);
+      alert(`Successfully loaded ${result.count} mock patient records with ${tables.length} data tables!`);
     } else {
       alert(`Failed to load mock data: ${result.error}`);
     }
