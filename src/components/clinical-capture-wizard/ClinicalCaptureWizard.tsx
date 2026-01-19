@@ -634,6 +634,9 @@ export function ClinicalCaptureWizard({ onNavigateToDatabase }: ClinicalCaptureW
             <ReviewPublishStep
               onPublish={handlePublish}
               onBack={handleBackFromReview}
+              protocol={currentProtocol}
+              methodology={currentProtocol.studyMethodology}
+              foundationalPapers={currentProtocol.studyMethodology?.foundationalPapers as any}
               protocolDetails={{
                 protocolTitle: currentProtocol.protocolTitle || '',
                 protocolNumber: currentProtocol.protocolNumber || '',

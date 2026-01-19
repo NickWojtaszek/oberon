@@ -18,13 +18,23 @@ import {
   Unlock,
   Eye,
   Edit,
+  Download,
+  FileDown,
 } from 'lucide-react';
 import type { ProtocolDetailsData } from './ProtocolDetailsStep';
+import type { SavedProtocol } from '../../protocol-workbench/types';
+import type { StudyMethodology } from '../../../contexts/ProtocolContext';
+import type { FoundationalPaperExtraction } from '../../../services/geminiService';
+import { downloadProtocolExport } from '../../../utils/protocolExportImport';
+import { downloadProtocolPDF } from '../../protocol-export/pdf';
 
 interface ReviewPublishStepProps {
   onPublish: () => void;
   onBack: (step: string) => void;
   protocolDetails: ProtocolDetailsData;
+  protocol?: SavedProtocol; // Full protocol object for export functionality
+  methodology?: StudyMethodology; // For PDF export with SPECTRA
+  foundationalPapers?: FoundationalPaperExtraction[]; // For PDF export
   summary: {
     picoComplete: boolean;
     picoApproved: boolean;
@@ -38,10 +48,11 @@ interface ReviewPublishStepProps {
   };
 }
 
-export function ReviewPublishStep({ onPublish, onBack, protocolDetails, summary }: ReviewPublishStepProps) {
+export function ReviewPublishStep({ onPublish, onBack, protocolDetails, protocol, methodology, foundationalPapers, summary }: ReviewPublishStepProps) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success'>('idle');
   const [confirmChecked, setConfirmChecked] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   const allChecksPass =
     summary.picoComplete &&
@@ -98,10 +109,65 @@ export function ReviewPublishStep({ onPublish, onBack, protocolDetails, summary 
             <p className="text-green-700 mb-6">
               Your protocol is now active and ready for data collection.
             </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-green-800">
-              <Unlock className="w-4 h-4" />
-              <span className="font-medium">Data Entry Enabled</span>
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-green-800">
+                <Unlock className="w-4 h-4" />
+                <span className="font-medium">Data Entry Enabled</span>
+              </div>
             </div>
+
+            {/* Export Protocol Buttons */}
+            {protocol && (
+              <div className="pt-4 border-t border-green-100">
+                <p className="text-sm text-slate-600 mb-4">
+                  Export your protocol for backup, IRB submission, or sharing with collaborators
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={async () => {
+                      setIsExportingPDF(true);
+                      try {
+                        await downloadProtocolPDF(
+                          protocol,
+                          protocol.versions[protocol.versions.length - 1],
+                          methodology,
+                          foundationalPapers
+                        );
+                      } catch (error) {
+                        console.error('PDF export failed:', error);
+                        alert('Failed to generate PDF. Please try again.');
+                      } finally {
+                        setIsExportingPDF(false);
+                      }
+                    }}
+                    disabled={isExportingPDF}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg font-medium transition-colors"
+                  >
+                    {isExportingPDF ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Generating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="w-5 h-5" />
+                        Export PDF
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => downloadProtocolExport(protocol, { includeClinicalData: true, includeManifests: true })}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    <Download className="w-5 h-5" />
+                    Export JSON
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  PDF: Professional document for IRB/review • JSON: Data backup for re-import
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ) : (

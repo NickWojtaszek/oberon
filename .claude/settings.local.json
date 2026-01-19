@@ -29,7 +29,8 @@
       "Bash(git commit:*)",
       "Bash(npm run typecheck:*)",
       "Read(//c/Users/mikol_5j7kx3s/Desktop/Malgosia Doktorar/**)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(npm cache clean:*)"
     ]
   }
 }

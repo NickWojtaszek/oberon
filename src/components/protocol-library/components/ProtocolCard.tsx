@@ -1,9 +1,10 @@
-import { FileText, Calendar, CheckCircle2, Edit3, Eye, Archive, GitBranch, Clock, Trash2, ArrowUpCircle, XCircle, AlertCircle, Blocks, FileCheck, Shield, Download } from 'lucide-react';
-import { useMemo } from 'react';
+import { FileText, Calendar, CheckCircle2, Edit3, Eye, Archive, GitBranch, Clock, Trash2, ArrowUpCircle, XCircle, AlertCircle, Blocks, FileCheck, Shield, Download, FileDown } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SavedProtocol, ProtocolVersion } from '../../protocol-workbench/types';
 import { calculateProtocolCompleteness, getMissingItemsCount } from '../utils/completenessCalculator';
 import { downloadProtocolExport } from '../../../utils/protocolExportImport';
+import { downloadProtocolPDF } from '../../protocol-export/pdf';
 
 interface ProtocolCardProps {
   protocol: SavedProtocol;
@@ -25,6 +26,7 @@ export function ProtocolCard({
   onDeleteDraft
 }: ProtocolCardProps) {
   const { t } = useTranslation('protocolLibrary');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   // 🛡️ DEFENSIVE: Handle both string and object formats for currentVersion
   const currentVersionData = useMemo(() => {
@@ -145,9 +147,37 @@ export function ProtocolCard({
           {/* Actions */}
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <button
+              onClick={async () => {
+                setIsExportingPDF(true);
+                try {
+                  const extendedProtocol = protocol as any;
+                  await downloadProtocolPDF(
+                    protocol,
+                    protocol.versions[protocol.versions.length - 1],
+                    extendedProtocol.studyMethodology,
+                    extendedProtocol.studyMethodology?.foundationalPapers
+                  );
+                } catch (error) {
+                  console.error('PDF export failed:', error);
+                  alert('Failed to generate PDF. Please try again.');
+                } finally {
+                  setIsExportingPDF(false);
+                }
+              }}
+              disabled={isExportingPDF}
+              className="px-3 py-2 bg-white hover:bg-purple-50 text-purple-600 border border-slate-300 hover:border-purple-300 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
+              title="Export protocol to PDF (for IRB/review)"
+            >
+              {isExportingPDF ? (
+                <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FileDown className="w-4 h-4" />
+              )}
+            </button>
+            <button
               onClick={() => downloadProtocolExport(protocol, { includeClinicalData: true, includeManifests: true })}
               className="px-3 py-2 bg-white hover:bg-blue-50 text-blue-600 border border-slate-300 hover:border-blue-300 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
-              title="Export protocol to JSON file"
+              title="Export protocol to JSON (for backup/import)"
             >
               <Download className="w-4 h-4" />
             </button>
