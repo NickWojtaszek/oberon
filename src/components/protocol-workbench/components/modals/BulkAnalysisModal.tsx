@@ -178,7 +178,7 @@ export function BulkAnalysisModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header - fixed at top */}
         <div className="flex-shrink-0 px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-purple-50 to-blue-50">
           <div className="flex items-center justify-between">

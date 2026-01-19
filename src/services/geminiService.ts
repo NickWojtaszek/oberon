@@ -165,6 +165,11 @@ function extractJSONFromResponse(responseText: string): any {
   }
   jsonText = jsonText.trim();
 
+  // Strip "json" prefix if it appears at the start (Gemini sometimes includes it after code block extraction)
+  if (jsonText.toLowerCase().startsWith('json')) {
+    jsonText = jsonText.substring(4).trim();
+  }
+
   // If still starts with backticks, remove them
   if (jsonText.startsWith('`')) {
     jsonText = jsonText.replace(/^`+|`+$/g, '').trim();
