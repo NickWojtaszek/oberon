@@ -158,24 +158,35 @@ const inferCategoryFromBlock = (block: SchemaBlock): SchemaBlock['variable']['ca
 };
 
 /**
- * Recursively regenerate all IDs and normalize categories to prevent conflicts on import
+ * Recursively regenerate all IDs and normalize categories to prevent conflicts on import.
+ * CRITICAL: Also updates parentId references to maintain nesting relationships.
+ *
+ * @param block - The block to regenerate
+ * @param newParentId - The NEW parent ID (after regeneration) or undefined for root blocks
  */
-export const regenerateBlockIds = (block: SchemaBlock): SchemaBlock => {
+export const regenerateBlockIds = (block: SchemaBlock, newParentId?: string): SchemaBlock => {
   // Infer proper category for this block
   const inferredCategory = inferCategoryFromBlock(block);
 
+  // Generate new ID for this block
+  const newId = generateUniqueId();
+
   const regenerated: SchemaBlock = {
     ...block,
-    id: generateUniqueId(),
+    id: newId,
+    // CRITICAL FIX: Set parentId to the NEW parent ID, not the old one
+    parentId: newParentId,
     variable: {
       ...block.variable,
       category: inferredCategory,
     },
   };
 
+  // Recursively regenerate children, passing THIS block's NEW ID as their parent
   if (block.children) {
-    regenerated.children = block.children.map(child => regenerateBlockIds(child));
+    regenerated.children = block.children.map(child => regenerateBlockIds(child, newId));
   }
+
   if (block.conditionalDependencies) {
     regenerated.conditionalDependencies = block.conditionalDependencies.map(dep => ({
       ...dep,

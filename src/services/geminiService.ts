@@ -854,7 +854,8 @@ Guidelines:
 }
 
 /**
- * Analyze multiple existing fields and suggest configuration improvements
+ * Analyze multiple existing fields and suggest configuration improvements.
+ * Processes fields in batches to avoid API token limits and timeouts.
  */
 export async function analyzeBulkFieldConfiguration(
   fields: Array<{
@@ -871,11 +872,22 @@ export async function analyzeBulkFieldConfiguration(
     statisticalPlan?: string;
     studyPhase?: string;
     fullProtocolText?: string;
-  }
+  },
+  onProgress?: (processed: number, total: number) => void
 ): Promise<Map<string, SchemaFieldSuggestion>> {
 
+  // BATCH PROCESSING: Process fields in chunks to avoid API limits
+  const BATCH_SIZE = 40; // 40 fields per batch is a safe limit
+  const batches: typeof fields[] = [];
+
+  for (let i = 0; i < fields.length; i += BATCH_SIZE) {
+    batches.push(fields.slice(i, i + BATCH_SIZE));
+  }
+
+  console.log(`🔬 [Bulk Analysis] Processing ${fields.length} fields in ${batches.length} batches`);
+
   const fullProtocolContext = protocolContext.fullProtocolText
-    ? `\n**Full Protocol Document:**\n${protocolContext.fullProtocolText.substring(0, 18000)}\n`
+    ? `\n**Full Protocol Document:**\n${protocolContext.fullProtocolText.substring(0, 12000)}\n`
     : '';
 
   // Enhanced guidance for bulk analysis when full protocol is available
@@ -891,7 +903,14 @@ With access to the full protocol, you should:
     : `\n**Analysis Instructions:**
 Limited protocol information available. Focus on clinical trial best practices and logical consistency.`;
 
-  const prompt = `You are Dr. Puck, Schema Architect. Review this existing clinical trial schema and suggest improvements based on the protocol.
+  const suggestionMap = new Map<string, SchemaFieldSuggestion>();
+  let processedCount = 0;
+
+  // Process each batch sequentially with error handling per batch
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+
+    const prompt = `You are Dr. Puck, Schema Architect. Review this existing clinical trial schema and suggest improvements based on the protocol.
 
 **Protocol Context:**
 - Primary Objective: ${protocolContext.primaryObjective || 'Not specified'}
@@ -901,62 +920,77 @@ Limited protocol information available. Focus on clinical trial best practices a
 ${fullProtocolContext}
 ${analysisGuidance}
 
-**Existing Fields to Review:**
-${fields.map(f => `
-- ${f.name}
+**Existing Fields to Review (Batch ${batchIndex + 1}/${batches.length}):**
+${batch.map(f => `- ID: ${f.id}
+  Name: ${f.name}
   Current: Role=${f.currentRole}, Endpoint=${f.currentEndpointTier || 'None'}, Analysis=${f.currentAnalysisMethod || 'None'}, Type=${f.dataType}
 `).join('\n')}
 
 **Task:** For EACH field, determine if configuration changes are needed. Only suggest changes if current configuration is suboptimal or incorrect based on protocol.
 
-Return JSON array:
+Return JSON array (ONLY include fields where needsChange=true):
 [
   {
-    "fieldId": "field-id",
+    "fieldId": "exact-field-id-from-input",
     "fieldName": "field name",
-    "needsChange": true/false,
+    "needsChange": true,
     "suggestedRole": "Predictor" | "Outcome" | "Structure" | "All",
     "suggestedEndpointTier": "primary" | "secondary" | "exploratory" | null,
     "suggestedAnalysisMethod": "survival" | "frequency" | "mean-comparison" | "non-parametric" | "chi-square" | null,
+    "suggestedDataType": "Continuous" | "Categorical" | "Boolean" | "Date" | "Text" | "Multi-Select",
     "confidence": 0-100,
     "rationale": "Why this configuration based on protocol objectives and endpoints"
   }
 ]
 
-Only include fields where needsChange=true in the output.`;
+IMPORTANT: Use the exact fieldId from the input. If no changes needed for any field in this batch, return an empty array [].`;
 
-  try {
-    const responseText = await callGemini(prompt, 4096);
-    const parsed = extractJSONFromResponse(responseText);
+    try {
+      console.log(`📊 [Bulk Analysis] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} fields)`);
 
-    const suggestionMap = new Map<string, SchemaFieldSuggestion>();
+      const responseText = await callGemini(prompt, 4096);
+      const parsed = extractJSONFromResponse(responseText);
 
-    const suggestions = Array.isArray(parsed) ? parsed : [];
+      const batchSuggestions = Array.isArray(parsed) ? parsed : [];
 
-    for (const item of suggestions) {
-      if (item.needsChange) {
-        const field = fields.find(f => f.id === item.fieldId);
-        suggestionMap.set(item.fieldId, {
-          role: item.suggestedRole || 'All',
-          roleConfidence: item.confidence || 70,
-          roleRationale: item.rationale || 'Based on protocol analysis',
-          endpointTier: item.suggestedEndpointTier || null,
-          endpointConfidence: item.confidence || 70,
-          endpointRationale: item.rationale || 'Based on protocol analysis',
-          analysisMethod: item.suggestedAnalysisMethod || null,
-          analysisConfidence: item.confidence || 70,
-          analysisRationale: item.rationale || 'Based on protocol analysis',
-          dataType: (field?.dataType as any) || 'Text',
-          dataTypeConfidence: 100,
-          dataTypeRationale: 'Existing data type retained',
-          suggestedDependencies: []
-        });
+      for (const item of batchSuggestions) {
+        if (item.needsChange && item.fieldId) {
+          const field = batch.find(f => f.id === item.fieldId);
+          suggestionMap.set(item.fieldId, {
+            role: item.suggestedRole || 'All',
+            roleConfidence: item.confidence || 70,
+            roleRationale: item.rationale || 'Based on protocol analysis',
+            endpointTier: item.suggestedEndpointTier || null,
+            endpointConfidence: item.confidence || 70,
+            endpointRationale: item.rationale || 'Based on protocol analysis',
+            analysisMethod: item.suggestedAnalysisMethod || null,
+            analysisConfidence: item.confidence || 70,
+            analysisRationale: item.rationale || 'Based on protocol analysis',
+            dataType: item.suggestedDataType || (field?.dataType as any) || 'Text',
+            dataTypeConfidence: item.suggestedDataType ? (item.confidence || 70) : 100,
+            dataTypeRationale: item.suggestedDataType ? item.rationale : 'Existing data type retained',
+            suggestedDependencies: []
+          });
+        }
       }
-    }
 
-    return suggestionMap;
-  } catch (error) {
-    console.error('Bulk field analysis failed:', error);
-    throw error;
+      processedCount += batch.length;
+      onProgress?.(processedCount, fields.length);
+
+      // Small delay between batches to avoid rate limiting
+      if (batchIndex < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+    } catch (batchError) {
+      console.warn(`⚠️ [Bulk Analysis] Batch ${batchIndex + 1} failed, continuing with next batch:`, batchError);
+      // Continue processing other batches even if one fails
+      processedCount += batch.length;
+      onProgress?.(processedCount, fields.length);
+    }
   }
+
+  console.log(`✅ [Bulk Analysis] Complete: ${suggestionMap.size} suggestions from ${fields.length} fields`);
+
+  return suggestionMap;
 }

@@ -46,6 +46,7 @@ export function BulkAnalysisModal({
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<FieldSuggestion[]>([]);
   const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
+  const [progress, setProgress] = useState({ processed: 0, total: 0 });
 
   // Get all non-Section fields
   const allFields = getAllBlocks(schemaBlocks).filter(b => b.dataType !== 'Section');
@@ -65,6 +66,7 @@ export function BulkAnalysisModal({
     setIsAnalyzing(true);
     setError(null);
     setSuggestions([]);
+    setProgress({ processed: 0, total: fieldCount });
 
     try {
       // Prepare fields for analysis
@@ -77,10 +79,11 @@ export function BulkAnalysisModal({
         dataType: block.dataType,
       }));
 
-      // Call bulk analysis API
+      // Call bulk analysis API with progress callback
       const suggestionMap = await analyzeBulkFieldConfiguration(
         fieldsForAnalysis,
-        protocolContext || {}
+        protocolContext || {},
+        (processed, total) => setProgress({ processed, total })
       );
 
       // Convert to array with selection state
@@ -110,7 +113,17 @@ export function BulkAnalysisModal({
       }
     } catch (err) {
       console.error('Bulk analysis failed:', err);
-      setError('Analysis failed. Please check your Gemini API configuration and try again.');
+      // More descriptive error message
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      if (errorMessage.includes('API key') || errorMessage.includes('configured')) {
+        setError('Gemini API key not configured. Go to Settings to add your API key.');
+      } else if (errorMessage.includes('429') || errorMessage.includes('rate')) {
+        setError('API rate limit reached. Please wait a moment and try again.');
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('network')) {
+        setError('Network timeout. Check your connection and try again.');
+      } else {
+        setError(`Analysis failed: ${errorMessage.substring(0, 100)}`);
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -217,9 +230,23 @@ export function BulkAnalysisModal({
               <p className="text-slate-600">
                 Dr. Puck is reviewing {fieldCount} fields against your protocol context.
               </p>
-              <p className="text-sm text-slate-500 mt-2">
-                This may take a moment for large schemas.
-              </p>
+              {progress.total > 0 && (
+                <div className="mt-4 max-w-xs mx-auto">
+                  <div className="flex justify-between text-sm text-slate-500 mb-1">
+                    <span>Progress</span>
+                    <span>{progress.processed} / {progress.total} fields</span>
+                  </div>
+                  <div className="h-2 bg-purple-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-purple-600 transition-all duration-300"
+                      style={{ width: `${Math.round((progress.processed / progress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">
+                    Processing in batches of 40 fields...
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -350,11 +377,22 @@ export function BulkAnalysisModal({
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="text-sm text-slate-600">
-            {suggestions.length > 0 && (
+            {suggestions.length > 0 ? (
               <span>{selectedCount} of {suggestions.length} suggestions selected</span>
+            ) : !isAnalyzing && !error && geminiConfigured && (
+              <span className="text-slate-400">No suggestions available</span>
             )}
           </div>
           <div className="flex items-center gap-3">
+            {/* Retry button always visible when not analyzing */}
+            {!isAnalyzing && geminiConfigured && (
+              <button
+                onClick={runBulkAnalysis}
+                className="px-4 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors"
+              >
+                Re-analyze
+              </button>
+            )}
             <button
               onClick={onClose}
               className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-white transition-colors"
