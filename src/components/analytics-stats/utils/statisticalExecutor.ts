@@ -37,14 +37,23 @@ export async function executeStatisticalAnalysis(
   context: StatisticalAnalysisContext
 ): Promise<AnalysisResults> {
   // Load metadata if not cached
-  const protocolId = context.protocol?.pico ? 'current' : null;
-  const versionId = 'current';  // TODO: Get from context
+  // Extract protocol info from records (all records should have same protocol)
+  const protocolId = records.length > 0 ? records[0].protocolNumber : null;
+
+  // Extract timestamp from protocol number for table ID suffix
+  const protocolTimestamp = protocolId?.split('-')[1] || null;
+  const tableIdSuffix = protocolTimestamp ? `draft_${protocolTimestamp}` : null;
 
   if (!cachedMetadata || cachedProtocolId !== protocolId) {
-    if (protocolId && versionId) {
-      cachedMetadata = loadSchemaMetadata(protocolId, versionId);
+    if (protocolId && tableIdSuffix) {
+      cachedMetadata = loadSchemaMetadata(protocolId, tableIdSuffix);
       cachedProtocolId = protocolId;
-      cachedVersionId = versionId;
+      cachedVersionId = tableIdSuffix;
+      if (cachedMetadata) {
+        console.log(`✅ Loaded schema metadata: ${cachedMetadata.totalFields} fields`);
+      } else {
+        console.warn(`⚠️ No schema metadata found for ${protocolId} with suffix ${tableIdSuffix}`);
+      }
     }
   }
 
