@@ -1039,8 +1039,9 @@ export async function callGeminiForStatisticalAnalysis(prompt: string): Promise<
   console.log('🤖 [Gemini/Statistician] Generating statistical analysis plan...');
 
   try {
-    // Use higher token limit for analysis plans
-    const response = await callGemini(prompt, 4096);
+    // Use much higher token limit for analysis plans - JSON responses can be very large
+    // with many variables (489+ fields). 8192 tokens should handle most cases without truncation.
+    const response = await callGemini(prompt, 8192);
     console.log('✅ [Gemini/Statistician] Analysis plan generated');
     return response;
   } catch (error) {

@@ -377,73 +377,42 @@ ${this.generateTestSelectionGuidance(context)}
 
 ## RESPONSE FORMAT
 
-Respond with valid JSON only. Include the following for EACH analysis suggestion:
+**IMPORTANT**: Respond with valid, complete JSON only. Limit to 8-12 key suggestions maximum.
 
 {
   "suggestions": [
     {
-      "suggestionType": "descriptive" | "normality-check" | "primary-analysis" | "secondary-analysis" | "exploratory-analysis" | "assumption-check" | "sensitivity-analysis" | "sample-size-review" | "missing-data-strategy" | "multiplicity-adjustment" | "subgroup-analysis" | "effect-size-estimation",
-      "priority": "critical" | "recommended" | "optional",
-      "title": "Clear, specific title",
-      "description": "What this analysis accomplishes and why it matters",
-      "rationale": "Detailed justification including: (1) why this test, (2) assumptions checked, (3) regulatory alignment",
-      "autoExecute": true | false,
-      "grounding": {
-        "protocolReference": "Specific link to PICO or objective",
-        "regulatoryReference": "ICH E9 Section X, CONSORT item Y, STROBE item Z",
-        "literatureReference": "Reference to foundational paper method if applicable"
-      },
+      "suggestionType": "descriptive|normality-check|primary-analysis|secondary-analysis|exploratory-analysis|sensitivity-analysis",
+      "priority": "critical|recommended|optional",
+      "title": "Short title",
+      "description": "Brief description",
+      "rationale": "Why this test is appropriate",
+      "autoExecute": true,
+      "grounding": {"protocolReference": "PICO link", "regulatoryReference": "ICH E9/CONSORT"},
       "proposedAnalysis": {
-        "analysisType": "descriptive" | "normality-test" | "t-test" | "paired-t-test" | "anova" | "repeated-anova" | "chi-square" | "fisher-exact" | "mcnemar" | "pearson-correlation" | "spearman-correlation" | "mann-whitney" | "wilcoxon" | "kruskal-wallis" | "linear-regression" | "logistic-regression" | "cox-regression" | "kaplan-meier" | "log-rank" | "diagnostic-accuracy",
-        "predictorId": "variable ID or null for single-variable analyses",
-        "outcomeId": "variable ID - REQUIRED",
-        "covariateIds": ["array of covariate IDs for adjustment"],
-        "stratificationFactorIds": ["array of stratification variable IDs"],
-        "method": {
-          "name": "Full statistical method name",
-          "category": "descriptive" | "parametric" | "non-parametric" | "regression" | "survival" | "diagnostic",
-          "assumptions": ["List ALL assumptions that must be met"],
-          "references": ["Relevant methodology references"]
-        },
-        "parameters": {
-          "alpha": 0.05,
-          "tails": "two" | "one",
-          "confidenceLevel": 0.95,
-          "pairedData": false,
-          "equalVariances": null,
-          "continuityCorrection": true,
-          "multiplicityMethod": "none" | "bonferroni" | "holm" | "hochberg" | "fdr"
-        }
+        "analysisType": "descriptive|t-test|chi-square|anova|mann-whitney|pearson-correlation|logistic-regression|cox-regression|kaplan-meier",
+        "predictorId": "variable_id or null",
+        "outcomeId": "variable_id",
+        "method": {"name": "Method name", "category": "parametric|non-parametric|survival", "assumptions": ["key assumptions"]},
+        "parameters": {"alpha": 0.05, "tails": "two", "confidenceLevel": 0.95}
       },
-      "expectedOutputs": {
-        "primaryStatistic": "e.g., Mean difference, Odds ratio, Hazard ratio",
-        "effectSizeType": "Cohen's d | Odds ratio | Hazard ratio | Correlation coefficient",
-        "confidenceInterval": true,
-        "pValue": true,
-        "visualization": "bar" | "histogram" | "boxplot" | "scatter" | "line" | "kaplan-meier" | "forest-plot"
-      },
-      "feasibilityNotes": "Any concerns about sample size, data quality, or assumption violations",
+      "expectedOutputs": {"primaryStatistic": "e.g. Mean difference", "pValue": true, "visualization": "boxplot"},
       "confidence": 85
     }
   ],
   "globalRecommendations": {
-    "multiplicityAdjustment": "Recommendation with rationale",
-    "missingDataStrategy": "Recommendation based on missing pattern",
-    "sensitivityAnalyses": ["List of recommended sensitivity analyses"],
-    "powerConsiderations": "Assessment of statistical power given sample size"
-  },
-  "analysisFlowSummary": "Brief narrative of the analysis strategy from descriptives through primary to sensitivity"
+    "multiplicityAdjustment": "Method recommendation",
+    "missingDataStrategy": "Strategy recommendation"
+  }
 }
 
 ## CRITICAL REQUIREMENTS
 
-1. **Use actual variable IDs** from the schema (not made-up names)
-2. **Match test to data type**: Verify predictor/outcome types before recommending tests
-3. **Check sample size adequacy**: Flag if N < 30 for parametric tests
-4. **Include effect sizes**: Every comparison must have an effect size measure
-5. **Reference regulations**: Cite specific ICH E9 sections or CONSORT/STROBE items
-6. **Wilson CI for proportions**: Always use Wilson score interval for rates/proportions
-7. **Address multiplicity**: If >1 hypothesis test, specify correction method`;
+1. **LIMIT TO 8-12 SUGGESTIONS** - Focus on the most important analyses
+2. **Use actual variable IDs** from the schema provided above
+3. **Keep JSON compact** - Short descriptions, no redundant fields
+4. **Match test to data type** - Verify predictor/outcome types
+5. **Ensure complete JSON** - No truncation, close all brackets`;
   }
 
   /**
