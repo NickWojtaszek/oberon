@@ -80,6 +80,17 @@ export class StatisticianService {
   }
 
   /**
+   * Analysis domains for batched generation
+   */
+  private static readonly ANALYSIS_DOMAINS = [
+    'descriptive',      // Baseline characteristics, distributions
+    'primary',          // Primary endpoint analysis
+    'secondary',        // Secondary endpoints
+    'safety',           // Safety/adverse events
+    'exploratory',      // Exploratory analyses, correlations
+  ] as const;
+
+  /**
    * Generate analysis plan - main entry point
    * Combines rule-based and AI suggestions
    */
@@ -121,6 +132,107 @@ export class StatisticianService {
     merged = this.suggestionEngine.prioritizeSuggestions(merged, context);
 
     return merged;
+  }
+
+  /**
+   * Generate analysis plan in batches by domain
+   * Calls AI separately for each domain to avoid truncation issues
+   * Returns suggestions incrementally via callback for progress updates
+   */
+  async generateAnalysisPlanBatched(
+    context: StatisticalAnalysisContext,
+    onDomainComplete?: (domain: string, suggestions: AnalysisSuggestion[]) => void,
+    onProgress?: (completed: number, total: number, currentDomain: string) => void
+  ): Promise<AnalysisSuggestion[]> {
+    const allSuggestions: AnalysisSuggestion[] = [];
+    const domains = StatisticianService.ANALYSIS_DOMAINS;
+    const total = domains.length;
+
+    console.log(`🔬 [Dr. Saga] Starting batched analysis generation across ${total} domains`);
+
+    // 1. First, generate rule-based suggestions (fast, reliable)
+    const ruleBased = this.suggestionEngine.generateRuleBasedSuggestions(context);
+    allSuggestions.push(...ruleBased);
+    console.log(`📋 Generated ${ruleBased.length} rule-based suggestions`);
+
+    // 2. Generate AI suggestions for each domain in parallel batches
+    const domainPromises = domains.map(async (domain, index) => {
+      try {
+        onProgress?.(index, total, domain);
+        console.log(`🤖 [Dr. Saga] Generating ${domain} analysis suggestions...`);
+
+        const prompt = this.promptEngine.buildDomainSpecificPrompt(context, domain);
+        const response = await callGeminiForStatisticalAnalysis(prompt);
+        let suggestions = this.promptEngine.parseAnalysisPlanResponse(response);
+
+        // Tag suggestions with their domain
+        suggestions = suggestions.map(s => ({
+          ...s,
+          domain,
+        }));
+
+        // Enrich with schema data
+        suggestions = this.enrichSuggestionsWithSchemaData(suggestions, context);
+
+        console.log(`✅ [Dr. Saga] ${domain}: ${suggestions.length} suggestions`);
+        onDomainComplete?.(domain, suggestions);
+
+        return { domain, suggestions, success: true };
+      } catch (error) {
+        console.error(`❌ [Dr. Saga] ${domain} generation failed:`, error);
+        return { domain, suggestions: [], success: false, error };
+      }
+    });
+
+    // Run domains in parallel (2 at a time to avoid rate limits)
+    const results = await this.runInBatches(domainPromises, 2);
+
+    // Collect all AI suggestions
+    for (const result of results) {
+      if (result.success) {
+        allSuggestions.push(...result.suggestions);
+      }
+    }
+
+    // 3. Deduplicate and merge
+    let merged = this.suggestionEngine.mergeSuggestions(ruleBased,
+      allSuggestions.filter(s => !ruleBased.includes(s))
+    );
+
+    // 4. Check feasibility
+    merged = merged.map(suggestion => ({
+      ...suggestion,
+      feasibilityCheck: this.suggestionEngine.checkFeasibility(
+        suggestion.proposedAnalysis,
+        context
+      ),
+    }));
+
+    // 5. Prioritize
+    merged = this.suggestionEngine.prioritizeSuggestions(merged, context);
+
+    console.log(`🎯 [Dr. Saga] Complete: ${merged.length} total suggestions`);
+    onProgress?.(total, total, 'complete');
+
+    return merged;
+  }
+
+  /**
+   * Run promises in batches to avoid overwhelming the API
+   */
+  private async runInBatches<T>(
+    promises: Promise<T>[],
+    batchSize: number
+  ): Promise<T[]> {
+    const results: T[] = [];
+
+    for (let i = 0; i < promises.length; i += batchSize) {
+      const batch = promises.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch);
+      results.push(...batchResults);
+    }
+
+    return results;
   }
 
   /**

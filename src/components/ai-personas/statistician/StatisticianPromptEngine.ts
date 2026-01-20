@@ -416,6 +416,109 @@ ${this.generateTestSelectionGuidance(context)}
   }
 
   /**
+   * Build a focused prompt for a specific analysis domain
+   * This produces smaller, more reliable responses than the full prompt
+   */
+  buildDomainSpecificPrompt(
+    context: StatisticalAnalysisContext,
+    domain: 'descriptive' | 'primary' | 'secondary' | 'safety' | 'exploratory'
+  ): string {
+    const studyDesign = this.normalizeStudyDesign(context.protocol.studyDesign);
+
+    // Domain-specific instructions and variable focus
+    const domainConfig: Record<string, {
+      focus: string;
+      variables: SchemaBlockSummary[];
+      maxSuggestions: number;
+      types: string[];
+    }> = {
+      descriptive: {
+        focus: 'Baseline characteristics and distribution checks. Generate Table 1 recommendations and normality assessments.',
+        variables: context.schema.blocks.filter(b =>
+          b.role === 'Predictor' || b.dataType === 'Continuous' || b.dataType === 'Categorical'
+        ).slice(0, 15),
+        maxSuggestions: 3,
+        types: ['descriptive', 'normality-check'],
+      },
+      primary: {
+        focus: 'Primary endpoint analysis. Focus on the main hypothesis test and effect size estimation.',
+        variables: context.schema.primaryEndpoints,
+        maxSuggestions: 2,
+        types: ['primary-analysis', 'effect-size-estimation'],
+      },
+      secondary: {
+        focus: 'Secondary endpoint analyses with appropriate multiplicity adjustment.',
+        variables: context.schema.secondaryEndpoints,
+        maxSuggestions: 3,
+        types: ['secondary-analysis'],
+      },
+      safety: {
+        focus: 'Safety and adverse event analysis. Complication rates, mortality, time-to-event for safety outcomes.',
+        variables: context.schema.blocks.filter(b =>
+          b.label?.toLowerCase().includes('complication') ||
+          b.label?.toLowerCase().includes('death') ||
+          b.label?.toLowerCase().includes('mortality') ||
+          b.label?.toLowerCase().includes('adverse') ||
+          b.label?.toLowerCase().includes('safety') ||
+          b.label?.toLowerCase().includes('stroke') ||
+          b.label?.toLowerCase().includes('bleeding')
+        ).slice(0, 10),
+        maxSuggestions: 3,
+        types: ['safety-analysis', 'sensitivity-analysis'],
+      },
+      exploratory: {
+        focus: 'Exploratory correlations, subgroup analyses, and hypothesis-generating analyses.',
+        variables: context.schema.blocks.filter(b =>
+          b.endpointTier === 'exploratory' || (!b.endpointTier && b.role === 'Outcome')
+        ).slice(0, 8),
+        maxSuggestions: 2,
+        types: ['exploratory-analysis', 'subgroup-analysis'],
+      },
+    };
+
+    const config = domainConfig[domain];
+
+    return `You are Dr. Saga, expert biostatistician. Generate ${domain.toUpperCase()} analysis suggestions only.
+
+## STUDY CONTEXT
+- Design: ${studyDesign.toUpperCase()}
+- N: ${context.data.completedRecords} records
+- PICO Population: ${context.protocol.pico.population || 'Not specified'}
+- Primary Outcome: ${context.protocol.pico.outcome || 'Not specified'}
+
+## DOMAIN FOCUS: ${config.focus}
+
+## RELEVANT VARIABLES (${config.variables.length})
+${config.variables.map(v => `- ${v.label} (ID: ${v.id}, Type: ${v.dataType}${v.endpointTier ? ', Tier: ' + v.endpointTier : ''})`).join('\n') || 'None identified for this domain'}
+
+## RESPONSE FORMAT
+Return ONLY valid JSON. Maximum ${config.maxSuggestions} suggestions.
+
+{
+  "suggestions": [
+    {
+      "suggestionType": "${config.types.join('|')}",
+      "priority": "critical|recommended|optional",
+      "title": "Short title",
+      "description": "Brief description",
+      "rationale": "Why appropriate",
+      "autoExecute": ${domain === 'descriptive'},
+      "proposedAnalysis": {
+        "analysisType": "descriptive|t-test|chi-square|anova|mann-whitney|logistic-regression|cox-regression|kaplan-meier",
+        "predictorId": "variable_id or null",
+        "outcomeId": "variable_id",
+        "method": {"name": "Method", "category": "parametric|non-parametric|survival", "assumptions": ["key assumption"]},
+        "parameters": {"alpha": 0.05, "confidenceLevel": 0.95}
+      },
+      "confidence": 85
+    }
+  ]
+}
+
+CRITICAL: Use actual variable IDs from the list above. Keep response under 1500 tokens.`;
+  }
+
+  /**
    * Build prompt for generating domain-specific interpretation
    */
   buildInterpretationPrompt(

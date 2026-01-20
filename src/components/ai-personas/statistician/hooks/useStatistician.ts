@@ -32,6 +32,13 @@ interface UseStatisticianOptions {
   autoGenerate?: boolean;
 }
 
+interface GenerationProgress {
+  completed: number;
+  total: number;
+  currentDomain: string;
+  domainResults: Record<string, { count: number; success: boolean }>;
+}
+
 interface UseStatisticianReturn {
   // State
   context: StatisticalAnalysisContext | null;
@@ -40,9 +47,11 @@ interface UseStatisticianReturn {
   isGenerating: boolean;
   isExecuting: boolean;
   error: string | null;
+  generationProgress: GenerationProgress | null;
 
   // Actions
   generateSuggestions: (useAI?: boolean) => Promise<void>;
+  generateSuggestionsBatched: () => Promise<void>;
   reviewSuggestion: (suggestionId: string, review: Omit<SuggestionReview, 'suggestionId'>) => void;
   executeAccepted: () => Promise<void>;
   executeSingle: (suggestionId: string) => Promise<void>;
@@ -82,6 +91,7 @@ export function useStatistician({
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
 
   // Build context when inputs change
   useEffect(() => {
@@ -106,20 +116,26 @@ export function useStatistician({
   }, [protocol, schemaBlocks, records, foundationalPapers, picoData, service]);
 
   // Auto-generate if enabled and conditions are met
+  // Uses batched generation for larger schemas to avoid truncation
   useEffect(() => {
     if (
       autoGenerate &&
       context &&
       !hasGenerated &&
-      !isGenerating &&
-      service.shouldAutoGenerate(context)
+      !isGenerating
     ) {
-      generateSuggestions(true);
+      // Use batched approach for larger schemas (more than 50 variables)
+      // as it's more reliable and won't truncate
+      if (context.schema.blocks.length > 50) {
+        generateSuggestionsBatched();
+      } else if (service.shouldAutoGenerate(context)) {
+        generateSuggestions(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context, autoGenerate, hasGenerated, isGenerating, service]);
 
-  // Generate suggestions
+  // Generate suggestions (single call - may truncate for large schemas)
   const generateSuggestions = useCallback(
     async (useAI: boolean = true) => {
       if (!context) {
@@ -129,6 +145,7 @@ export function useStatistician({
 
       setIsGenerating(true);
       setError(null);
+      setGenerationProgress(null);
 
       try {
         const suggestions = await service.generateAnalysisPlan(context, useAI);
@@ -139,6 +156,60 @@ export function useStatistician({
         setError(err instanceof Error ? err.message : 'Failed to generate suggestions');
       } finally {
         setIsGenerating(false);
+      }
+    },
+    [context, records, service]
+  );
+
+  // Generate suggestions in batches by domain (more reliable for large schemas)
+  const generateSuggestionsBatched = useCallback(
+    async () => {
+      if (!context) {
+        setError('No context available');
+        return;
+      }
+
+      setIsGenerating(true);
+      setError(null);
+      setGenerationProgress({
+        completed: 0,
+        total: 5,
+        currentDomain: 'Starting...',
+        domainResults: {},
+      });
+
+      try {
+        const suggestions = await service.generateAnalysisPlanBatched(
+          context,
+          // On domain complete callback
+          (domain, domainSuggestions) => {
+            setGenerationProgress(prev => prev ? {
+              ...prev,
+              domainResults: {
+                ...prev.domainResults,
+                [domain]: { count: domainSuggestions.length, success: true },
+              },
+            } : null);
+          },
+          // On progress callback
+          (completed, total, currentDomain) => {
+            setGenerationProgress(prev => prev ? {
+              ...prev,
+              completed,
+              total,
+              currentDomain,
+            } : null);
+          }
+        );
+
+        const initialQueue = await service.initializeQueue(suggestions, context, records);
+        setQueue(initialQueue);
+        setHasGenerated(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to generate suggestions');
+      } finally {
+        setIsGenerating(false);
+        setGenerationProgress(null);
       }
     },
     [context, records, service]
@@ -282,7 +353,9 @@ export function useStatistician({
     isGenerating,
     isExecuting,
     error,
+    generationProgress,
     generateSuggestions,
+    generateSuggestionsBatched,
     reviewSuggestion,
     executeAccepted,
     executeSingle,
