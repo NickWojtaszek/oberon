@@ -45,14 +45,27 @@ export function DeployStep({ onComplete, onNavigateToDatabase, protocolSummary }
         try {
           console.log('📚 Generating schema metadata for AI analysis...');
 
+          // Get version ID - try currentVersion.versionId first, then fall back to latest version
+          let versionId = currentVersion.versionId;
+          if (!versionId && currentProtocol.versions && currentProtocol.versions.length > 0) {
+            // Find the published version or use the latest
+            const publishedVersion = currentProtocol.versions.find(v => v.status === 'published');
+            versionId = publishedVersion ? publishedVersion.versionId : currentProtocol.versions[currentProtocol.versions.length - 1].versionId;
+            console.log(`⚠️ currentVersion.versionId was undefined, using fallback: ${versionId}`);
+          }
+
+          if (!versionId) {
+            throw new Error('Cannot generate metadata: no version ID available');
+          }
+
           console.log(`Using protocol: ${currentProtocol.protocolNumber}`);
-          console.log(`Version: ${currentVersion.versionId}`);
+          console.log(`Version: ${versionId}`);
           console.log(`Schema blocks count: ${currentVersion.schemaBlocks.length}`);
 
           const metadata = generateSchemaMetadata(
             currentVersion.schemaBlocks,
             currentProtocol.protocolNumber,
-            currentVersion.versionId  // Pass version ID, not table suffix
+            versionId
           );
 
           saveSchemaMetadata(metadata);
