@@ -45,17 +45,27 @@ export function DeployStep({ onComplete, onNavigateToDatabase, protocolSummary }
         try {
           console.log('📚 Generating schema metadata for AI analysis...');
 
-          // Get version ID - try currentVersion.versionId first, then fall back to latest version
+          // Get version ID - try currentVersion.versionId first, then fall back to versions array or derive from protocol
           let versionId = currentVersion.versionId;
+
           if (!versionId && currentProtocol.versions && currentProtocol.versions.length > 0) {
             // Find the published version or use the latest
             const publishedVersion = currentProtocol.versions.find(v => v.status === 'published');
             versionId = publishedVersion ? publishedVersion.versionId : currentProtocol.versions[currentProtocol.versions.length - 1].versionId;
-            console.log(`⚠️ currentVersion.versionId was undefined, using fallback: ${versionId}`);
+            console.log(`⚠️ currentVersion.versionId was undefined, using version from protocol.versions: ${versionId}`);
           }
 
           if (!versionId) {
-            throw new Error('Cannot generate metadata: no version ID available');
+            // Last resort: derive version ID from protocol number timestamp
+            // Protocol format: PROTO-{timestamp}-{random}
+            // Version format: v-{timestamp}
+            const protocolTimestamp = currentProtocol.protocolNumber.split('-')[1];
+            if (protocolTimestamp) {
+              versionId = `v-${protocolTimestamp}`;
+              console.log(`⚠️ Derived version ID from protocol number: ${versionId}`);
+            } else {
+              throw new Error('Cannot generate metadata: no version ID available');
+            }
           }
 
           console.log(`Using protocol: ${currentProtocol.protocolNumber}`);
