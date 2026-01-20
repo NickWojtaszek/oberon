@@ -1,7 +1,7 @@
 // StatisticianPanel
 // Main UI panel for the AI-powered Statistician
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Brain,
   Play,
@@ -21,6 +21,7 @@ import { useStatistician } from '../hooks/useStatistician';
 import { SuggestionCard } from './SuggestionCard';
 import { ExecutionResultCard } from './ExecutionResultCard';
 import { ContextSummaryCard } from './ContextSummaryCard';
+import { inspectStoredData } from '../../../analytics-stats/utils/dataInspector';
 
 interface PicoData {
   population?: string;
@@ -45,6 +46,12 @@ export function StatisticianPanel({
   foundationalPapers,
   picoData,
 }: StatisticianPanelProps) {
+  // DEBUG: Inspect stored data on mount
+  useEffect(() => {
+    console.log('\n\n🚀 STATISTICIAN PANEL LOADED - Running data inspection...\n');
+    inspectStoredData();
+  }, []); // Run once on mount
+
   const {
     context,
     queue,

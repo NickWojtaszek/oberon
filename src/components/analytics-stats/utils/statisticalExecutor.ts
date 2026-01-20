@@ -28,6 +28,26 @@ export async function executeStatisticalAnalysis(
   records: ClinicalDataRecord[],
   context: StatisticalAnalysisContext
 ): Promise<AnalysisResults> {
+  // DEBUG: Log analysis request
+  console.group(`📈 EXECUTING ANALYSIS: ${analysis.analysisType}`);
+  console.log(`Analysis ID: ${analysis.analysisId}`);
+  console.log(`Outcome variable:`, {
+    id: analysis.outcome.id,
+    name: analysis.outcome.name,
+    label: analysis.outcome.label,
+    dataType: analysis.outcome.dataType,
+  });
+  if (analysis.predictor) {
+    console.log(`Predictor variable:`, {
+      id: analysis.predictor.id,
+      name: analysis.predictor.name,
+      label: analysis.predictor.label,
+      dataType: analysis.predictor.dataType,
+    });
+  }
+  console.log(`Total records available: ${records.length}`);
+  console.groupEnd();
+
   // Extract data for the analysis
   const outcomeData = extractVariableData(analysis.outcome.id, records);
   const predictorData = analysis.predictor
@@ -526,22 +546,115 @@ function extractVariableData(
 ): (string | number | null)[] {
   const data: (string | number | null)[] = [];
 
+  // DEBUG: Log what we're searching for
+  console.group(`🔍 DATA EXTRACTION DEBUG: ${variableId}`);
+  console.log(`Searching for variable ID: "${variableId}"`);
+  console.log(`Total records to search: ${records.length}`);
+
+  // DEBUG: Collect all available field IDs across all records
+  const allAvailableFieldIds = new Set<string>();
+  const fieldIdsByTable: Record<string, Set<string>> = {};
+
+  if (records.length > 0) {
+    // Sample first record to show structure
+    const sampleRecord = records[0];
+    console.log(`Sample record structure:`, {
+      recordId: sampleRecord.recordId,
+      subjectId: sampleRecord.subjectId,
+      tables: Object.keys(sampleRecord.data),
+    });
+
+    // Collect all field IDs from all records
+    for (const record of records) {
+      for (const [tableId, tableData] of Object.entries(record.data)) {
+        if (tableData) {
+          if (!fieldIdsByTable[tableId]) {
+            fieldIdsByTable[tableId] = new Set();
+          }
+          for (const fieldId of Object.keys(tableData)) {
+            allAvailableFieldIds.add(fieldId);
+            fieldIdsByTable[tableId].add(fieldId);
+          }
+        }
+      }
+    }
+
+    console.log(`Available tables:`, Object.keys(fieldIdsByTable));
+    console.log(`All available field IDs across all tables:`, Array.from(allAvailableFieldIds).sort());
+
+    // Show fields by table
+    for (const [tableId, fieldIds] of Object.entries(fieldIdsByTable)) {
+      console.log(`  Table "${tableId}": [${Array.from(fieldIds).sort().join(', ')}]`);
+    }
+  }
+
+  let foundCount = 0;
+  let nullCount = 0;
+
   for (const record of records) {
     let found = false;
 
     // Search through all tables in the record
-    for (const tableData of Object.values(record.data)) {
+    for (const [tableId, tableData] of Object.entries(record.data)) {
       if (tableData && variableId in tableData) {
-        data.push(tableData[variableId]);
+        const value = tableData[variableId];
+        data.push(value);
         found = true;
+        foundCount++;
+
+        // DEBUG: Log first few successful extractions
+        if (foundCount <= 3) {
+          console.log(`✓ Found in record ${record.subjectId}, table "${tableId}":`, value);
+        }
         break;
       }
     }
 
     if (!found) {
       data.push(null);
+      nullCount++;
     }
   }
+
+  // DEBUG: Summary statistics
+  const validData = data.filter(v => v !== null && v !== undefined && v !== '');
+  console.log(`\n📊 EXTRACTION SUMMARY:`);
+  console.log(`  Total extractions: ${data.length}`);
+  console.log(`  Found matches: ${foundCount} (${((foundCount/data.length)*100).toFixed(1)}%)`);
+  console.log(`  Null/missing: ${nullCount} (${((nullCount/data.length)*100).toFixed(1)}%)`);
+  console.log(`  Valid non-empty: ${validData.length} (${((validData.length/data.length)*100).toFixed(1)}%)`);
+
+  // DEBUG: Show fuzzy matches if no exact match found
+  if (foundCount === 0 && allAvailableFieldIds.size > 0) {
+    console.warn(`\n⚠️ NO EXACT MATCHES FOUND!`);
+    console.log(`Looking for fuzzy matches for "${variableId}"...`);
+
+    const fuzzyMatches: string[] = [];
+    const variableIdLower = variableId.toLowerCase();
+    const variableIdNormalized = variableId.replace(/[_-]/g, '');
+
+    for (const fieldId of allAvailableFieldIds) {
+      const fieldIdLower = fieldId.toLowerCase();
+      const fieldIdNormalized = fieldId.replace(/[_-]/g, '');
+
+      // Check various match types
+      if (fieldIdLower.includes(variableIdLower) ||
+          variableIdLower.includes(fieldIdLower) ||
+          fieldIdNormalized.includes(variableIdNormalized.toLowerCase()) ||
+          variableIdNormalized.toLowerCase().includes(fieldIdNormalized)) {
+        fuzzyMatches.push(fieldId);
+      }
+    }
+
+    if (fuzzyMatches.length > 0) {
+      console.log(`🔎 Potential fuzzy matches found:`, fuzzyMatches);
+      console.log(`💡 SUGGESTION: Variable ID might need remapping from "${variableId}" to one of:`, fuzzyMatches);
+    } else {
+      console.error(`❌ No fuzzy matches found. Variable "${variableId}" may not exist in the data at all.`);
+    }
+  }
+
+  console.groupEnd();
 
   return data;
 }
