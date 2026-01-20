@@ -20,6 +20,14 @@ import {
   calculateFrequency,
 } from './statisticalTests';
 
+import { loadSchemaMetadata, resolveFieldId } from '../../../utils/schemaMetadata';
+import type { SchemaMetadata } from '../../../utils/schemaMetadata';
+
+// Global metadata cache for current session
+let cachedMetadata: SchemaMetadata | null = null;
+let cachedProtocolId: string | null = null;
+let cachedVersionId: string | null = null;
+
 /**
  * Execute a statistical analysis based on its type
  */
@@ -28,6 +36,18 @@ export async function executeStatisticalAnalysis(
   records: ClinicalDataRecord[],
   context: StatisticalAnalysisContext
 ): Promise<AnalysisResults> {
+  // Load metadata if not cached
+  const protocolId = context.protocol?.pico ? 'current' : null;
+  const versionId = 'current';  // TODO: Get from context
+
+  if (!cachedMetadata || cachedProtocolId !== protocolId) {
+    if (protocolId && versionId) {
+      cachedMetadata = loadSchemaMetadata(protocolId, versionId);
+      cachedProtocolId = protocolId;
+      cachedVersionId = versionId;
+    }
+  }
+
   // DEBUG: Log analysis request
   console.group(`📈 EXECUTING ANALYSIS: ${analysis.analysisType}`);
   console.log(`Analysis ID: ${analysis.analysisId}`);
@@ -46,12 +66,13 @@ export async function executeStatisticalAnalysis(
     });
   }
   console.log(`Total records available: ${records.length}`);
+  console.log(`Metadata loaded: ${cachedMetadata ? 'YES' : 'NO'}`);
   console.groupEnd();
 
-  // Extract data for the analysis
-  const outcomeData = extractVariableData(analysis.outcome.id, records);
+  // Extract data for the analysis (with metadata support)
+  const outcomeData = extractVariableData(analysis.outcome.id, records, cachedMetadata);
   const predictorData = analysis.predictor
-    ? extractVariableData(analysis.predictor.id, records)
+    ? extractVariableData(analysis.predictor.id, records, cachedMetadata)
     : null;
 
   switch (analysis.analysisType) {
@@ -87,7 +108,7 @@ export function calculateDescriptiveStats(
   records: ClinicalDataRecord[],
   dataType: string
 ): DescriptiveResults {
-  const data = extractVariableData(variableId, records);
+  const data = extractVariableData(variableId, records, cachedMetadata);
 
   if (dataType === 'Continuous') {
     const numericData = data
@@ -539,10 +560,12 @@ function executeNormalityTest(
 
 /**
  * Extract data for a variable from records
+ * Now supports metadata-based field resolution
  */
 function extractVariableData(
   variableId: string,
-  records: ClinicalDataRecord[]
+  records: ClinicalDataRecord[],
+  metadata?: SchemaMetadata | null
 ): (string | number | null)[] {
   const data: (string | number | null)[] = [];
 
@@ -550,6 +573,25 @@ function extractVariableData(
   console.group(`🔍 DATA EXTRACTION DEBUG: ${variableId}`);
   console.log(`Searching for variable ID: "${variableId}"`);
   console.log(`Total records to search: ${records.length}`);
+  console.log(`Metadata available: ${metadata ? 'YES' : 'NO'}`);
+
+  // Resolve field ID using metadata if available
+  let actualFieldId = variableId;
+  if (metadata && !variableId.startsWith('block-')) {
+    const resolved = resolveFieldId(variableId, metadata);
+    if (resolved) {
+      console.log(`✨ Resolved "${variableId}" → "${resolved}" via metadata`);
+      actualFieldId = resolved;
+
+      const fieldInfo = metadata.fieldRegistry[resolved];
+      if (fieldInfo) {
+        console.log(`   Field: ${fieldInfo.label} (${fieldInfo.dataType}${fieldInfo.unit ? ', ' + fieldInfo.unit : ''})`);
+        console.log(`   Location: ${fieldInfo.tableName} (${fieldInfo.tableId})`);
+      }
+    } else {
+      console.warn(`⚠️ Could not resolve "${variableId}" with metadata, trying direct lookup`);
+    }
+  }
 
   // DEBUG: Collect all available field IDs across all records
   const allAvailableFieldIds = new Set<string>();
@@ -582,9 +624,14 @@ function extractVariableData(
     console.log(`Available tables:`, Object.keys(fieldIdsByTable));
     console.log(`All available field IDs across all tables:`, Array.from(allAvailableFieldIds).sort());
 
-    // Show fields by table
+    // Show fields by table (limited to first 5 per table)
     for (const [tableId, fieldIds] of Object.entries(fieldIdsByTable)) {
-      console.log(`  Table "${tableId}": [${Array.from(fieldIds).sort().join(', ')}]`);
+      const fieldArray = Array.from(fieldIds).sort();
+      if (fieldArray.length > 5) {
+        console.log(`  Table "${tableId}": [${fieldArray.slice(0, 5).join(', ')}, ... +${fieldArray.length - 5} more]`);
+      } else {
+        console.log(`  Table "${tableId}": [${fieldArray.join(', ')}]`);
+      }
     }
   }
 
@@ -596,8 +643,8 @@ function extractVariableData(
 
     // Search through all tables in the record
     for (const [tableId, tableData] of Object.entries(record.data)) {
-      if (tableData && variableId in tableData) {
-        const value = tableData[variableId];
+      if (tableData && actualFieldId in tableData) {
+        const value = tableData[actualFieldId];
         data.push(value);
         found = true;
         foundCount++;
@@ -619,6 +666,8 @@ function extractVariableData(
   // DEBUG: Summary statistics
   const validData = data.filter(v => v !== null && v !== undefined && v !== '');
   console.log(`\n📊 EXTRACTION SUMMARY:`);
+  console.log(`  Original ID: "${variableId}"`);
+  console.log(`  Resolved ID: "${actualFieldId}"`);
   console.log(`  Total extractions: ${data.length}`);
   console.log(`  Found matches: ${foundCount} (${((foundCount/data.length)*100).toFixed(1)}%)`);
   console.log(`  Null/missing: ${nullCount} (${((nullCount/data.length)*100).toFixed(1)}%)`);
@@ -627,30 +676,30 @@ function extractVariableData(
   // DEBUG: Show fuzzy matches if no exact match found
   if (foundCount === 0 && allAvailableFieldIds.size > 0) {
     console.warn(`\n⚠️ NO EXACT MATCHES FOUND!`);
-    console.log(`Looking for fuzzy matches for "${variableId}"...`);
+    console.log(`Looking for fuzzy matches for "${actualFieldId}"...`);
 
     const fuzzyMatches: string[] = [];
-    const variableIdLower = variableId.toLowerCase();
-    const variableIdNormalized = variableId.replace(/[_-]/g, '');
+    const fieldIdLower = actualFieldId.toLowerCase();
+    const fieldIdNormalized = actualFieldId.replace(/[_-]/g, '');
 
-    for (const fieldId of allAvailableFieldIds) {
-      const fieldIdLower = fieldId.toLowerCase();
-      const fieldIdNormalized = fieldId.replace(/[_-]/g, '');
+    for (const availableFieldId of allAvailableFieldIds) {
+      const availFieldLower = availableFieldId.toLowerCase();
+      const availFieldNormalized = availableFieldId.replace(/[_-]/g, '');
 
       // Check various match types
-      if (fieldIdLower.includes(variableIdLower) ||
-          variableIdLower.includes(fieldIdLower) ||
-          fieldIdNormalized.includes(variableIdNormalized.toLowerCase()) ||
-          variableIdNormalized.toLowerCase().includes(fieldIdNormalized)) {
-        fuzzyMatches.push(fieldId);
+      if (availFieldLower.includes(fieldIdLower) ||
+          fieldIdLower.includes(availFieldLower) ||
+          availFieldNormalized.includes(fieldIdNormalized.toLowerCase()) ||
+          fieldIdNormalized.toLowerCase().includes(availFieldNormalized)) {
+        fuzzyMatches.push(availableFieldId);
       }
     }
 
     if (fuzzyMatches.length > 0) {
       console.log(`🔎 Potential fuzzy matches found:`, fuzzyMatches);
-      console.log(`💡 SUGGESTION: Variable ID might need remapping from "${variableId}" to one of:`, fuzzyMatches);
+      console.log(`💡 SUGGESTION: Variable ID might need remapping from "${actualFieldId}" to one of:`, fuzzyMatches);
     } else {
-      console.error(`❌ No fuzzy matches found. Variable "${variableId}" may not exist in the data at all.`);
+      console.error(`❌ No fuzzy matches found. Variable "${actualFieldId}" may not exist in the data at all.`);
     }
   }
 

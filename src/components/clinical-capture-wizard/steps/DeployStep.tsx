@@ -14,6 +14,8 @@ import {
   Table as TableIcon,
   Clock,
 } from 'lucide-react';
+import { useProtocol } from '../../../contexts/ProtocolContext';
+import { generateSchemaMetadata, saveSchemaMetadata } from '../../../utils/schemaMetadata';
 
 interface DeployStepProps {
   onComplete: () => void;
@@ -29,6 +31,7 @@ interface DeployStepProps {
 }
 
 export function DeployStep({ onComplete, onNavigateToDatabase, protocolSummary }: DeployStepProps) {
+  const { currentProtocol, currentVersion } = useProtocol();
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentStatus, setDeploymentStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
 
@@ -36,19 +39,36 @@ export function DeployStep({ onComplete, onNavigateToDatabase, protocolSummary }
     setIsDeploying(true);
     setDeploymentStatus('deploying');
 
-    // Brief delay for UI feedback, then navigate to Database module
-    // The actual database table generation happens in the Database module
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Generate and save schema metadata for AI analysis
+      if (currentProtocol && currentVersion && currentVersion.schemaBlocks) {
+        console.log('📚 Generating schema metadata for AI analysis...');
+        const metadata = generateSchemaMetadata(
+          currentVersion.schemaBlocks,
+          currentProtocol.protocolNumber,
+          currentVersion.versionId
+        );
+        saveSchemaMetadata(metadata);
+        console.log(`✅ Schema metadata saved: ${metadata.totalFields} fields indexed`);
+      }
 
-    setDeploymentStatus('success');
-    setIsDeploying(false);
+      // Brief delay for UI feedback
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Mark step complete and navigate to Database after short delay
-    setTimeout(() => {
-      onComplete();
-      // Navigate to Database module where actual table generation occurs
-      onNavigateToDatabase();
-    }, 1500);
+      setDeploymentStatus('success');
+      setIsDeploying(false);
+
+      // Mark step complete and navigate to Database after short delay
+      setTimeout(() => {
+        onComplete();
+        // Navigate to Database module where actual table generation occurs
+        onNavigateToDatabase();
+      }, 1500);
+    } catch (error) {
+      console.error('Deployment error:', error);
+      setDeploymentStatus('error');
+      setIsDeploying(false);
+    }
   };
 
   const canDeploy = protocolSummary.picoComplete && protocolSummary.schemaComplete && protocolSummary.fieldCount > 0;
