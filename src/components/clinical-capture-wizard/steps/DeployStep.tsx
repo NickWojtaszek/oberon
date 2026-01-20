@@ -42,19 +42,33 @@ export function DeployStep({ onComplete, onNavigateToDatabase, protocolSummary }
     try {
       // Generate and save schema metadata for AI analysis
       if (currentProtocol && currentVersion && currentVersion.schemaBlocks) {
-        console.log('📚 Generating schema metadata for AI analysis...');
+        try {
+          console.log('📚 Generating schema metadata for AI analysis...');
 
-        // Use protocol creation timestamp for table ID suffix (matches database generator)
-        const protocolTimestamp = currentProtocol.protocolNumber.split('-')[1] || Date.now().toString();
-        const tableIdSuffix = `draft_${protocolTimestamp}`;
+          // Use protocol creation timestamp for table ID suffix (matches database generator)
+          const protocolTimestamp = currentProtocol.protocolNumber.split('-')[1] || Date.now().toString();
+          const tableIdSuffix = `draft_${protocolTimestamp}`;
 
-        const metadata = generateSchemaMetadata(
-          currentVersion.schemaBlocks,
-          currentProtocol.protocolNumber,
-          tableIdSuffix
-        );
-        saveSchemaMetadata(metadata);
-        console.log(`✅ Schema metadata saved: ${metadata.totalFields} fields indexed`);
+          console.log(`Using protocol: ${currentProtocol.protocolNumber}, suffix: ${tableIdSuffix}`);
+          console.log(`Schema blocks count: ${currentVersion.schemaBlocks.length}`);
+
+          const metadata = generateSchemaMetadata(
+            currentVersion.schemaBlocks,
+            currentProtocol.protocolNumber,
+            tableIdSuffix
+          );
+
+          saveSchemaMetadata(metadata);
+          console.log(`✅ Schema metadata saved: ${metadata.totalFields} fields indexed`);
+        } catch (metadataError) {
+          console.error('❌ Schema metadata generation failed:', metadataError);
+          console.error('Error details:', {
+            name: (metadataError as Error).name,
+            message: (metadataError as Error).message,
+            stack: (metadataError as Error).stack
+          });
+          // Don't fail deployment if metadata generation fails
+        }
       }
 
       // Brief delay for UI feedback
