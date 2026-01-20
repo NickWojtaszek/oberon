@@ -479,12 +479,33 @@ const FoundationalPapersPage: React.FC<{ data: ProtocolPDFData }> = ({ data }) =
 // SCHEMA PAGE
 // =============================================================================
 
+/**
+ * Flatten nested schema blocks to get all fields including those in sections
+ */
+const flattenSchemaBlocks = (blocks: SchemaBlock[]): SchemaBlock[] => {
+  const result: SchemaBlock[] = [];
+
+  const processBlock = (block: SchemaBlock) => {
+    // Add non-section blocks to result
+    if (block.dataType !== 'Section') {
+      result.push(block);
+    }
+    // Recurse into children
+    if (block.children && block.children.length > 0) {
+      block.children.forEach(processBlock);
+    }
+  };
+
+  blocks.forEach(processBlock);
+  return result;
+};
+
 const SchemaPage: React.FC<{ data: ProtocolPDFData }> = ({ data }) => {
   const { protocol, version } = data;
   const schemaBlocks = version.schemaBlocks || [];
 
-  // Filter out sections and group by role
-  const variables = schemaBlocks.filter((b) => b.dataType !== 'Section');
+  // Flatten nested blocks to get all variables (including those inside sections)
+  const variables = flattenSchemaBlocks(schemaBlocks);
   const predictors = variables.filter((b) => b.role === 'Predictor');
   const outcomes = variables.filter((b) => b.role === 'Outcome');
   const structural = variables.filter((b) => b.role === 'Structure' || b.role === 'All');

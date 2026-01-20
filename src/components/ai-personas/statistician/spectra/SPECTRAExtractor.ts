@@ -40,6 +40,27 @@ import {
 // SPECTRA EXTRACTOR CLASS
 // =============================================================================
 
+/**
+ * Flatten nested schema blocks to get all fields including those in sections
+ */
+function flattenSchemaBlocks(blocks: SchemaBlock[]): SchemaBlock[] {
+  const result: SchemaBlock[] = [];
+
+  const processBlock = (block: SchemaBlock) => {
+    // Add non-section blocks to result
+    if (block.dataType !== 'Section') {
+      result.push(block);
+    }
+    // Recurse into children
+    if (block.children && block.children.length > 0) {
+      block.children.forEach(processBlock);
+    }
+  };
+
+  blocks.forEach(processBlock);
+  return result;
+}
+
 export class SPECTRAExtractor {
   /**
    * Extract complete SPECTRA context from protocol and related data
@@ -58,13 +79,16 @@ export class SPECTRAExtractor {
       // Extract PICO data from multiple sources
       const picoData = this.extractPICO(methodology);
 
-      // Extract each SPECTRA component
+      // Flatten schema blocks to include nested fields inside sections
+      const flattenedBlocks = flattenSchemaBlocks(version.schemaBlocks || []);
+
+      // Extract each SPECTRA component (using flattened blocks for proper variable extraction)
       const study = this.extractStudyContext(methodology, version, errors, warnings);
-      const population = this.extractPopulationContext(picoData, version.schemaBlocks, errors, warnings);
-      const endpoints = this.extractEndpointsContext(picoData, version.schemaBlocks, errors, warnings);
+      const population = this.extractPopulationContext(picoData, flattenedBlocks, errors, warnings);
+      const endpoints = this.extractEndpointsContext(picoData, flattenedBlocks, errors, warnings);
       const comparator = this.extractComparatorContext(picoData, methodology, errors, warnings);
       const treatment = this.extractTreatmentContext(picoData, methodology, errors, warnings);
-      const riskFactors = this.extractRiskFactorsContext(picoData, version.schemaBlocks, methodology, errors, warnings);
+      const riskFactors = this.extractRiskFactorsContext(picoData, flattenedBlocks, methodology, errors, warnings);
       const analysisParameters = this.extractAnalysisParametersContext(version, methodology, errors, warnings);
 
       // Extract literature context if foundational papers available
