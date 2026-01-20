@@ -53,6 +53,7 @@ export function ReviewPublishStep({ onPublish, onBack, protocolDetails, protocol
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success'>('idle');
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   const allChecksPass =
     summary.picoComplete &&
@@ -74,11 +75,14 @@ export function ReviewPublishStep({ onPublish, onBack, protocolDetails, protocol
 
     setPublishStatus('success');
     setIsPublishing(false);
+    // Don't auto-navigate - let user export first if desired
+  };
 
-    // Call onPublish after short delay for success animation
-    setTimeout(() => {
+  const handleContinueToDatabase = () => {
+    if (!hasNavigated) {
+      setHasNavigated(true);
       onPublish();
-    }, 1000);
+    }
   };
 
   return (
@@ -166,6 +170,18 @@ export function ReviewPublishStep({ onPublish, onBack, protocolDetails, protocol
                 <p className="text-xs text-slate-500 mt-3">
                   PDF: Professional document for IRB/review • JSON: Data backup for re-import
                 </p>
+
+                {/* Continue Button */}
+                <div className="mt-6 pt-4 border-t border-green-100">
+                  <button
+                    onClick={handleContinueToDatabase}
+                    disabled={hasNavigated}
+                    className="inline-flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Continue to Database
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

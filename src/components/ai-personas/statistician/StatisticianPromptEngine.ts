@@ -583,6 +583,7 @@ Respond with valid JSON only:
 
   /**
    * Parse LLM response into structured suggestions
+   * Includes robust error handling for malformed LLM responses
    */
   parseAnalysisPlanResponse(response: string): AnalysisSuggestion[] {
     try {
@@ -590,15 +591,84 @@ Respond with valid JSON only:
 
       if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
         console.error('Invalid response structure: missing suggestions array');
+        // Try to create a basic suggestion from any available data
+        if (parsed.title || parsed.analysisType) {
+          console.log('Attempting to wrap single suggestion object');
+          return [this.validateAndTransformSuggestion(parsed, 0)];
+        }
         return [];
       }
 
-      return parsed.suggestions.map((s: any, index: number) =>
-        this.validateAndTransformSuggestion(s, index)
-      );
+      const suggestions = parsed.suggestions
+        .map((s: any, index: number) => {
+          try {
+            return this.validateAndTransformSuggestion(s, index);
+          } catch (err) {
+            console.warn(`Failed to transform suggestion ${index}:`, err);
+            return null;
+          }
+        })
+        .filter((s: AnalysisSuggestion | null): s is AnalysisSuggestion => s !== null);
+
+      console.log(`Successfully parsed ${suggestions.length} analysis suggestions`);
+      return suggestions;
     } catch (error) {
       console.error('Failed to parse analysis plan response:', error);
-      return [];
+
+      // Return a helpful error suggestion so the user knows what happened
+      return [{
+        id: `error-${Date.now()}`,
+        suggestionType: 'descriptive',
+        priority: 'recommended',
+        title: 'Analysis Plan Generation Issue',
+        description: 'The AI response could not be fully parsed. Please try regenerating the analysis plan.',
+        rationale: `Technical details: ${error instanceof Error ? error.message : 'Unknown parsing error'}. This can happen when the AI generates an incomplete or malformed response.`,
+        grounding: {},
+        proposedAnalysis: {
+          analysisId: `analysis-error-${Date.now()}`,
+          analysisType: 'descriptive',
+          outcome: {
+            id: 'unknown',
+            name: 'unknown',
+            label: 'Unable to parse',
+            dataType: 'Continuous',
+            role: 'Outcome',
+            endpointTier: null,
+            analysisMethod: null,
+            hasData: false,
+            completeness: 0,
+          },
+          method: {
+            name: 'Error Recovery',
+            category: 'descriptive',
+            assumptions: [],
+            references: [],
+          },
+          parameters: {
+            alpha: 0.05,
+            tails: 'two',
+            confidenceLevel: 0.95,
+          },
+          expectedOutputs: {
+            primaryStatistic: 'N/A',
+            confidenceInterval: false,
+            pValue: false,
+          },
+          executionReady: false,
+          blockers: ['Response parsing failed - please regenerate'],
+        },
+        confidence: 0,
+        feasibilityCheck: {
+          feasible: false,
+          sampleSizeAdequate: false,
+          assumptionsMet: false,
+          dataComplete: false,
+          issues: ['Failed to parse AI response'],
+        },
+        autoExecute: false,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      }];
     }
   }
 
@@ -1037,21 +1107,163 @@ Respond with valid JSON only:
 
   /**
    * Extract JSON from potentially markdown-wrapped response
+   * Handles common LLM JSON malformations
    */
   private extractJSON(text: string): any {
     // Try to find JSON in markdown code blocks
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[1]);
+    let jsonText = jsonMatch ? jsonMatch[1] : null;
+
+    // If no code block, try to find raw JSON object
+    if (!jsonText) {
+      const objectMatch = text.match(/\{[\s\S]*\}/);
+      if (objectMatch) {
+        jsonText = objectMatch[0];
+      }
     }
 
-    // Try to find raw JSON object
-    const objectMatch = text.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-      return JSON.parse(objectMatch[0]);
+    if (!jsonText) {
+      throw new Error('No valid JSON found in response');
     }
 
-    throw new Error('No valid JSON found in response');
+    // Try parsing as-is first
+    try {
+      return JSON.parse(jsonText);
+    } catch (e) {
+      // JSON is malformed, attempt repairs
+      console.warn('Initial JSON parse failed, attempting repair:', e);
+    }
+
+    // Attempt common repairs
+    let repairedJson = jsonText;
+
+    // 1. Remove trailing commas before ] or }
+    repairedJson = repairedJson.replace(/,(\s*[}\]])/g, '$1');
+
+    // 2. Fix unescaped quotes in strings (common LLM issue)
+    // This is tricky - we need to be careful not to break valid JSON
+    // Look for patterns like ": "some text "inner" more text"
+    repairedJson = repairedJson.replace(
+      /:\s*"([^"]*?)(?<!\\)"([^",}\]]*?)"/g,
+      (match, before, after) => {
+        // If there's text after the middle quote, escape it
+        if (after && after.trim()) {
+          return `: "${before}\\"${after}"`;
+        }
+        return match;
+      }
+    );
+
+    // 3. Fix missing commas between array elements or object properties
+    // Pattern: }" or ]" or number" or true/false/null followed by " or { or [
+    repairedJson = repairedJson.replace(/([}\]"\d]|true|false|null)(\s*)(["{\[])/g, (match, before, space, after) => {
+      // Check if there's already a comma or colon
+      if (space.includes(',') || space.includes(':')) {
+        return match;
+      }
+      return `${before},${space}${after}`;
+    });
+
+    // 4. Try to fix truncated JSON by closing open brackets/braces
+    const openBraces = (repairedJson.match(/\{/g) || []).length;
+    const closeBraces = (repairedJson.match(/\}/g) || []).length;
+    const openBrackets = (repairedJson.match(/\[/g) || []).length;
+    const closeBrackets = (repairedJson.match(/\]/g) || []).length;
+
+    // Remove any trailing incomplete elements (strings, commas, etc.)
+    repairedJson = repairedJson.replace(/,\s*$/, '');
+    repairedJson = repairedJson.replace(/:\s*$/, ': null');
+    repairedJson = repairedJson.replace(/"[^"]*$/, '""');
+
+    // Add missing closing brackets/braces
+    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+      repairedJson += ']';
+    }
+    for (let i = 0; i < openBraces - closeBraces; i++) {
+      repairedJson += '}';
+    }
+
+    try {
+      return JSON.parse(repairedJson);
+    } catch (e2) {
+      console.warn('JSON repair attempt 1 failed, trying aggressive repair');
+    }
+
+    // 5. More aggressive repair: try to extract just the suggestions array
+    try {
+      const suggestionsMatch = repairedJson.match(/"suggestions"\s*:\s*\[([\s\S]*?)\](?=\s*[,}]|\s*$)/);
+      if (suggestionsMatch) {
+        let suggestionsContent = suggestionsMatch[1];
+        // Try to find complete suggestion objects
+        const suggestionObjects: any[] = [];
+        let depth = 0;
+        let currentObj = '';
+        let inString = false;
+        let escape = false;
+
+        for (const char of suggestionsContent) {
+          if (escape) {
+            currentObj += char;
+            escape = false;
+            continue;
+          }
+          if (char === '\\') {
+            escape = true;
+            currentObj += char;
+            continue;
+          }
+          if (char === '"' && !escape) {
+            inString = !inString;
+          }
+          if (!inString) {
+            if (char === '{') depth++;
+            if (char === '}') depth--;
+          }
+          currentObj += char;
+
+          if (depth === 0 && currentObj.trim().startsWith('{')) {
+            try {
+              const obj = JSON.parse(currentObj.trim());
+              suggestionObjects.push(obj);
+              currentObj = '';
+            } catch {
+              // Keep accumulating
+            }
+          }
+        }
+
+        if (suggestionObjects.length > 0) {
+          console.log(`Recovered ${suggestionObjects.length} suggestions from malformed JSON`);
+          return { suggestions: suggestionObjects };
+        }
+      }
+    } catch (e3) {
+      console.warn('Suggestions extraction failed:', e3);
+    }
+
+    // 6. Last resort: try to parse each suggestion individually
+    try {
+      const individualSuggestions: any[] = [];
+      // Match individual suggestion objects
+      const suggestionRegex = /\{[^{}]*"suggestionType"[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
+      let match;
+      while ((match = suggestionRegex.exec(jsonText)) !== null) {
+        try {
+          const suggestion = JSON.parse(match[0]);
+          individualSuggestions.push(suggestion);
+        } catch {
+          // Skip malformed individual suggestions
+        }
+      }
+      if (individualSuggestions.length > 0) {
+        console.log(`Last-resort recovery: found ${individualSuggestions.length} suggestions`);
+        return { suggestions: individualSuggestions };
+      }
+    } catch (e4) {
+      console.warn('Individual suggestion extraction failed:', e4);
+    }
+
+    throw new Error(`Failed to parse JSON after repair attempts. Original error at position indicated truncation or malformation.`);
   }
 
   /**
