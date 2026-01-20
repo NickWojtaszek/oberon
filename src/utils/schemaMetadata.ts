@@ -84,7 +84,10 @@ export interface SchemaMetadata {
 /**
  * Normalize label to create a canonical field name
  */
-function normalizeLabelToName(label: string): string {
+function normalizeLabelToName(label: string | undefined): string {
+  if (!label) {
+    return 'unnamed_field';
+  }
   return label
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')  // Replace non-alphanumeric with underscore
@@ -155,6 +158,12 @@ export function generateSchemaMetadata(
 
   // Process each block
   for (const block of allBlocks) {
+    // Skip blocks without labels
+    if (!block.label) {
+      console.warn(`⚠️ Skipping block ${block.id} - no label defined`);
+      continue;
+    }
+
     // Skip sections (they're structure, not data fields)
     if (block.dataType === 'Section') {
       // Track section for hierarchy
