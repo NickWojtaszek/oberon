@@ -122,6 +122,14 @@ export function generateSchemaMetadata(
 ): SchemaMetadata {
   console.log('📚 Generating schema metadata...');
 
+  // Extract timestamp from version ID (format: v-<timestamp>)
+  const versionTimestamp = versionId.startsWith('v-')
+    ? versionId.split('-')[1]
+    : versionId;
+  const tableIdSuffix = `draft_${versionTimestamp}`;
+
+  console.log(`Version ID: ${versionId}, Table suffix: ${tableIdSuffix}`);
+
   const fieldRegistry: Record<string, FieldMetadata> = {};
   const byName: Record<string, string> = {};
   const byLabel: Record<string, string> = {};
@@ -172,10 +180,10 @@ export function generateSchemaMetadata(
       const parentSection = allBlocks.find(b => b.id === block.parentId && b.dataType === 'Section');
       if (parentSection) {
         tableName = parentSection.label;
-        tableId = `${normalizeLabelToName(parentSection.label)}_${versionId}`;
+        tableId = `${normalizeLabelToName(parentSection.label)}_${tableIdSuffix}`;
       } else {
         tableName = 'General Data';
-        tableId = `general_data_${versionId}`;
+        tableId = `general_data_${tableIdSuffix}`;
       }
     }
 
