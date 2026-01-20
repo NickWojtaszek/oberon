@@ -45,11 +45,14 @@ export function DeployStep({ onComplete, onNavigateToDatabase, protocolSummary }
         try {
           console.log('📚 Generating schema metadata for AI analysis...');
 
-          // Use protocol creation timestamp for table ID suffix (matches database generator)
-          const protocolTimestamp = currentProtocol.protocolNumber.split('-')[1] || Date.now().toString();
-          const tableIdSuffix = `draft_${protocolTimestamp}`;
+          // Extract timestamp from VERSION ID (which matches table creation)
+          // Version ID format: v-<timestamp> where timestamp matches table suffix
+          const versionTimestamp = currentVersion.versionId.split('-')[1] || currentProtocol.protocolNumber.split('-')[1] || Date.now().toString();
+          const tableIdSuffix = `draft_${versionTimestamp}`;
 
-          console.log(`Using protocol: ${currentProtocol.protocolNumber}, suffix: ${tableIdSuffix}`);
+          console.log(`Using protocol: ${currentProtocol.protocolNumber}`);
+          console.log(`Version: ${currentVersion.versionId}`);
+          console.log(`Table suffix: ${tableIdSuffix}`);
           console.log(`Schema blocks count: ${currentVersion.schemaBlocks.length}`);
 
           const metadata = generateSchemaMetadata(
