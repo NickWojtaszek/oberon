@@ -102,6 +102,9 @@ export interface SchemaBlockSummary {
   hasData: boolean;
   completeness: number; // 0-1
   distribution?: DataDistributionSummary;
+  // AI Statistical Planning fields (from confirmed AIStatisticalPlan)
+  statisticalRole?: import('../../protocol-workbench/types').StatisticalRole;
+  statisticalRoleConfirmed?: boolean;
 }
 
 export interface DataDistributionSummary {

@@ -1101,3 +1101,46 @@ export async function callGeminiForStatisticalAnalysis(prompt: string): Promise<
     throw error;
   }
 }
+
+/**
+ * Generate AI statistical plan with variable mappings
+ * Used by the StatisticalPlanningAgent to suggest statistical roles for schema variables
+ */
+export async function generateStatisticalPlan(
+  pico: {
+    population: string;
+    intervention: string;
+    comparison: string;
+    outcome: string;
+  },
+  schemaBlocks: Array<{
+    id: string;
+    label: string;
+    dataType: string;
+    role?: string;
+    endpointTier?: string | null;
+    description?: string;
+    category?: string;
+  }>
+): Promise<string> {
+  if (!isGeminiConfigured()) {
+    throw new Error('Gemini API not configured');
+  }
+
+  // Import the prompt builder from StatisticalPlanningAgent
+  const { buildStatisticalPlanPrompt } = await import('../components/ai-personas/statistician/StatisticalPlanningAgent');
+
+  const prompt = buildStatisticalPlanPrompt(pico, schemaBlocks);
+
+  console.log(`🤖 [Gemini/StatPlan] Generating statistical plan for ${schemaBlocks.length} variables...`);
+
+  try {
+    // Use higher token limit since response includes all variables
+    const response = await callGemini(prompt, 8192);
+    console.log('✅ [Gemini/StatPlan] Statistical plan generated');
+    return response;
+  } catch (error) {
+    console.error('❌ [Gemini/StatPlan] Failed to generate statistical plan:', error);
+    throw error;
+  }
+}

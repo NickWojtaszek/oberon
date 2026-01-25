@@ -9,6 +9,8 @@ export { DependencyHelpSidebar } from './DependencyHelpSidebar';
 export { ProtocolAudit } from './ProtocolAudit';
 export { SchemaTemplateLibrary } from './SchemaTemplateLibrary';
 export { AISuggestionButton } from './AISuggestionButton';
+export { AIRoleSuggestion, AIRoleSuggestionBadge } from './AIRoleSuggestion';
+export { SuggestStatisticalRolesButton } from './SuggestStatisticalRolesButton';
 
 // Block components
 export { SchemaBlockAdvanced } from './blocks/SchemaBlockAdvanced';

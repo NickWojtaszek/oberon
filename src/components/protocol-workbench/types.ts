@@ -5,6 +5,18 @@ export type RoleTag = 'Predictor' | 'Outcome' | 'Structure' | 'All';
 export type VariableCategory = 'Demographics' | 'Treatments' | 'Endpoints' | 'Clinical' | 'Laboratory' | 'Structural' | 'Vitals' | 'Labs' | 'Safety' | 'Efficacy' | 'Quality of Life' | 'Medical History' | 'Biomarkers' | 'Imaging' | 'Medications' | 'Adverse Events' | 'Procedures' | 'Questionnaires' | 'Other';
 export type WorkbenchState = 'blueprint' | 'mapping' | 'review-mapping' | 'production';
 
+// Statistical role types for AI-assisted variable mapping
+export type StatisticalRole =
+  | 'primary_endpoint'
+  | 'secondary_endpoint'
+  | 'safety_endpoint'
+  | 'baseline_covariate'
+  | 'confounder'
+  | 'subgroup_variable'
+  | 'treatment_indicator'
+  | 'time_variable'
+  | 'excluded';
+
 export interface Variable {
   id: string;
   name: string;
@@ -55,6 +67,10 @@ export interface SchemaBlock {
   customName?: string;
   isCustom?: boolean;
   lockedSource?: string; // Reference to locked knowledge source
+  // AI statistical mapping fields
+  statisticalRole?: StatisticalRole;
+  aiSuggestedRole?: StatisticalRole;
+  roleConfirmed?: boolean;
 }
 
 export interface ConditionalDependency {
@@ -162,4 +178,28 @@ export interface SchemaTemplate {
   modifiedAt: Date;
   usageCount?: number;
   tags?: string[];
+}
+
+// AI Statistical Planning types
+export interface StatisticalMapping {
+  blockId: string;
+  blockLabel: string;
+  suggestedRole: StatisticalRole;
+  confidence: number; // 0-1, AI confidence in suggestion
+  reasoning: string; // Why AI suggested this role
+  confirmed: boolean; // User checkbox state
+}
+
+export interface AIStatisticalPlan {
+  id: string;
+  protocolId: string;
+  createdAt: string;
+  picoContext: {
+    population: string;
+    intervention: string;
+    comparison: string;
+    outcome: string;
+  };
+  mappings: StatisticalMapping[];
+  status: 'draft' | 'confirmed';
 }

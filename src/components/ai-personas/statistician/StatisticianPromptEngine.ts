@@ -409,10 +409,11 @@ ${this.generateTestSelectionGuidance(context)}
 ## CRITICAL REQUIREMENTS
 
 1. **LIMIT TO 8-12 SUGGESTIONS** - Focus on the most important analyses
-2. **Use actual variable IDs** from the schema provided above
+2. **EXACT VARIABLE IDs ONLY** - You MUST use the exact variable IDs shown in backticks above (e.g., \`block-1234567890-abc\`). DO NOT invent, guess, or create semantic names like "stroke_rate" or "30_day_mortality". Copy the exact ID string from the schema.
 3. **Keep JSON compact** - Short descriptions, no redundant fields
 4. **Match test to data type** - Verify predictor/outcome types
-5. **Ensure complete JSON** - No truncation, close all brackets`;
+5. **Ensure complete JSON** - No truncation, close all brackets
+6. **Respect confirmed roles** - Variables marked with "(confirmed)" statistical roles should be used according to their assigned role (Primary Endpoint, Treatment Indicator, etc.)`;
   }
 
   /**
@@ -982,6 +983,7 @@ Respond with valid JSON only:
 
   /**
    * Format variables with detailed distribution info
+   * Includes statistical role from confirmed AIStatisticalPlan when available
    */
   private formatVariablesDetailed(variables: SchemaBlockSummary[]): string {
     if (variables.length === 0) return 'None defined';
@@ -992,6 +994,15 @@ Respond with valid JSON only:
           `- **${v.label}** (ID: \`${v.id}\`)`,
           `  Type: ${v.dataType}`,
         ];
+
+        // Include confirmed statistical role if available
+        if (v.statisticalRole && v.statisticalRoleConfirmed) {
+          const roleLabel = this.formatStatisticalRole(v.statisticalRole);
+          parts.push(`  📋 Statistical Role: **${roleLabel}** (confirmed)`);
+        } else if (v.statisticalRole) {
+          const roleLabel = this.formatStatisticalRole(v.statisticalRole);
+          parts.push(`  📋 Statistical Role: ${roleLabel} (suggested)`);
+        }
 
         if (v.distribution) {
           if (v.distribution.type === 'continuous') {
@@ -1021,6 +1032,24 @@ Respond with valid JSON only:
         return parts.join('\n');
       })
       .join('\n\n');
+  }
+
+  /**
+   * Format statistical role for display
+   */
+  private formatStatisticalRole(role: string): string {
+    const roleLabels: Record<string, string> = {
+      'primary_endpoint': 'Primary Endpoint',
+      'secondary_endpoint': 'Secondary Endpoint',
+      'safety_endpoint': 'Safety Endpoint',
+      'baseline_covariate': 'Baseline Covariate',
+      'confounder': 'Confounder',
+      'subgroup_variable': 'Subgroup Variable',
+      'treatment_indicator': 'Treatment Indicator',
+      'time_variable': 'Time Variable',
+      'excluded': 'Excluded',
+    };
+    return roleLabels[role] || role;
   }
 
   /**
