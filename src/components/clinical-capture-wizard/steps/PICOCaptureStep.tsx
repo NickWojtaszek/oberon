@@ -23,6 +23,7 @@ import {
   Bot,
   Mic,
   MicOff,
+  Eye,
 } from 'lucide-react';
 import { getPersona } from '../../ai-personas/core/personaRegistry';
 import {
@@ -31,13 +32,48 @@ import {
   extractFromPDF,
   synthesizeFoundationalPapers,
   type FoundationalPaperExtraction,
+  type GeminiTransparencyCapture,
 } from '../../../services/geminiService';
+import { TransparencyDialog } from '../components/TransparencyDialog';
 
 interface PICOField {
   label: string;
   value: string;
   icon: React.ComponentType<{ className?: string }>;
   grounded: 'found' | 'missing' | 'pending';
+}
+
+interface PICOExtractionTransparency {
+  timestamp: string;
+  status: 'success' | 'error';
+  input: {
+    rawObservation: string;
+    foundationalPapers: FoundationalPaperExtraction[];
+  };
+  prompt: {
+    fullPrompt: string;
+    model: string;
+    parameters: {
+      temperature: number;
+      maxOutputTokens: number;
+    };
+  };
+  response: {
+    rawText: string;
+    responseTimeMs: number;
+  };
+  parsed: {
+    population: string;
+    intervention: string;
+    comparison: string;
+    outcome: string;
+    confidence: number;
+    reasoning: string;
+  };
+  error?: {
+    message: string;
+    details?: string;
+  };
 }
 
 interface PICOCaptureStepProps {
@@ -73,6 +109,10 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [personaExpanded, setPersonaExpanded] = useState(false);
+
+  // Transparency UI state
+  const [extractionTransparency, setExtractionTransparency] = useState<PICOExtractionTransparency | null>(null);
+  const [showTransparencyDialog, setShowTransparencyDialog] = useState(false);
 
   // Transform initialData.picoFields if it exists (from protocol storage)
   // Protocol stores as {population: "string", intervention: "string"}
@@ -162,10 +202,45 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
     if (!rawObservation.trim()) return;
 
     setIsProcessing(true);
+    setExtractionTransparency(null); // Clear previous transparency data
+
     try {
       if (isGeminiConfigured()) {
+        let capturedData: GeminiTransparencyCapture | null = null;
+
         // Pass foundational papers to extraction to enrich PICO with paper context
-        const extracted = await extractPICOWithGemini(rawObservation, foundationalPapers);
+        const extracted = await extractPICOWithGemini(
+          rawObservation,
+          foundationalPapers,
+          {
+            onCapture: (data) => {
+              capturedData = data;
+            },
+          }
+        );
+
+        // Build transparency data structure
+        if (capturedData) {
+          setExtractionTransparency({
+            timestamp: capturedData.captureTimestamp,
+            status: 'success',
+            input: {
+              rawObservation,
+              foundationalPapers,
+            },
+            prompt: {
+              fullPrompt: capturedData.capturePrompt,
+              model: capturedData.captureModel,
+              parameters: capturedData.captureParameters,
+            },
+            response: {
+              rawText: capturedData.captureResponse,
+              responseTimeMs: capturedData.captureResponseTimeMs,
+            },
+            parsed: extracted,
+          });
+        }
+
         setPicoFields({
           population: {
             label: 'Population',
@@ -224,6 +299,20 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
       }
     } catch (error) {
       console.error('PICO extraction error:', error);
+
+      // Set error state in transparency if we have any captured data
+      setExtractionTransparency((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: 'error',
+              error: {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                details: error?.toString(),
+              },
+            }
+          : null
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -544,24 +633,37 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
             : 'Extract PICO framework from your research question using AI.'}
         </p>
 
-        <button
-          onClick={handleExtractPICO}
-          disabled={!rawObservation.trim() || isProcessing}
-          className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Extracting PICO...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Extract PICO Framework
-              {foundationalPapers.length > 0 && ` (with ${foundationalPapers.length} paper${foundationalPapers.length !== 1 ? 's' : ''})`}
-            </>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExtractPICO}
+            disabled={!rawObservation.trim() || isProcessing}
+            className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Extracting PICO...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Extract PICO Framework
+                {foundationalPapers.length > 0 && ` (with ${foundationalPapers.length} paper${foundationalPapers.length !== 1 ? 's' : ''})`}
+              </>
+            )}
+          </button>
+
+          {/* Transparency Icon - Only shown after extraction */}
+          {extractionTransparency && (
+            <button
+              onClick={() => setShowTransparencyDialog(true)}
+              className="p-3 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-600 transition-colors"
+              title="View AI extraction details"
+            >
+              <Eye className="w-5 h-5" />
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Step 5: PICO Fields */}
@@ -613,6 +715,13 @@ export function PICOCaptureStep({ onComplete, initialData }: PICOCaptureStepProp
           Complete & Continue
         </button>
       </div>
+
+      {/* Transparency Dialog */}
+      <TransparencyDialog
+        open={showTransparencyDialog}
+        onClose={() => setShowTransparencyDialog(false)}
+        data={extractionTransparency}
+      />
     </div>
   );
 }

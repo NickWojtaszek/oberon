@@ -31,6 +31,22 @@ interface PICOExtraction {
 }
 
 /**
+ * Transparency data captured during Gemini API calls
+ * Used for debugging and showing users the AI reasoning pipeline
+ */
+export interface GeminiTransparencyCapture {
+  capturePrompt: string;
+  captureResponse: string;
+  captureTimestamp: string;
+  captureResponseTimeMs: number;
+  captureModel: string;
+  captureParameters: {
+    temperature: number;
+    maxOutputTokens: number;
+  };
+}
+
+/**
  * Extracted data from a foundational research paper
  */
 export interface FoundationalPaperExtraction {
@@ -247,7 +263,8 @@ function extractJSONFromResponse(responseText: string): any {
  */
 export async function extractPICOWithGemini(
   clinicalText: string,
-  foundationalPapers?: FoundationalPaperExtraction[]
+  foundationalPapers?: FoundationalPaperExtraction[],
+  transparencyCapture?: { onCapture: (data: GeminiTransparencyCapture) => void }
 ): Promise<PICOExtraction> {
   // Build papers context if provided
   const papersContext = foundationalPapers && foundationalPapers.length > 0
@@ -288,8 +305,27 @@ Respond in valid JSON format only, with no additional text:
   "reasoning": "Brief explanation of your extraction logic"
 }`;
 
+  const startTime = performance.now();
+
   try {
     const responseText = await callGemini(prompt);
+    const responseTimeMs = performance.now() - startTime;
+
+    // Capture transparency data if callback provided
+    if (transparencyCapture) {
+      transparencyCapture.onCapture({
+        capturePrompt: prompt,
+        captureResponse: responseText,
+        captureTimestamp: new Date().toISOString(),
+        captureResponseTimeMs: responseTimeMs,
+        captureModel: 'gemini-2.0-flash',
+        captureParameters: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+        },
+      });
+    }
+
     const parsed = extractJSONFromResponse(responseText) as PICOExtraction;
 
     return {
@@ -301,6 +337,22 @@ Respond in valid JSON format only, with no additional text:
       reasoning: parsed.reasoning || 'AI extraction completed',
     };
   } catch (error) {
+    // Capture error case in transparency data
+    if (transparencyCapture) {
+      const responseTimeMs = performance.now() - startTime;
+      transparencyCapture.onCapture({
+        capturePrompt: prompt,
+        captureResponse: error instanceof Error ? error.message : String(error),
+        captureTimestamp: new Date().toISOString(),
+        captureResponseTimeMs: responseTimeMs,
+        captureModel: 'gemini-2.0-flash',
+        captureParameters: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+        },
+      });
+    }
+
     console.error('PICO extraction failed:', error);
     throw error;
   }
