@@ -27,6 +27,7 @@ import {
   Info,
 } from 'lucide-react';
 import type { SchemaBlock, StatisticalMapping, AIStatisticalPlan, StatisticalRole } from '../protocol-workbench/types';
+import { getAllBlocks } from '../protocol-workbench/utils';
 import {
   getStatisticalRoleLabel,
   getStatisticalRoleColor,
@@ -74,9 +75,12 @@ export function VariableMappingPanel({
     new Set(['primary_endpoint', 'secondary_endpoint', 'treatment_indicator', 'baseline_covariate'])
   );
 
-  // Convert SchemaBlock to SchemaBlockInput
+  // Convert SchemaBlock to SchemaBlockInput - flatten nested blocks first
   const schemaBlockInputs: SchemaBlockInput[] = useMemo(() => {
-    return schemaBlocks
+    // Use getAllBlocks to flatten the tree structure (includes nested children)
+    const allBlocks = getAllBlocks(schemaBlocks);
+
+    return allBlocks
       .filter(block => block.dataType !== 'Section') // Exclude section blocks
       .map(block => ({
         id: block.id,

@@ -5,9 +5,10 @@
  * of schema blocks and suggests statistical roles based on PICO framework.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Sparkles, RefreshCw, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import type { SchemaBlock, StatisticalRole, AIStatisticalPlan } from '../types';
+import { getAllBlocks } from '../utils';
 import { generateStatisticalPlan } from '../../../services/geminiService';
 import {
   parseStatisticalPlanResponse,
@@ -37,18 +38,23 @@ export function SuggestStatisticalRolesButton({
   const [plan, setPlan] = useState<AIStatisticalPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Convert SchemaBlock to SchemaBlockInput
-  const schemaBlockInputs: SchemaBlockInput[] = schemaBlocks
-    .filter(block => block.dataType !== 'Section')
-    .map(block => ({
-      id: block.id,
-      label: block.variable?.name || block.customName || 'Unnamed',
-      dataType: block.dataType,
-      role: block.role,
-      endpointTier: block.endpointTier,
-      description: block.variable?.name,
-      category: block.variable?.category,
-    }));
+  // Convert SchemaBlock to SchemaBlockInput - flatten nested blocks first
+  const schemaBlockInputs: SchemaBlockInput[] = useMemo(() => {
+    // Use getAllBlocks to flatten the tree structure (includes nested children)
+    const allBlocks = getAllBlocks(schemaBlocks);
+
+    return allBlocks
+      .filter(block => block.dataType !== 'Section')
+      .map(block => ({
+        id: block.id,
+        label: block.variable?.name || block.customName || 'Unnamed',
+        dataType: block.dataType,
+        role: block.role,
+        endpointTier: block.endpointTier,
+        description: block.variable?.name,
+        category: block.variable?.category,
+      }));
+  }, [schemaBlocks]);
 
   const handleGenerate = async () => {
     if (schemaBlockInputs.length === 0) {
