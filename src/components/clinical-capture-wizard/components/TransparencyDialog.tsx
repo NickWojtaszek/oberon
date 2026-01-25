@@ -90,20 +90,27 @@ export function TransparencyDialog({ open, onClose, data }: TransparencyDialogPr
     }
   };
 
-  if (!data) return null;
-
-  const formattedDate = new Date(data.timestamp).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const formattedDate = data
+    ? new Date(data.timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : '';
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        {!data ? (
+          <div className="p-8 text-center text-slate-600">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+            <p>No transparency data available</p>
+          </div>
+        ) : (
+          <>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <Eye className="w-6 h-6 text-purple-600" />
@@ -368,6 +375,8 @@ export function TransparencyDialog({ open, onClose, data }: TransparencyDialogPr
             Close
           </button>
         </div>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );
