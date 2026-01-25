@@ -2,7 +2,7 @@
 // React hook for managing Statistician AI state
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import type { SchemaBlock, ProtocolVersion } from '../../../protocol-workbench/types';
+import type { SchemaBlock, ProtocolVersion, AIStatisticalPlan } from '../../../protocol-workbench/types';
 import type { ClinicalDataRecord } from '../../../../utils/dataStorage';
 import type { FoundationalPaperExtraction } from '../../../../services/geminiService';
 import type {
@@ -30,6 +30,7 @@ interface UseStatisticianOptions {
   picoData?: PicoData | null;
   config?: Partial<StatisticianConfig>;
   autoGenerate?: boolean;
+  statisticalPlan?: AIStatisticalPlan | null; // Confirmed variable mappings from AI
 }
 
 interface GenerationProgress {
@@ -73,6 +74,7 @@ export function useStatistician({
   picoData,
   config,
   autoGenerate = true,
+  statisticalPlan,
 }: UseStatisticianOptions): UseStatisticianReturn {
   // Initialize service
   const service = useMemo(() => new StatisticianService(config), [config]);
@@ -93,14 +95,34 @@ export function useStatistician({
   const [hasGenerated, setHasGenerated] = useState(false);
   const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
 
+  // Apply confirmed statistical mappings to schema blocks
+  const enrichedSchemaBlocks = useMemo(() => {
+    if (!statisticalPlan || statisticalPlan.status !== 'confirmed') {
+      return schemaBlocks;
+    }
+
+    // Apply confirmed mappings to blocks
+    return schemaBlocks.map(block => {
+      const mapping = statisticalPlan.mappings.find(m => m.blockId === block.id && m.confirmed);
+      if (mapping) {
+        return {
+          ...block,
+          statisticalRole: mapping.suggestedRole,
+          roleConfirmed: true,
+        };
+      }
+      return block;
+    });
+  }, [schemaBlocks, statisticalPlan]);
+
   // Build context when inputs change
   useEffect(() => {
-    if (protocol && schemaBlocks.length > 0) {
+    if (protocol && enrichedSchemaBlocks.length > 0) {
       setIsLoading(true);
       try {
         const newContext = service.buildContext(
           protocol,
-          schemaBlocks,
+          enrichedSchemaBlocks,
           records,
           foundationalPapers,
           picoData
@@ -113,7 +135,7 @@ export function useStatistician({
         setIsLoading(false);
       }
     }
-  }, [protocol, schemaBlocks, records, foundationalPapers, picoData, service]);
+  }, [protocol, enrichedSchemaBlocks, records, foundationalPapers, picoData, service]);
 
   // Auto-generate if enabled and conditions are met
   // Uses batched generation for larger schemas to avoid truncation
@@ -329,16 +351,17 @@ export function useStatistician({
 
   // Refresh context
   const refreshContext = useCallback(() => {
-    if (protocol && schemaBlocks.length > 0) {
+    if (protocol && enrichedSchemaBlocks.length > 0) {
       const newContext = service.buildContext(
         protocol,
-        schemaBlocks,
+        enrichedSchemaBlocks,
         records,
-        foundationalPapers
+        foundationalPapers,
+        picoData
       );
       setContext(newContext);
     }
-  }, [protocol, schemaBlocks, records, foundationalPapers, service]);
+  }, [protocol, enrichedSchemaBlocks, records, foundationalPapers, picoData, service]);
 
   // Computed values
   const pendingCount = queue.pending.length;

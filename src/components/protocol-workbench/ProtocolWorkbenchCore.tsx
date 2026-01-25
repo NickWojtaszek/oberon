@@ -19,6 +19,8 @@ import { canEditProtocolVersion, updateDataCollectionStats } from '../../utils/s
 import { storage } from '../../utils/storageService';
 import { migrateProjectProtocols } from '../../utils/protocolMigration';
 import { runProtocolAudit } from './auditEngine';
+import { SuggestStatisticalRolesButton } from './components/SuggestStatisticalRolesButton';
+import type { AIStatisticalPlan } from './types';
 
 interface ProtocolWorkbenchProps {
   initialProtocolId?: string;
@@ -79,6 +81,9 @@ export function ProtocolWorkbench({
   const [aiSuggestionsEnabled, setAiSuggestionsEnabled] = useState(true);
   const [protocolDocumentText, setProtocolDocumentText] = useState<string | undefined>(undefined);
   const [protocolFileName, setProtocolFileName] = useState<string | undefined>(undefined);
+
+  // 🎯 AI Statistical Plan State (Mode A - Semi-automated role suggestions)
+  const [aiStatisticalPlan, setAiStatisticalPlan] = useState<AIStatisticalPlan | null>(null);
 
   // Prepare protocol context for AI suggestions
   const protocolContext = useMemo(() => {
@@ -285,6 +290,31 @@ export function ProtocolWorkbench({
   const handleVersionTagSave = (blockId: string, versionTag: string | undefined, versionColor: 'blue' | 'green' | 'purple' | 'amber' | undefined) => {
     schemaState.updateBlock(blockId, { versionTag, versionColor });
   };
+
+  // Handle AI statistical role suggestions generated
+  const handleStatisticalSuggestionsGenerated = (plan: AIStatisticalPlan) => {
+    console.log('🎯 AI Statistical Role Suggestions Generated:', plan);
+    setAiStatisticalPlan(plan);
+
+    // Apply AI-suggested roles to schema blocks
+    plan.mappings.forEach(mapping => {
+      if (mapping.confirmed && mapping.suggestedRole !== 'excluded') {
+        schemaState.updateBlock(mapping.blockId, {
+          aiSuggestedRole: mapping.suggestedRole,
+          statisticalRole: mapping.suggestedRole,
+          roleConfirmed: mapping.confirmed,
+        });
+      } else if (!mapping.confirmed) {
+        // Just store the suggestion, don't confirm yet
+        schemaState.updateBlock(mapping.blockId, {
+          aiSuggestedRole: mapping.suggestedRole,
+        });
+      }
+    });
+  };
+
+  // Get PICO from current protocol
+  const currentPico = currentProtocol?.studyMethodology?.hypothesis?.picoFramework;
 
   // Handle save
   const handleSave = (status: 'draft' | 'published' = 'draft') => {
@@ -644,15 +674,33 @@ export function ProtocolWorkbench({
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-slate-700">
-                {aiSuggestionsEnabled ? 'Enabled' : 'Disabled'}
-              </span>
-              <Switch
-                checked={aiSuggestionsEnabled}
-                onCheckedChange={setAiSuggestionsEnabled}
-                className="data-[state=checked]:bg-purple-600"
-              />
+            <div className="flex items-center gap-4">
+              {/* AI Statistical Role Suggestion Button */}
+              {currentPico && (
+                <SuggestStatisticalRolesButton
+                  pico={{
+                    population: currentPico.population || '',
+                    intervention: currentPico.intervention || '',
+                    comparison: currentPico.comparison || '',
+                    outcome: currentPico.outcome || '',
+                  }}
+                  schemaBlocks={schemaState.schemaBlocks}
+                  protocolId={versionControl.currentProtocolId || 'new-protocol'}
+                  onSuggestionsGenerated={handleStatisticalSuggestionsGenerated}
+                  disabled={schemaState.schemaBlocks.length === 0}
+                />
+              )}
+
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-slate-700">
+                  {aiSuggestionsEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+                <Switch
+                  checked={aiSuggestionsEnabled}
+                  onCheckedChange={setAiSuggestionsEnabled}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
             </div>
           </div>
         </div>

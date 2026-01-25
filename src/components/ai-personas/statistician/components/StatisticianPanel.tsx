@@ -13,8 +13,9 @@ import {
   Clock,
   Sparkles,
   FileText,
+  MapPin,
 } from 'lucide-react';
-import type { SchemaBlock, ProtocolVersion } from '../../../protocol-workbench/types';
+import type { SchemaBlock, ProtocolVersion, AIStatisticalPlan } from '../../../protocol-workbench/types';
 import type { ClinicalDataRecord } from '../../../../utils/dataStorage';
 import type { FoundationalPaperExtraction } from '../../../../services/geminiService';
 import { useStatistician } from '../hooks/useStatistician';
@@ -22,6 +23,7 @@ import { SuggestionCard } from './SuggestionCard';
 import { ExecutionResultCard } from './ExecutionResultCard';
 import { ContextSummaryCard } from './ContextSummaryCard';
 import { inspectStoredData } from '../../../analytics-stats/utils/dataInspector';
+import { VariableMappingPanel } from '../../../analytics/VariableMappingPanel';
 
 interface PicoData {
   population?: string;
@@ -52,6 +54,10 @@ export function StatisticianPanel({
     inspectStoredData();
   }, []); // Run once on mount
 
+  // Statistical Plan State (AI Variable Mapping)
+  const [statisticalPlan, setStatisticalPlan] = useState<AIStatisticalPlan | null>(null);
+  const [showMappingPanel, setShowMappingPanel] = useState(false);
+
   const {
     context,
     queue,
@@ -73,11 +79,23 @@ export function StatisticianPanel({
     foundationalPapers,
     picoData,
     autoGenerate: true,
+    statisticalPlan, // Pass the confirmed plan to the statistician
   });
 
   const [showAutoExecuted, setShowAutoExecuted] = useState(true);
   const [showExecuted, setShowExecuted] = useState(true);
   const [showRejected, setShowRejected] = useState(false);
+
+  // Check if PICO is available for mapping
+  const hasPicoData = picoData && (picoData.population || picoData.intervention || picoData.outcome);
+  const hasConfirmedPlan = statisticalPlan?.status === 'confirmed';
+
+  // Handle confirmed statistical plan
+  const handlePlanConfirmed = (plan: AIStatisticalPlan) => {
+    console.log('✅ Statistical plan confirmed:', plan);
+    setStatisticalPlan(plan);
+    setShowMappingPanel(false);
+  };
 
   if (!protocol) {
     return (
@@ -159,6 +177,66 @@ export function StatisticianPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Context Summary */}
         {context && <ContextSummaryCard context={context} />}
+
+        {/* Variable Mapping Section */}
+        {hasPicoData && schemaBlocks.length > 0 && (
+          <section className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-sm font-semibold text-indigo-900">Variable Mapping</h3>
+              </div>
+              {hasConfirmedPlan ? (
+                <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+                  <CheckCircle2 className="w-3 h-3" />
+                  {statisticalPlan?.mappings.filter(m => m.confirmed).length} mapped
+                </span>
+              ) : (
+                <button
+                  onClick={() => setShowMappingPanel(true)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Map Variables
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-600">
+              {hasConfirmedPlan
+                ? 'AI has mapped your schema variables to statistical roles. Analysis will use these confirmed mappings.'
+                : 'Let AI analyze your PICO and schema to suggest how each variable should be used in analysis.'}
+            </p>
+            {hasConfirmedPlan && (
+              <button
+                onClick={() => setShowMappingPanel(true)}
+                className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
+              >
+                Review or modify mappings
+              </button>
+            )}
+          </section>
+        )}
+
+        {/* Variable Mapping Panel (Modal-like overlay) */}
+        {showMappingPanel && protocol && hasPicoData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="max-w-3xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl m-4">
+              <VariableMappingPanel
+                protocolId={protocol.id}
+                pico={{
+                  population: picoData?.population || '',
+                  intervention: picoData?.intervention || '',
+                  comparison: picoData?.comparison || '',
+                  outcome: picoData?.outcome || '',
+                }}
+                schemaBlocks={schemaBlocks}
+                onConfirm={handlePlanConfirmed}
+                onCancel={() => setShowMappingPanel(false)}
+                existingPlan={statisticalPlan}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Auto-Executed Results (Descriptive Stats) */}
         {hasAutoExecuted && (
