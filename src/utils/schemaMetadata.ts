@@ -99,9 +99,12 @@ function normalizeLabelToName(label: string | undefined): string {
 /**
  * Get the label/name from a schema block
  * SchemaBlock stores the name in variable.name, not block.label
+ * Handles multiple formats for imported JSON compatibility
  */
 function getBlockLabel(block: SchemaBlock): string | undefined {
-  // Primary: variable.name (where the actual label is stored)
+  const blockAny = block as any;
+
+  // Primary: variable.name (where the actual label is stored in app-generated blocks)
   if (block.variable?.name) {
     return block.variable.name;
   }
@@ -109,9 +112,29 @@ function getBlockLabel(block: SchemaBlock): string | undefined {
   if (block.customName) {
     return block.customName;
   }
-  // Legacy: check for label property (backwards compatibility)
-  if ((block as any).label) {
-    return (block as any).label;
+  // Legacy/import: check for label property at block level
+  if (blockAny.label) {
+    return blockAny.label;
+  }
+  // Import formats: some use name at block level
+  if (blockAny.name && typeof blockAny.name === 'string') {
+    return blockAny.name;
+  }
+  // Import formats: some use title
+  if (blockAny.title && typeof blockAny.title === 'string') {
+    return blockAny.title;
+  }
+  // Import formats: variable.label instead of variable.name
+  if (block.variable && (block.variable as any).label) {
+    return (block.variable as any).label;
+  }
+  // Last resort: extract from ID (e.g., "age-1234567" -> "age")
+  if (block.id) {
+    const idParts = block.id.split('-');
+    if (idParts.length > 0 && idParts[0] !== 'block') {
+      // ID like "age-123456" -> "age"
+      return idParts[0].replace(/_/g, ' ');
+    }
   }
   return undefined;
 }
