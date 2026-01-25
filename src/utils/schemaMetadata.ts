@@ -97,6 +97,26 @@ function normalizeLabelToName(label: string | undefined): string {
 }
 
 /**
+ * Get the label/name from a schema block
+ * SchemaBlock stores the name in variable.name, not block.label
+ */
+function getBlockLabel(block: SchemaBlock): string | undefined {
+  // Primary: variable.name (where the actual label is stored)
+  if (block.variable?.name) {
+    return block.variable.name;
+  }
+  // Fallback: customName for custom fields
+  if (block.customName) {
+    return block.customName;
+  }
+  // Legacy: check for label property (backwards compatibility)
+  if ((block as any).label) {
+    return (block as any).label;
+  }
+  return undefined;
+}
+
+/**
  * Extract section path from schema block hierarchy
  */
 function extractSectionPath(block: SchemaBlock, allBlocks: SchemaBlock[]): string[] {
@@ -107,7 +127,10 @@ function extractSectionPath(block: SchemaBlock, allBlocks: SchemaBlock[]): strin
     const parent = allBlocks.find(b => b.id === block.parentId);
     if (parent && parent.dataType === 'Section') {
       path.push(...extractSectionPath(parent, allBlocks));
-      path.push(parent.label);
+      const parentLabel = getBlockLabel(parent);
+      if (parentLabel) {
+        path.push(parentLabel);
+      }
     }
   }
 
@@ -158,9 +181,12 @@ export function generateSchemaMetadata(
 
   // Process each block
   for (const block of allBlocks) {
+    // Get label from block.variable.name (the correct location)
+    const blockLabel = getBlockLabel(block);
+
     // Skip blocks without labels
-    if (!block.label) {
-      console.warn(`⚠️ Skipping block ${block.id} - no label defined`);
+    if (!blockLabel) {
+      console.warn(`⚠️ Skipping block ${block.id} - no label defined (variable.name is empty)`);
       continue;
     }
 
@@ -168,7 +194,7 @@ export function generateSchemaMetadata(
     if (block.dataType === 'Section') {
       // Track section for hierarchy
       sections.push({
-        name: block.label,
+        name: blockLabel,
         path: extractSectionPath(block, allBlocks),
         fields: [],
       });
@@ -176,7 +202,7 @@ export function generateSchemaMetadata(
     }
 
     // Generate canonical name
-    const name = normalizeLabelToName(block.label);
+    const name = normalizeLabelToName(blockLabel);
 
     // Determine table ID (use provided map or construct from parent)
     let tableId = '';
@@ -188,8 +214,9 @@ export function generateSchemaMetadata(
       // Find parent section
       const parentSection = allBlocks.find(b => b.id === block.parentId && b.dataType === 'Section');
       if (parentSection) {
-        tableName = parentSection.label;
-        tableId = `${normalizeLabelToName(parentSection.label)}_${tableIdSuffix}`;
+        const parentLabel = getBlockLabel(parentSection) || 'Section';
+        tableName = parentLabel;
+        tableId = `${normalizeLabelToName(parentLabel)}_${tableIdSuffix}`;
       } else {
         tableName = 'General Data';
         tableId = `general_data_${tableIdSuffix}`;
@@ -200,10 +227,10 @@ export function generateSchemaMetadata(
     const sectionPath = extractSectionPath(block, allBlocks);
 
     // Build metadata
-    const metadata: FieldMetadata = {
+    const fieldMetadata: FieldMetadata = {
       id: block.id,
       name,
-      label: block.label,
+      label: blockLabel,
       dataType: block.dataType,
       unit: block.unit,
       options: block.options,
@@ -213,16 +240,16 @@ export function generateSchemaMetadata(
       tableId,
       tableName,
       sectionPath,
-      required: block.required,
-      validationRules: block.validationRules,
+      required: (block as any).required,
+      validationRules: (block as any).validationRules,
     };
 
     // Add to registry
-    fieldRegistry[block.id] = metadata;
+    fieldRegistry[block.id] = fieldMetadata;
 
     // Add to lookups
     byName[name] = block.id;
-    byLabel[block.label.toLowerCase()] = block.id;
+    byLabel[blockLabel.toLowerCase()] = block.id;
 
     if (!byTable[tableId]) {
       byTable[tableId] = [];
