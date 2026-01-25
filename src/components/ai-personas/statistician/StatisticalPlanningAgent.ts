@@ -119,13 +119,22 @@ export function parseStatisticalPlanResponse(
   pico: PICOContext,
   schemaBlocks: SchemaBlockInput[]
 ): AIStatisticalPlan {
+  console.log('📋 [StatisticalPlanningAgent] Parsing response...');
+  console.log('📋 [StatisticalPlanningAgent] Input schema blocks:', schemaBlocks.length);
+  console.log('📋 [StatisticalPlanningAgent] Sample block IDs:', schemaBlocks.slice(0, 5).map(b => b.id));
+
   let parsed: any;
 
   try {
     // Try to extract JSON from response
     parsed = extractJSONFromResponse(responseText);
+    console.log('📋 [StatisticalPlanningAgent] Parsed mappings count:', parsed.mappings?.length || 0);
+    if (parsed.mappings?.length > 0) {
+      console.log('📋 [StatisticalPlanningAgent] Sample AI block IDs:', parsed.mappings.slice(0, 5).map((m: any) => m.blockId));
+    }
   } catch (error) {
     console.error('Failed to parse statistical plan response:', error);
+    console.error('📋 [StatisticalPlanningAgent] Raw response:', responseText.substring(0, 500));
     // Return empty plan on parse failure
     return createEmptyPlan(protocolId, pico);
   }
@@ -140,6 +149,7 @@ export function parseStatisticalPlanResponse(
   for (const block of schemaBlocks) {
     blockLookup.set(block.id, block);
   }
+  console.log('📋 [StatisticalPlanningAgent] Block lookup size:', blockLookup.size);
 
   // Transform response mappings into typed StatisticalMapping objects
   const mappings: StatisticalMapping[] = parsed.mappings
@@ -177,7 +187,15 @@ export function parseStatisticalPlanResponse(
     })
     .filter((m: StatisticalMapping | null): m is StatisticalMapping => m !== null);
 
+  console.log('📋 [StatisticalPlanningAgent] Mappings after filtering (matched IDs):', mappings.length);
+  if (mappings.length > 0) {
+    console.log('📋 [StatisticalPlanningAgent] Sample matched mappings:', mappings.slice(0, 3).map(m => ({ id: m.blockId, role: m.suggestedRole })));
+  }
+
   // Add any schema blocks not in the response as excluded
+  const missingCount = schemaBlocks.filter(block => !mappings.some(m => m.blockId === block.id)).length;
+  console.log('📋 [StatisticalPlanningAgent] Schema blocks missing from AI response:', missingCount);
+
   for (const block of schemaBlocks) {
     if (!mappings.some(m => m.blockId === block.id)) {
       mappings.push({
@@ -190,6 +208,13 @@ export function parseStatisticalPlanResponse(
       });
     }
   }
+
+  console.log('📋 [StatisticalPlanningAgent] Final mappings count:', mappings.length);
+  const roleBreakdown = mappings.reduce((acc, m) => {
+    acc[m.suggestedRole] = (acc[m.suggestedRole] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  console.log('📋 [StatisticalPlanningAgent] Role breakdown:', roleBreakdown);
 
   return {
     id: `stat-plan-${Date.now()}`,

@@ -77,12 +77,19 @@ export function VariableMappingPanel({
 
   // Convert SchemaBlock to SchemaBlockInput - flatten nested blocks first
   const schemaBlockInputs: SchemaBlockInput[] = useMemo(() => {
+    // DEBUG: Log incoming schemaBlocks
+    console.log('📊 [VariableMappingPanel] Incoming schemaBlocks:', schemaBlocks.length);
+    console.log('📊 [VariableMappingPanel] First block sample:', schemaBlocks[0]);
+    console.log('📊 [VariableMappingPanel] Has children?', schemaBlocks.map(b => ({ id: b.id, childCount: b.children?.length || 0 })));
+
     // Use getAllBlocks to flatten the tree structure (includes nested children)
     const allBlocks = getAllBlocks(schemaBlocks);
+    console.log('📊 [VariableMappingPanel] After getAllBlocks:', allBlocks.length);
 
-    return allBlocks
-      .filter(block => block.dataType !== 'Section') // Exclude section blocks
-      .map(block => ({
+    const filtered = allBlocks.filter(block => block.dataType !== 'Section');
+    console.log('📊 [VariableMappingPanel] After Section filter:', filtered.length);
+
+    const result = filtered.map(block => ({
         id: block.id,
         label: block.variable?.name || block.customName || 'Unnamed',
         dataType: block.dataType,
@@ -91,6 +98,11 @@ export function VariableMappingPanel({
         description: block.variable?.name,
         category: block.variable?.category,
       }));
+
+    console.log('📊 [VariableMappingPanel] Final schemaBlockInputs:', result.length);
+    console.log('📊 [VariableMappingPanel] Sample inputs:', result.slice(0, 5));
+
+    return result;
   }, [schemaBlocks]);
 
   // Group mappings by role for display
